@@ -36,8 +36,10 @@ const POPULAR_SUBJECTS = [
 export default function StudyPlanView({
   plan,
   loading,
+  error,
   onGeneratePlan,
   onUpdateProgress,
+  onAddToLearn,
   onPracticeTopic
 }) {
   const [showGenerator, setShowGenerator] = useState(!plan);
@@ -63,17 +65,17 @@ export default function StudyPlanView({
     setSubjectInput(name);
   };
 
-  const handleSubmitGenerate = (e) => {
+  const handleSubmitGenerate = async (e) => {
     e.preventDefault();
     const finalSubject = subjectInput.trim() || 'Data Structures & Algorithms';
-    onGeneratePlan({
+    const didGenerate = await onGeneratePlan({
       subject: finalSubject,
       duration_weeks: Number(durationWeeks),
       target_hours_per_week: Number(targetHoursPerWeek),
       skill_level: skillLevel,
       learning_goal: learningGoal,
     });
-    setShowGenerator(false);
+    if (didGenerate) setShowGenerator(false);
   };
 
   // Calculate statistics from the plan
@@ -178,6 +180,12 @@ export default function StudyPlanView({
               gap: '16px',
             }}
           >
+            {error && (
+              <div role="alert" style={{ padding: '10px 12px', borderRadius: '10px', background: 'rgba(244, 63, 94, 0.14)', border: '1px solid rgba(251, 113, 133, 0.55)', color: '#fecdd3', fontSize: '0.8rem' }}>
+                Could not generate the plan: {error}
+              </div>
+            )}
+
             {/* Quick Chips */}
             <div>
               <div style={{ fontSize: '0.76rem', color: '#94a3b8', marginBottom: '8px', fontWeight: 600 }}>
@@ -397,6 +405,13 @@ export default function StudyPlanView({
 
               {/* Quick Hours Logger */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={() => onAddToLearn && onAddToLearn(!plan.is_added_to_learn)}
+                  className={plan.is_added_to_learn ? 'btn btn-white' : 'btn btn-primary'}
+                  style={{ fontSize: '0.78rem', padding: '7px 12px', borderRadius: '8px', border: plan.is_added_to_learn ? '1px solid #86efac' : 'none' }}
+                >
+                  {plan.is_added_to_learn ? '✓ Added to Learn' : 'Add to Learn'}
+                </button>
                 <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>Log Study Time:</span>
                 <button
                   onClick={() => onUpdateProgress({ logged_hours_delta: 0.5 })}

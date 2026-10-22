@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 # Auth schemas
@@ -149,6 +149,9 @@ class CreateCustomPlanRequest(BaseModel):
     skill_level: str = "Beginner"
     learning_goal: str = "Full Mastery"
 
+class SaveCustomPlanRequest(BaseModel):
+    plan: Dict[str, Any]
+
 class UpdatePlanProgressRequest(BaseModel):
     plan_id: Optional[str] = None
     milestone_id: Optional[str] = None
@@ -158,6 +161,7 @@ class UpdatePlanProgressRequest(BaseModel):
     resource_completed: Optional[bool] = None
     logged_hours_delta: Optional[float] = 0.0
     milestone_status: Optional[str] = None
+    add_to_learn: Optional[bool] = None
 
 # Tutor chat schemas
 class TutorChatRequest(BaseModel):

@@ -51,6 +51,7 @@ export default function App() {
   const [roadmap, setRoadmap] = useState(null);
   const [customPlan, setCustomPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState('');
 
   // Diagnostic Quiz / Practice State
   const [selectedTopicId, setSelectedTopicId] = useState(null);
@@ -171,12 +172,20 @@ export default function App() {
   // Custom Study Plan Handlers
   const handleGenerateCustomPlan = async (planConfig) => {
     setPlanLoading(true);
+    setPlanError('');
     try {
       const res = await analyticsAPI.createCustomPlan(planConfig);
+      if (!res.data?.milestones?.length) {
+        throw new Error('The server returned an incomplete study plan. Please try again.');
+      }
       setCustomPlan(res.data);
       setActiveNav('Study Plan');
+      return true;
     } catch (err) {
       console.error('Failed to generate study plan:', err);
+      const message = err.response?.data?.detail || err.message || 'Unable to generate the study plan. Please try again.';
+      setPlanError(message);
+      return false;
     } finally {
       setPlanLoading(false);
     }
@@ -192,6 +201,24 @@ export default function App() {
       console.error('Failed to update study plan progress:', err);
     }
   };
+
+  const handleAddPlanToLearn = async (addToLearn) => {
+    if (!customPlan) return;
+    try {
+      if (addToLearn) {
+        const res = await analyticsAPI.saveCustomPlan(customPlan);
+        setCustomPlan(res.data);
+        setActiveNav('Learn');
+      } else {
+        await handleUpdatePlanProgress({ add_to_learn: false });
+      }
+    } catch (err) {
+      setPlanError(err.response?.data?.detail || 'Unable to save this plan. Please try again.');
+    }
+  };
+
+  // Only the plan deliberately added to Learn drives plan-specific surfaces.
+  const learningPlan = customPlan?.is_added_to_learn ? customPlan : null;
 
   // AI Tutor Chat
   const handleSendChat = async (e) => {
@@ -341,7 +368,7 @@ export default function App() {
 
               {/* Four Summary Stat Cards */}
               <StatCards
-                customPlan={customPlan}
+                customPlan={learningPlan}
                 overallProgress={analytics?.overall_accuracy || 84}
                 topicsCompleted={12}
                 weakTopics={analytics?.weak_topics_count || 3}
@@ -350,7 +377,7 @@ export default function App() {
 
               {/* Continue Learning & Today's Plan Row */}
               <ContinueLearningRow
-                customPlan={customPlan}
+                customPlan={learningPlan}
                 todayTasks={todayTasks}
                 onToggleTask={handleToggleTask}
                 onOpenStudyPlan={() => setActiveNav('Study Plan')}
@@ -367,14 +394,14 @@ export default function App() {
                 />
 
                 <StudyPlanPanel
-                  plan={customPlan}
+                  plan={learningPlan}
                   onOpenFullPlan={() => setActiveNav('Study Plan')}
                   onUpdateProgress={handleUpdatePlanProgress}
                   onRegeneratePlan={() => setActiveNav('Study Plan')}
                 />
 
                 <RecommendedPanel
-                  customPlan={customPlan}
+                  customPlan={learningPlan}
                   activeResourceFilter={activeResourceFilter}
                   setActiveResourceFilter={setActiveResourceFilter}
                   onOpenResources={() => setActiveNav('Resources')}
@@ -386,7 +413,7 @@ export default function App() {
           {activeNav === 'Learn' && (
             <LearnView
               topics={topics}
-              customPlan={customPlan}
+              customPlan={learningPlan}
               onUpdateProgress={handleUpdatePlanProgress}
               onOpenStudyPlan={() => setActiveNav('Study Plan')}
               user={user}
@@ -416,8 +443,10 @@ export default function App() {
             <StudyPlanView
               plan={customPlan}
               loading={planLoading}
+              error={planError}
               onGeneratePlan={handleGenerateCustomPlan}
               onUpdateProgress={handleUpdatePlanProgress}
+              onAddToLearn={handleAddPlanToLearn}
               onPracticeTopic={(topicName) => {
                 setActiveNav('Practice');
                 loadNextQuestion();
@@ -429,7 +458,7 @@ export default function App() {
             <AnalyticsFullView
               analytics={analytics}
               pieData={pieData}
-              customPlan={customPlan}
+              customPlan={learningPlan}
               onPracticeTopic={(topicId) => {
                 setActiveNav('Practice');
                 loadNextQuestion(topicId);
@@ -440,7 +469,7 @@ export default function App() {
           {activeNav === 'Resources' && (
             <ResourcesFullView
               recommendations={recommendations}
-              customPlan={customPlan}
+              customPlan={learningPlan}
             />
           )}
 

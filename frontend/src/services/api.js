@@ -38,6 +38,7 @@ export const analyticsAPI = {
   getRecommendations: () => api.get('/recommendations'),
   generateRoadmap: (targetHours) => api.post('/roadmaps/generate', { target_hours_per_week: targetHours }),
   createCustomPlan: (data) => api.post('/roadmaps/custom', data),
+  saveCustomPlan: (plan) => api.post('/roadmaps/custom/save', { plan }),
   getCurrentPlan: () => api.get('/roadmaps/current'),
   updatePlanProgress: (data) => api.put('/roadmaps/progress', data),
 };

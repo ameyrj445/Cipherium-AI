@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 import json
@@ -14,6 +14,7 @@ from app.schemas import (
     RoadmapResponse,
     RoadmapTask,
     CreateCustomPlanRequest,
+    SaveCustomPlanRequest,
     UpdatePlanProgressRequest
 )
 from app.routers.auth import get_current_user
@@ -266,30 +267,48 @@ def generate_study_roadmap(
 @router.post("/roadmaps/custom")
 def create_custom_study_plan(
     req: CreateCustomPlanRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Generate a Gemini draft for preview only; it is not persisted."""
+    try:
+        plan_dict = generate_study_plan(
+            subject=req.subject,
+            duration_weeks=req.duration_weeks,
+            target_hours_per_week=req.target_hours_per_week,
+            skill_level=req.skill_level,
+            learning_goal=req.learning_goal
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    plan_dict["is_added_to_learn"] = False
+    return plan_dict
+
+@router.post("/roadmaps/custom/save")
+def save_custom_study_plan(
+    req: SaveCustomPlanRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    plan_dict = generate_study_plan(
-        subject=req.subject,
-        duration_weeks=req.duration_weeks,
-        target_hours_per_week=req.target_hours_per_week,
-        skill_level=req.skill_level,
-        learning_goal=req.learning_goal
-    )
-    
+    """Persist a Gemini-generated plan only after the learner adds it to Learn."""
+    plan_dict = req.plan
+    if not isinstance(plan_dict, dict) or not plan_dict.get("milestones"):
+        raise HTTPException(status_code=422, detail="A valid generated study plan is required.")
+
+    plan_dict["is_added_to_learn"] = True
     plan_record = db.query(StudyPlan).filter(StudyPlan.user_id == current_user.id).first()
     if not plan_record:
         plan_record = StudyPlan(
             user_id=current_user.id,
-            target_hours_per_week=req.target_hours_per_week,
+            target_hours_per_week=plan_dict.get("target_hours_per_week", 10),
             plan_json=json.dumps(plan_dict)
         )
         db.add(plan_record)
     else:
-        plan_record.target_hours_per_week = req.target_hours_per_week
+        plan_record.target_hours_per_week = plan_dict.get("target_hours_per_week", 10)
         plan_record.plan_json = json.dumps(plan_dict)
         plan_record.updated_at = datetime.utcnow()
-    
+
     db.commit()
     return plan_dict
 
@@ -337,6 +356,10 @@ def update_study_plan_progress(
         return {"error": "Invalid plan data format."}
 
     milestones = plan_data.get("milestones", [])
+
+    # The selected plan drives Learn, dashboard tracking, analytics, and resources.
+    if req.add_to_learn is not None:
+        plan_data["is_added_to_learn"] = req.add_to_learn
     
     # Update subtopic completion
     if req.milestone_id and req.subtopic_name is not None and req.subtopic_completed is not None:

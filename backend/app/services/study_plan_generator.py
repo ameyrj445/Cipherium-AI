@@ -6,7 +6,7 @@ from datetime import datetime
 import requests
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 # Pre-compiled high-quality pedagogical blueprints for popular subjects
 CURRICULUM_BLUEPRINTS: Dict[str, Dict[str, Any]] = {
@@ -1224,7 +1224,9 @@ def generate_study_plan(
     if gemini_plan:
         return gemini_plan
 
-    # 2. Try static expert blueprints
+    raise RuntimeError('Gemini could not generate this study plan. Check GEMINI_API_KEY and try again.')
+
+    # Legacy blueprint fallback retained below for reference only.
     blueprint = match_subject_blueprint(subject)
     if blueprint:
         raw_milestones = blueprint["milestones"]

@@ -602,17 +602,17 @@ export default function LearnView({
   onOpenStudyPlan,
   user = null,
 }) {
-  const [activeTab, setActiveTab] = useState(customPlan ? 'activePlan' : 'explore');
+  const [activeTab, setActiveTab] = useState(customPlan?.is_added_to_learn ? 'activePlan' : 'explore');
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
   const [expandedStages, setExpandedStages] = useState({ 0: true, 1: true });
   const [searchQuery, setSearchQuery] = useState('');
 
   // Auto-switch to active plan tab if customPlan becomes available
   useEffect(() => {
-    if (customPlan) {
+    if (customPlan?.is_added_to_learn) {
       setActiveTab('activePlan');
     }
-  }, [customPlan?.id]);
+  }, [customPlan?.id, customPlan?.is_added_to_learn]);
 
   // User-isolated local tracker state for exploring non-active subjects
   const userStorageKey = user?.email ? `cipherium_learn_done_${user.email}` : 'cipherium_learn_done';
@@ -941,7 +941,7 @@ export default function LearnView({
       {/* ── TAB 1: ACTIVE STUDY PLAN ROADMAP ─────────────────────────────────── */}
       {activeTab === 'activePlan' && (
         <div>
-          {customPlan ? (
+          {customPlan?.is_added_to_learn ? (
             <div>
               {/* Plan Overview Card */}
               <div
@@ -1302,10 +1302,10 @@ export default function LearnView({
                 <Sparkles size={32} />
               </div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                No Custom Study Plan Created Yet
+                No Plan Added to Learn Yet
               </h3>
               <p style={{ color: '#64748b', fontSize: '0.86rem', maxWidth: '440px', margin: '8px auto 20px' }}>
-                Pick any subject (DSA, OS, DBMS, Networks, or any custom topic) to generate a full roadmap with internet resources and subtopic checklist.
+                Generate a study plan, then select “Add to Learn” to track its roadmap, resources, and progress here.
               </p>
               {onOpenStudyPlan && (
                 <button
@@ -1313,7 +1313,7 @@ export default function LearnView({
                   className="btn btn-primary"
                   style={{ padding: '10px 22px', fontSize: '0.88rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                 >
-                  <Sparkles size={16} /> Create Your Study Plan Now
+                  <Sparkles size={16} /> Open Study Plan
                 </button>
               )}
             </div>

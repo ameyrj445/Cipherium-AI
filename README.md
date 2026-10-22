@@ -19,6 +19,18 @@
 
 ## Running Locally
 
+### PostgreSQL setup
+
+1. Install PostgreSQL and create the database and application user:
+
+```sql
+CREATE USER cipherium_user WITH PASSWORD 'choose-a-strong-password';
+CREATE DATABASE cipherium_ai OWNER cipherium_user;
+```
+
+2. Copy `backend/.env.example` to `backend/.env`, then set `DATABASE_URL` with the same user, password, host, port, and database name.
+
+3. Install backend dependencies and start the API. On startup, SQLAlchemy creates the tables and seeds the default topics, questions, and resources automatically.
 ### 1. Backend Server
 ```bash
 cd backend
