@@ -538,7 +538,7 @@ export default function App() {
 
           {activeNav === 'Practice' && (
             <PracticeView
-              plan={learningPlan}
+              plans={customPlans.filter((plan) => plan.is_added_to_learn)}
               initialTopic={practiceTopic}
               onUpdateProgress={handleUpdatePlanProgress}
               onOpenStudyPlan={() => setActiveNav('Study Plan')}
