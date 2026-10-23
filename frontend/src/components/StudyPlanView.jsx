@@ -85,6 +85,7 @@ export default function StudyPlanView({
   const [expandedMilestones, setExpandedMilestones] = useState({ 0: true });
   // Filter for stages
   const [stageFilter, setStageFilter] = useState('All'); // All, In Progress, Completed
+  const [stageSearch, setStageSearch] = useState('');
 
   const toggleMilestone = (idx) => {
     setExpandedMilestones((prev) => ({
@@ -137,6 +138,8 @@ export default function StudyPlanView({
 
   // Filtered milestones
   const filteredMilestones = milestones.filter((m) => {
+    const searchText = `${m.title || ''} ${m.description || ''} ${(m.subtopics || []).join(' ')} ${(m.resources || []).map((resource) => resource.title).join(' ')}`.toLowerCase();
+    if (stageSearch.trim() && !searchText.includes(stageSearch.toLowerCase())) return false;
     if (stageFilter === 'All') return true;
     if (stageFilter === 'In Progress') return m.status === 'in_progress';
     if (stageFilter === 'Completed') return m.status === 'completed';
@@ -545,7 +548,8 @@ export default function StudyPlanView({
               </div>
 
               {/* Filter Buttons */}
-              <div style={{ display: 'flex', gap: '6px' }}>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <input value={stageSearch} onChange={(event) => setStageSearch(event.target.value)} placeholder="Search stages" style={{ padding: '6px 10px', width: '150px', border: '1px solid #e2e8f0', borderRadius: '8px', outline: 'none', fontSize: '0.74rem' }} />
                 {['All', 'In Progress', 'Completed'].map((filter) => (
                   <button
                     key={filter}

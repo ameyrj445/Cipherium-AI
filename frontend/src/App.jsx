@@ -563,7 +563,7 @@ export default function App() {
           {activeNav === 'Analytics' && (
             <AnalyticsFullView
               analytics={analytics}
-              customPlan={learningPlan}
+              plans={customPlans.filter((plan) => plan.is_added_to_learn)}
               onPracticeTopic={(topicId) => {
                 setActiveNav('Practice');
                 setPracticeTopic('');

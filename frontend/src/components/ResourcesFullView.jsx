@@ -3,6 +3,7 @@ import { ExternalLink, Play, Bookmark, Clock, Sparkles, BookOpen, Code2, FileTex
 
 export default function ResourcesFullView({ recommendations = [], customPlan = null }) {
   const [activeFilter, setActiveFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Extract resources from customPlan
   const planResources = [];
@@ -30,13 +31,14 @@ export default function ResourcesFullView({ recommendations = [], customPlan = n
   // Combine plan resources (ranked highest) with diagnostic recommendations
   const allResources = [...planResources, ...recommendations.map(r => ({ ...r, isFromPlan: false }))];
 
-  const filtered = activeFilter === 'All'
+  const typeFiltered = activeFilter === 'All'
     ? allResources
     : activeFilter === 'My Plan'
     ? allResources.filter(r => r.isFromPlan)
     : activeFilter === 'Practice'
     ? allResources.filter(r => (r.resource_type || '').toLowerCase().includes('practice') || (r.resource_type || '').toLowerCase().includes('exercise'))
     : allResources.filter(r => (r.resource_type || '').toLowerCase() === activeFilter.toLowerCase());
+  const filtered = typeFiltered.filter((resource) => !searchQuery.trim() || `${resource.title} ${resource.summary || ''} ${resource.topic_name || ''} ${resource.milestoneTitle || ''}`.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div>
@@ -73,6 +75,8 @@ export default function ResourcesFullView({ recommendations = [], customPlan = n
           ))}
         </div>
       </div>
+
+      <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search resources, topics, or roadmap stages" style={{ width: '100%', maxWidth: '420px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '10px', marginBottom: '18px', outline: 'none' }} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '20px' }}>
         {filtered.map((res, idx) => {
