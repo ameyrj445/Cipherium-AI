@@ -3,7 +3,7 @@ import { CheckCircle2, Circle, ChevronRight, Lock, ExternalLink, Sparkles } from
 
 export default function StudyPlanPanel({ plan, onOpenFullPlan, onUpdateProgress, onRegeneratePlan }) {
   const milestones = plan?.milestones || [];
-  const activeSubject = plan?.subject || 'Data Structures & Algorithms';
+  const activeSubject = plan?.subject || 'No active study plan';
 
   // Calculate stats
   let totalSubs = 0;
@@ -12,7 +12,7 @@ export default function StudyPlanPanel({ plan, onOpenFullPlan, onUpdateProgress,
     totalSubs += (m.subtopics || []).length;
     doneSubs += (m.completed_subtopics || []).length;
   });
-  const pct = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 25;
+  const pct = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
 
   return (
     <div className="ui-card" style={{ padding: '20px' }}>

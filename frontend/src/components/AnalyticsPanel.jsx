@@ -2,15 +2,10 @@ import React from 'react';
 import { BarChart2, Clock, BookOpen, Flame } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-export default function AnalyticsPanel({ analyticsPeriod, setAnalyticsPeriod, pieData }) {
-  const topicsData = [
-    { topic: 'Data Structures', pct: 88, color: '#3b82f6' },
-    { topic: 'Algorithms', pct: 72, color: '#06b6d4' },
-    { topic: 'Operating Systems', pct: 45, color: '#f59e0b' },
-    { topic: 'Computer Networks', pct: 78, color: '#38bdf8' },
-    { topic: 'Database Systems', pct: 85, color: '#8b5cf6' },
-    { topic: 'Software Engineering', pct: 60, color: '#a78bfa' },
-  ];
+export default function AnalyticsPanel({ analyticsPeriod, setAnalyticsPeriod, dashboardData }) {
+  const data = dashboardData || { completion: 0, topicsDone: 0, totalTopics: 0, resourcesDone: 0, totalResources: 0, studyHours: 0, topicsData: [], pieData: [] };
+  const topicsData = data.topicsData || [];
+  const pieData = data.pieData || [];
 
   return (
     <div className="ui-card" style={{ padding: '20px' }}>
@@ -47,36 +42,32 @@ export default function AnalyticsPanel({ analyticsPeriod, setAnalyticsPeriod, pi
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontSize: '0.7rem' }}>
             <BarChart2 size={12} />
           </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>84%</div>
-          <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Overall Score</div>
-          <div style={{ fontSize: '0.62rem', color: '#10b981' }}>↑ 12%</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{data.completion}%</div>
+          <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Plan Progress</div>
         </div>
 
         <div style={{ background: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#3b82f6', fontSize: '0.7rem' }}>
             <Clock size={12} />
           </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>6.4 hrs</div>
-          <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Study Time</div>
-          <div style={{ fontSize: '0.62rem', color: '#10b981' }}>↑ 20%</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{data.studyHours} hrs</div>
+          <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Logged Study Time</div>
         </div>
 
         <div style={{ background: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#8b5cf6', fontSize: '0.7rem' }}>
             <BookOpen size={12} />
           </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>28</div>
-          <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Quizzes Taken</div>
-          <div style={{ fontSize: '0.62rem', color: '#10b981' }}>↑ 33%</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{data.topicsDone}/{data.totalTopics}</div>
+          <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Topics Completed</div>
         </div>
 
         <div style={{ background: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontSize: '0.7rem' }}>
             <Flame size={12} />
           </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>18</div>
-          <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Day Streak</div>
-          <div style={{ fontSize: '0.62rem', color: '#10b981' }}>↑ 50%</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{data.resourcesDone}/{data.totalResources}</div>
+          <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Resources Completed</div>
         </div>
       </div>
 
@@ -120,23 +111,23 @@ export default function AnalyticsPanel({ analyticsPeriod, setAnalyticsPeriod, pi
                 justifyContent: 'center',
               }}
             >
-              <span style={{ fontSize: '1rem', fontWeight: 800 }}>84%</span>
-              <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Overall</span>
+              <span style={{ fontSize: '1rem', fontWeight: 800 }}>{data.completion}%</span>
+              <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Plan</span>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '8px', fontSize: '0.68rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
-              <span>Strong Topics (6)</span>
+              <span>Completed stages ({pieData[0]?.value || 0})</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
-              <span>Moderate Topics (4)</span>
+              <span>Started stages ({pieData[1]?.value || 0})</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f43f5e' }}></span>
-              <span>Weak Topics (3)</span>
+              <span>Not started stages ({pieData[2]?.value || 0})</span>
             </div>
           </div>
         </div>

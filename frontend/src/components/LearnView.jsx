@@ -614,6 +614,9 @@ export default function LearnView({
   topics = [],
   onSelectTopic,
   customPlan = null,
+  customPlans = [],
+  onSelectPlan,
+  onDeletePlan,
   onUpdateProgress,
   onOpenStudyPlan,
   user = null,
@@ -622,6 +625,7 @@ export default function LearnView({
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
   const [expandedStages, setExpandedStages] = useState({ 0: true, 1: true });
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedPlanId, setExpandedPlanId] = useState(null);
 
   // Auto-switch to active plan tab if customPlan becomes available
   useEffect(() => {
@@ -661,7 +665,7 @@ export default function LearnView({
 
   // Helper for active custom plan calculations
   const calculatePlanProgress = () => {
-    if (!customPlan || !customPlan.milestones) return { totalSubs: 0, doneSubs: 0, pct: 0, totalHours: 0, doneHours: 0 };
+    if (!customPlan || !customPlan.milestones) return { totalSubs: 0, doneSubs: 0, pct: 0, totalHours: 0, doneHours: 0, remainingHours: 0 };
     let totalSubs = 0;
     let doneSubs = 0;
     customPlan.milestones.forEach(m => {
@@ -674,7 +678,8 @@ export default function LearnView({
       doneSubs,
       pct,
       totalHours: customPlan.total_estimated_hours || 0,
-      doneHours: customPlan.completed_hours || 0
+      doneHours: customPlan.completed_hours || 0,
+      remainingHours: Math.max((customPlan.total_estimated_hours || 0) - (customPlan.completed_hours || 0), 0)
     };
   };
 
@@ -929,7 +934,7 @@ export default function LearnView({
             }}
           >
             <Sparkles size={14} color={activeTab === 'activePlan' ? '#2563eb' : '#64748b'} />
-            My Active Study Plan {customPlan ? `(${planStats.pct}%)` : ''}
+            My Study Plans {customPlans.length ? `(${customPlans.length})` : ''}
           </button>
           <button
             onClick={() => setActiveTab('explore')}
@@ -957,7 +962,37 @@ export default function LearnView({
       {/* ── TAB 1: ACTIVE STUDY PLAN ROADMAP ─────────────────────────────────── */}
       {activeTab === 'activePlan' && (
         <div>
-          {customPlan?.is_added_to_learn ? (
+          {customPlans.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              {customPlans.map((plan) => {
+                const total = (plan.milestones || []).reduce((sum, milestone) => sum + (milestone.subtopics || []).length, 0);
+                const done = (plan.milestones || []).reduce((sum, milestone) => sum + (milestone.completed_subtopics || []).length, 0);
+                const progress = total ? Math.round((done / total) * 100) : 0;
+                const isExpanded = expandedPlanId === plan.id;
+                return (
+                  <div key={plan.id} className="ui-card" style={{ border: isExpanded ? '1.5px solid #93c5fd' : '1px solid #e2e8f0', overflow: 'hidden' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isExpanded) {
+                          setExpandedPlanId(null);
+                        } else {
+                          onSelectPlan?.(plan);
+                          setExpandedPlanId(plan.id);
+                          setExpandedStages({ 0: true });
+                        }
+                      }}
+                      style={{ width: '100%', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', border: 'none', background: isExpanded ? '#eff6ff' : '#fff', cursor: 'pointer', textAlign: 'left' }}
+                    >
+                      <div><div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{plan.subject}</div><div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>{plan.duration_weeks} weeks · {plan.target_hours_per_week} hrs/week · {done}/{total} topics</div></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#2563eb', fontWeight: 800, fontSize: '0.82rem' }}><span>{progress}%</span>{isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {customPlan?.is_added_to_learn && expandedPlanId === customPlan.id ? (
             <div>
               {/* Plan Overview Card */}
               <div
@@ -1005,15 +1040,27 @@ export default function LearnView({
                         {planStats.doneSubs} of {planStats.totalSubs} subtopics completed
                       </div>
                     </div>
-                    {onOpenStudyPlan && (
-                      <button
-                        onClick={onOpenStudyPlan}
-                        className="btn btn-white"
-                        style={{ padding: '8px 14px', fontSize: '0.78rem', border: '1px solid #bfdbfe', borderRadius: '10px' }}
-                      >
-                        Edit Plan
-                      </button>
-                    )}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {onOpenStudyPlan && (
+                        <button
+                          onClick={onOpenStudyPlan}
+                          className="btn btn-white"
+                          style={{ padding: '8px 14px', fontSize: '0.78rem', border: '1px solid #bfdbfe', borderRadius: '10px' }}
+                        >
+                          Edit Plan
+                        </button>
+                      )}
+                      {onDeletePlan && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Delete the ${customPlan.subject} study plan? This cannot be undone.`)) onDeletePlan(customPlan.id);
+                          }}
+                          style={{ padding: '8px 14px', fontSize: '0.78rem', border: '1px solid #fecaca', borderRadius: '10px', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
+                        >
+                          Delete Plan
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1028,6 +1075,18 @@ export default function LearnView({
                       transition: 'width 0.4s ease',
                     }}
                   />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '14px' }}>
+                  {[
+                    ['Total hours', `${planStats.totalHours}h`],
+                    ['Hours logged', `${planStats.doneHours}h`],
+                    ['Hours remaining', `${planStats.remainingHours}h`],
+                  ].map(([label, value]) => (
+                    <div key={label} style={{ background: '#ffffff', border: '1px solid #dbeafe', borderRadius: '10px', padding: '9px 11px' }}>
+                      <div style={{ fontSize: '0.68rem', color: '#64748b' }}>{label}</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>{value}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -1315,6 +1374,7 @@ export default function LearnView({
             <div
               className="ui-card"
               style={{
+                display: customPlans.length ? 'none' : undefined,
                 textAlign: 'center',
                 padding: '48px 24px',
                 borderRadius: '20px',

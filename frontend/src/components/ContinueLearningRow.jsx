@@ -58,8 +58,8 @@ export default function ContinueLearningRow({
     }
   }
 
-  // Use dynamic tasks if available, otherwise fallback
-  const tasksToRender = dynamicTasks.length > 0 ? dynamicTasks : todayTasks;
+  // Dashboard tasks exist only when they come from the active study plan.
+  const tasksToRender = customPlan ? dynamicTasks : [];
 
   const handleTaskClick = (task) => {
     if (task.subtopicName && task.milestoneId && onUpdatePlanProgress) {
@@ -114,7 +114,7 @@ export default function ContinueLearningRow({
                 <Sparkles size={18} color="#2563eb" />
               </div>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '3px 8px', borderRadius: '12px' }}>
-                {customPlan ? `${planProgressPct}%` : '65%'}
+                {planProgressPct}%
               </span>
             </div>
             <div
@@ -129,9 +129,9 @@ export default function ContinueLearningRow({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
               }}
-              title={customPlan?.subject || 'Data Structures and Algorithms'}
+              title={customPlan?.subject || 'No active study plan'}
             >
-              {customPlan?.subject || 'Data Structures & Algorithms'}
+              {customPlan?.subject || 'No active study plan'}
             </div>
             <div
               style={{
@@ -143,14 +143,14 @@ export default function ContinueLearningRow({
                 textOverflow: 'ellipsis',
               }}
             >
-              {activeMilestone ? activeMilestone.title : 'Arrays & Hashing Roadmap'}
+              {activeMilestone ? activeMilestone.title : 'Create and add a study plan to begin'}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
               <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '4px', flex: 1, marginRight: '10px', overflow: 'hidden' }}>
-                <div style={{ width: `${customPlan ? planProgressPct : 65}%`, height: '100%', background: '#2563eb', borderRadius: '4px' }}></div>
+                <div style={{ width: `${planProgressPct}%`, height: '100%', background: '#2563eb', borderRadius: '4px' }}></div>
               </div>
               <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                {customPlan ? `${activeMilestone?.completed_subtopics?.length || 0}/${activeMilestone?.subtopics?.length || 0} topics` : '3/5 lessons'}
+                {`${activeMilestone?.completed_subtopics?.length || 0}/${activeMilestone?.subtopics?.length || 0} topics`}
               </span>
             </div>
           </div>
@@ -183,9 +183,9 @@ export default function ContinueLearningRow({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
               <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '4px', flex: 1, marginRight: '10px', overflow: 'hidden' }}>
-                <div style={{ width: '45%', height: '100%', background: '#7c3aed', borderRadius: '4px' }}></div>
+                <div style={{ width: '0%', height: '100%', background: '#7c3aed', borderRadius: '4px' }}></div>
               </div>
-              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Active</span>
+              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{customPlan ? 'Open plan' : '0 completed'}</span>
             </div>
           </div>
         </div>
@@ -215,6 +215,11 @@ export default function ContinueLearningRow({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {!customPlan && (
+            <div style={{ fontSize: '0.82rem', color: '#64748b', padding: '10px 8px' }}>
+              Add a study plan to see your tasks here.
+            </div>
+          )}
           {tasksToRender.map((t) => (
             <div
               key={t.id}

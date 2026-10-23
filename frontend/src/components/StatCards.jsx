@@ -109,7 +109,7 @@ export default function StatCards({
             {customPlan ? `${hoursCompleted}/${totalHours}h` : weakTopics}
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            {customPlan ? 'Logged Hours' : 'Plans in Learn'}
+            {customPlan ? `${Math.max(totalHours - hoursCompleted, 0)}h remaining` : 'Plans in Learn'}
           </div>
         </div>
       </div>

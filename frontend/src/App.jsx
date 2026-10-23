@@ -72,6 +72,7 @@ export default function App() {
   const [recommendations, setRecommendations] = useState([]);
   const [roadmap, setRoadmap] = useState(null);
   const [customPlan, setCustomPlan] = useState(null);
+  const [customPlans, setCustomPlans] = useState([]);
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState('');
   const [practiceTopic, setPracticeTopic] = useState('');
@@ -117,21 +118,33 @@ export default function App() {
     { id: 4, title: 'Chat with AI Tutor', duration: 'Any time', done: false },
   ]);
 
+  const plansStorageKey = user?.id ? `cipherium_saved_plans_${user.id}` : '';
+  const cachePlans = (plans) => {
+    if (plansStorageKey) localStorage.setItem(plansStorageKey, JSON.stringify(plans));
+  };
+
   // Load user data whenever token changes
   const loadUserData = async () => {
     try {
-      const [topRes, anaRes, recRes, roadRes, planRes] = await Promise.all([
+      const [topRes, anaRes, recRes, roadRes, planRes, plansRes] = await Promise.all([
         quizAPI.getTopics().catch(() => ({ data: [] })),
         analyticsAPI.getMastery().catch(() => ({ data: null })),
         analyticsAPI.getRecommendations().catch(() => ({ data: [] })),
         analyticsAPI.generateRoadmap(10).catch(() => ({ data: null })),
         analyticsAPI.getCurrentPlan().catch(() => null),
+        analyticsAPI.getCustomPlans().catch(() => ({ data: [] })),
       ]);
       if (topRes.data) setTopics(topRes.data);
       if (anaRes.data) setAnalytics(anaRes.data);
       if (recRes.data) setRecommendations(recRes.data);
       if (roadRes.data) setRoadmap(roadRes.data);
-      if (planRes?.data) setCustomPlan(planRes.data);
+      const savedPlans = Array.isArray(plansRes.data) && plansRes.data.length
+        ? plansRes.data
+        : JSON.parse(localStorage.getItem(plansStorageKey) || '[]');
+      setCustomPlans(savedPlans);
+      cachePlans(savedPlans);
+      const currentPlan = savedPlans.find((plan) => plan.id === planRes?.data?.id) || savedPlans[0] || planRes?.data || null;
+      setCustomPlan(currentPlan);
     } catch (err) {
       console.error('Initialization error:', err);
     }
@@ -182,6 +195,7 @@ export default function App() {
     setSessionExpiresAt(null);
     setUser(null);
     setCustomPlan(null);
+    setCustomPlans([]);
     setAnalytics(null);
     setRecommendations([]);
     setRoadmap(null);
@@ -215,9 +229,14 @@ export default function App() {
 
   const handleUpdatePlanProgress = async (updatePayload) => {
     try {
-      const res = await analyticsAPI.updatePlanProgress(updatePayload);
+      const res = await analyticsAPI.updatePlanProgress({ plan_id: customPlan?.id, ...updatePayload });
       if (res.data && !res.data.error) {
         setCustomPlan(res.data);
+        setCustomPlans((plans) => {
+          const updatedPlans = plans.map((plan) => plan.id === res.data.id ? res.data : plan);
+          cachePlans(updatedPlans);
+          return updatedPlans;
+        });
       }
     } catch (err) {
       console.error('Failed to update study plan progress:', err);
@@ -230,12 +249,32 @@ export default function App() {
       if (addToLearn) {
         const res = await analyticsAPI.saveCustomPlan(customPlan);
         setCustomPlan(res.data);
+        setCustomPlans((plans) => {
+          const updatedPlans = [res.data, ...plans.filter((plan) => plan.id !== res.data.id)];
+          cachePlans(updatedPlans);
+          return updatedPlans;
+        });
         setActiveNav('Learn');
       } else {
         await handleUpdatePlanProgress({ add_to_learn: false });
       }
     } catch (err) {
       setPlanError(err.response?.data?.detail || 'Unable to save this plan. Please try again.');
+    }
+  };
+
+  const handleDeletePlan = async (planId) => {
+    try {
+      await analyticsAPI.deleteCustomPlan(planId);
+      setCustomPlans((plans) => {
+        const updatedPlans = plans.filter((plan) => plan.id !== planId);
+        cachePlans(updatedPlans);
+        setCustomPlan(updatedPlans[0] || null);
+        return updatedPlans;
+      });
+    } catch (err) {
+      console.error('Failed to delete study plan:', err);
+      setPlanError(err.response?.data?.detail || 'Unable to delete the study plan. Please try again.');
     }
   };
 
@@ -306,12 +345,63 @@ export default function App() {
     setTodayTasks(todayTasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
   };
 
-  // Strengths vs Weaknesses Pie Data
-  const pieData = [
-    { name: 'Strong Topics', value: analytics?.strong_topics_count || 6, color: '#10b981' },
-    { name: 'Moderate Topics', value: analytics?.developing_topics_count || 4, color: '#f59e0b' },
-    { name: 'Weak Topics', value: analytics?.weak_topics_count || 3, color: '#f43f5e' },
-  ];
+  // Dashboard metrics deliberately use only the plan added to Learn. No plan
+  // (or no recorded plan activity) means every dashboard metric remains zero.
+  const dashboardData = (() => {
+    if (!learningPlan) {
+      return {
+        completion: 0, topicsDone: 0, totalTopics: 0, resourcesDone: 0,
+        totalResources: 0, studyHours: 0, topicsData: [],
+        pieData: [
+          { name: 'Completed stages', value: 0, color: '#10b981' },
+          { name: 'Started stages', value: 0, color: '#f59e0b' },
+          { name: 'Not started stages', value: 0, color: '#f43f5e' },
+        ],
+      };
+    }
+
+    let topicsDone = 0;
+    let totalTopics = 0;
+    let resourcesDone = 0;
+    let totalResources = 0;
+    let completedStages = 0;
+    let startedStages = 0;
+    const topicsData = (learningPlan.milestones || []).map((milestone, index) => {
+      const subtopics = milestone.subtopics || [];
+      const completedSubtopics = milestone.completed_subtopics || [];
+      const resources = milestone.resources || [];
+      const completedResources = resources.filter((resource) => resource.completed).length;
+      const trackedItems = subtopics.length + resources.length;
+      const completedItems = completedSubtopics.length + completedResources;
+      totalTopics += subtopics.length;
+      topicsDone += completedSubtopics.length;
+      totalResources += resources.length;
+      resourcesDone += completedResources;
+      if (trackedItems > 0 && completedItems === trackedItems) completedStages += 1;
+      else if (completedItems > 0) startedStages += 1;
+      return {
+        topic: milestone.title || `Stage ${index + 1}`,
+        pct: trackedItems ? Math.round((completedItems / trackedItems) * 100) : 0,
+        color: ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#38bdf8', '#a78bfa'][index % 6],
+      };
+    });
+    const totalTrackedItems = totalTopics + totalResources;
+
+    return {
+      completion: totalTrackedItems ? Math.round(((topicsDone + resourcesDone) / totalTrackedItems) * 100) : 0,
+      topicsDone,
+      totalTopics,
+      resourcesDone,
+      totalResources,
+      studyHours: learningPlan.completed_hours || 0,
+      topicsData,
+      pieData: [
+        { name: 'Completed stages', value: completedStages, color: '#10b981' },
+        { name: 'Started stages', value: startedStages, color: '#f59e0b' },
+        { name: 'Not started stages', value: Math.max((learningPlan.milestones || []).length - completedStages - startedStages, 0), color: '#f43f5e' },
+      ],
+    };
+  })();
 
   // ── Show Login Interface First: Workspace is only unlocked after authentication ──
   if (!token) {
@@ -388,8 +478,8 @@ export default function App() {
               {/* Four Summary Stat Cards */}
               <StatCards
                 customPlan={learningPlan}
-                overallProgress={0}
-                topicsCompleted={0}
+                overallProgress={dashboardData.completion}
+                topicsCompleted={dashboardData.topicsDone}
                 weakTopics={0}
                 dayStreak={0}
               />
@@ -409,7 +499,7 @@ export default function App() {
                 <AnalyticsPanel
                   analyticsPeriod={analyticsPeriod}
                   setAnalyticsPeriod={setAnalyticsPeriod}
-                  pieData={pieData}
+                  dashboardData={dashboardData}
                 />
 
                 <StudyPlanPanel
@@ -433,6 +523,9 @@ export default function App() {
             <LearnView
               topics={topics}
               customPlan={learningPlan}
+              customPlans={customPlans}
+              onSelectPlan={setCustomPlan}
+              onDeletePlan={handleDeletePlan}
               onUpdateProgress={handleUpdatePlanProgress}
               onOpenStudyPlan={() => setActiveNav('Study Plan')}
               user={user}
@@ -470,7 +563,6 @@ export default function App() {
           {activeNav === 'Analytics' && (
             <AnalyticsFullView
               analytics={analytics}
-              pieData={pieData}
               customPlan={learningPlan}
               onPracticeTopic={(topicId) => {
                 setActiveNav('Practice');

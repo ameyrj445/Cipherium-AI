@@ -296,21 +296,56 @@ def save_custom_study_plan(
         raise HTTPException(status_code=422, detail="A valid generated study plan is required.")
 
     plan_dict["is_added_to_learn"] = True
-    plan_record = db.query(StudyPlan).filter(StudyPlan.user_id == current_user.id).first()
-    if not plan_record:
-        plan_record = StudyPlan(
-            user_id=current_user.id,
-            target_hours_per_week=plan_dict.get("target_hours_per_week", 10),
-            plan_json=json.dumps(plan_dict)
-        )
-        db.add(plan_record)
-    else:
-        plan_record.target_hours_per_week = plan_dict.get("target_hours_per_week", 10)
-        plan_record.plan_json = json.dumps(plan_dict)
-        plan_record.updated_at = datetime.utcnow()
+    # Each saved plan gets its own record so learners can keep several active plans.
+    plan_record = StudyPlan(
+        user_id=current_user.id,
+        target_hours_per_week=plan_dict.get("target_hours_per_week", 10),
+        plan_json=json.dumps(plan_dict)
+    )
+    db.add(plan_record)
 
     db.commit()
     return plan_dict
+
+@router.get("/roadmaps/custom")
+def list_custom_study_plans(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Return every plan the learner has added to Learn, most recently updated first."""
+    records = (
+        db.query(StudyPlan)
+        .filter(StudyPlan.user_id == current_user.id)
+        .order_by(StudyPlan.updated_at.desc(), StudyPlan.id.desc())
+        .all()
+    )
+    plans = []
+    for record in records:
+        try:
+            data = json.loads(record.plan_json)
+            if isinstance(data, dict) and data.get("milestones"):
+                plans.append(data)
+        except Exception:
+            continue
+    return plans
+
+@router.delete("/roadmaps/custom/{plan_id}")
+def delete_custom_study_plan(
+    plan_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete only the selected learner plan."""
+    records = db.query(StudyPlan).filter(StudyPlan.user_id == current_user.id).all()
+    for record in records:
+        try:
+            if json.loads(record.plan_json).get("id") == plan_id:
+                db.delete(record)
+                db.commit()
+                return {"deleted": True, "plan_id": plan_id}
+        except Exception:
+            continue
+    raise HTTPException(status_code=404, detail="Study plan not found.")
 
 @router.get("/roadmaps/current")
 def get_current_study_plan(
@@ -341,12 +376,23 @@ def update_study_plan_progress(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    plan_record = (
+    plan_records = (
         db.query(StudyPlan)
         .filter(StudyPlan.user_id == current_user.id)
         .order_by(StudyPlan.updated_at.desc(), StudyPlan.id.desc())
-        .first()
+        .all()
     )
+    plan_record = None
+    if req.plan_id:
+        for candidate in plan_records:
+            try:
+                if json.loads(candidate.plan_json).get("id") == req.plan_id:
+                    plan_record = candidate
+                    break
+            except Exception:
+                continue
+    if plan_record is None and plan_records:
+        plan_record = plan_records[0]
     if not plan_record or not plan_record.plan_json:
         return {"error": "No active study plan found."}
 
