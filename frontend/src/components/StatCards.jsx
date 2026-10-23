@@ -3,10 +3,10 @@ import { BarChart2, BookOpen, Brain, Flame, Clock } from 'lucide-react';
 
 export default function StatCards({
   customPlan = null,
-  overallProgress = 84,
-  topicsCompleted = 12,
-  weakTopics = 3,
-  dayStreak = 18,
+  overallProgress = 0,
+  topicsCompleted = 0,
+  weakTopics = 0,
+  dayStreak = 0,
 }) {
   let displayProgress = overallProgress;
   let displayCompleted = topicsCompleted;
@@ -48,7 +48,7 @@ export default function StatCards({
         <div>
           <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>{displayProgress}%</div>
           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            {customPlan ? 'Plan Progress' : 'Overall Progress'}
+            {customPlan ? 'Plan Progress' : 'Add a plan to begin'}
           </div>
         </div>
       </div>
@@ -109,7 +109,7 @@ export default function StatCards({
             {customPlan ? `${hoursCompleted}/${totalHours}h` : weakTopics}
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            {customPlan ? 'Logged Hours' : 'Weak Topics'}
+            {customPlan ? 'Logged Hours' : 'Plans in Learn'}
           </div>
         </div>
       </div>

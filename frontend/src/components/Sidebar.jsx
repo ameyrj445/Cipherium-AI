@@ -31,6 +31,7 @@ export default function Sidebar({
     { name: 'Study Plan', icon: Compass },
     { name: 'Analytics', icon: BarChart2 },
     { name: 'Resources', icon: FolderKanban },
+    { name: 'AI Tutor', icon: Brain },
   ];
 
   return (

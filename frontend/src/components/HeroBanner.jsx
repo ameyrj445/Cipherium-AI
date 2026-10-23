@@ -20,7 +20,7 @@ export default function HeroBanner({ onContinueLearning, onViewStudyPlan }) {
           Your Personalized Learning Journey
         </h2>
         <p style={{ fontSize: '0.86rem', color: '#cbd5e1', lineHeight: 1.5, marginBottom: '22px' }}>
-          AI-powered study plans, adaptive practice, and 24/7 tutoring to help you achieve your academic goals.
+          AI-powered study plans, curated reading, and topic-specific practice links to help you achieve your goals.
         </p>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button

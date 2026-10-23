@@ -33,6 +33,38 @@ const POPULAR_SUBJECTS = [
   { name: 'Full-Stack Web Development', icon: '🚀', category: 'Web Dev' }
 ];
 
+const topicWords = (value) => new Set(
+  String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9+#. ]/g, ' ')
+    .split(/\s+/)
+    .filter((word) => word.length > 2)
+);
+
+// Generated plans may have stage-level resources only. Prefer the closest
+// curated stage resource, then provide a focused YouTube learning search so
+// every individual checklist concept is still directly actionable.
+const getSubtopicResource = (subtopic, stageResources, subject) => {
+  const subtopicTerms = topicWords(subtopic);
+  const closestResource = (stageResources || []).reduce(
+    (best, resource) => {
+      const resourceTerms = topicWords(`${resource.title} ${resource.summary}`);
+      const score = [...subtopicTerms].filter((term) => resourceTerms.has(term)).length;
+      return score > best.score ? { resource, score } : best;
+    },
+    { resource: null, score: 0 }
+  );
+
+  if (closestResource.resource && closestResource.score > 0 && closestResource.resource.url) {
+    return { url: closestResource.resource.url, label: 'Open resource' };
+  }
+
+  return {
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${subject || 'study'} ${subtopic} tutorial`)}`,
+    label: 'Find tutorial',
+  };
+};
+
 export default function StudyPlanView({
   plan,
   loading,
@@ -637,6 +669,7 @@ export default function StudyPlanView({
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                               {subtopics.map((sub, sIdx) => {
                                 const isChecked = completedSubs.includes(sub);
+                                const subtopicResource = getSubtopicResource(sub, stageResources, plan?.subject);
                                 return (
                                   <label
                                     key={sIdx}
@@ -664,16 +697,36 @@ export default function StudyPlanView({
                                       }
                                       style={{ marginTop: '2px', accentColor: '#10b981', cursor: 'pointer' }}
                                     />
-                                    <span
-                                      style={{
-                                        fontSize: '0.8rem',
-                                        color: isChecked ? '#166534' : '#1e293b',
-                                        textDecoration: isChecked ? 'line-through' : 'none',
-                                        lineHeight: 1.4,
-                                      }}
-                                    >
-                                      {sub}
-                                    </span>
+                                    <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                      <span
+                                        style={{
+                                          fontSize: '0.8rem',
+                                          color: isChecked ? '#166534' : '#1e293b',
+                                          textDecoration: isChecked ? 'line-through' : 'none',
+                                          lineHeight: 1.4,
+                                        }}
+                                      >
+                                        {sub}
+                                      </span>
+                                      <a
+                                        href={subtopicResource.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        onClick={(event) => event.stopPropagation()}
+                                        style={{
+                                          flexShrink: 0,
+                                          fontSize: '0.7rem',
+                                          color: '#2563eb',
+                                          fontWeight: 700,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '3px',
+                                          textDecoration: 'none',
+                                        }}
+                                      >
+                                        {subtopicResource.label} <ExternalLink size={11} />
+                                      </a>
+                                    </div>
                                   </label>
                                 );
                               })}

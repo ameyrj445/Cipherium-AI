@@ -155,7 +155,7 @@ export default function ContinueLearningRow({
             </div>
           </div>
 
-          {/* Card 2: Interactive Diagnostic Practice */}
+          {/* Card 2: Plan-linked practice */}
           <div className="ui-card" style={{ padding: '18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div
@@ -176,10 +176,10 @@ export default function ContinueLearningRow({
               </span>
             </div>
             <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
-              Adaptive Knowledge Quizzes
+              Topic-based practice links
             </div>
             <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '14px' }}>
-              Remediate weak topics with AI
+              LeetCode, NeetCode, projects and curated exercises
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
               <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '4px', flex: 1, marginRight: '10px', overflow: 'hidden' }}>

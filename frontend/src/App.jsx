@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useResizable } from './hooks/useResizable';
-import { authAPI, quizAPI, analyticsAPI, tutorAPI } from './services/api';
+import { authAPI, quizAPI, analyticsAPI, tutorAPI, getStoredSession, startSession, endSession } from './services/api';
 
 // Modular Components
 import Sidebar from './components/Sidebar';
@@ -29,15 +29,37 @@ export default function App() {
   const isResizingAny = sidebar.isResizing || tutor.isResizing;
 
   // Session & Auth
-  const [token, setToken] = useState(localStorage.getItem('cipherium_token') || '');
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('cipherium_user') || 'null'));
-  const [showAuthModal, setShowAuthModal] = useState(!token);
+  const [restoredSession] = useState(() => getStoredSession());
+  const [token, setToken] = useState(restoredSession?.token || '');
+  const [user, setUser] = useState(restoredSession?.user || null);
+  const [sessionExpiresAt, setSessionExpiresAt] = useState(restoredSession?.expiresAt || null);
+  const [showAuthModal, setShowAuthModal] = useState(!restoredSession);
   const [authMode, setAuthMode] = useState('login');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+
+  // Legacy keys are no longer used; the structured session above expires after two hours.
+  useEffect(() => {
+    localStorage.removeItem('cipherium_token');
+    localStorage.removeItem('cipherium_user');
+  }, []);
+
+  useEffect(() => {
+    if (!token || !sessionExpiresAt) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      endSession();
+      setToken('');
+      setUser(null);
+      setSessionExpiresAt(null);
+      setShowAuthModal(true);
+    }, Math.max(sessionExpiresAt - Date.now(), 0));
+
+    return () => window.clearTimeout(timeout);
+  }, [token, sessionExpiresAt]);
 
   // Active Navigation Tab
   const [activeNav, setActiveNav] = useState('Dashboard');
@@ -52,6 +74,7 @@ export default function App() {
   const [customPlan, setCustomPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState('');
+  const [practiceTopic, setPracticeTopic] = useState('');
 
   // Diagnostic Quiz / Practice State
   const [selectedTopicId, setSelectedTopicId] = useState(null);
@@ -140,11 +163,10 @@ export default function App() {
         id: res.data.user_id,
       };
 
-      localStorage.setItem('cipherium_token', activeToken);
-      localStorage.setItem('cipherium_user', JSON.stringify(userData));
-
+      const session = startSession(activeToken, userData);
       setToken(activeToken);
       setUser(userData);
+      setSessionExpiresAt(session.expiresAt);
       setShowAuthModal(false);
     } catch (err) {
       console.error('Auth error:', err);
@@ -155,9 +177,9 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('cipherium_token');
-    localStorage.removeItem('cipherium_user');
+    endSession();
     setToken('');
+    setSessionExpiresAt(null);
     setUser(null);
     setCustomPlan(null);
     setAnalytics(null);
@@ -327,13 +349,10 @@ export default function App() {
         activeNav={activeNav}
         setActiveNav={(nav) => {
           setActiveNav(nav);
-          if (nav === 'Practice' && !currentQuestion) {
-            loadNextQuestion();
-          }
         }}
         handleOpenQuiz={() => {
           setActiveNav('Practice');
-          loadNextQuestion();
+          setPracticeTopic('');
         }}
         user={user}
         width={sidebar.size}
@@ -369,10 +388,10 @@ export default function App() {
               {/* Four Summary Stat Cards */}
               <StatCards
                 customPlan={learningPlan}
-                overallProgress={analytics?.overall_accuracy || 84}
-                topicsCompleted={12}
-                weakTopics={analytics?.weak_topics_count || 3}
-                dayStreak={18}
+                overallProgress={0}
+                topicsCompleted={0}
+                weakTopics={0}
+                dayStreak={0}
               />
 
               {/* Continue Learning & Today's Plan Row */}
@@ -426,16 +445,10 @@ export default function App() {
 
           {activeNav === 'Practice' && (
             <PracticeView
-              topics={topics}
-              selectedTopicId={selectedTopicId}
-              setSelectedTopicId={setSelectedTopicId}
-              currentQuestion={currentQuestion}
-              selectedOption={selectedOption}
-              setSelectedOption={setSelectedOption}
-              quizResult={quizResult}
-              quizLoading={quizLoading}
-              loadNextQuestion={loadNextQuestion}
-              handleOptionSubmit={handleSubmitQuiz}
+              plan={learningPlan}
+              initialTopic={practiceTopic}
+              onUpdateProgress={handleUpdatePlanProgress}
+              onOpenStudyPlan={() => setActiveNav('Study Plan')}
             />
           )}
 
@@ -449,7 +462,7 @@ export default function App() {
               onAddToLearn={handleAddPlanToLearn}
               onPracticeTopic={(topicName) => {
                 setActiveNav('Practice');
-                loadNextQuestion();
+                setPracticeTopic(topicName);
               }}
             />
           )}
@@ -461,7 +474,7 @@ export default function App() {
               customPlan={learningPlan}
               onPracticeTopic={(topicId) => {
                 setActiveNav('Practice');
-                loadNextQuestion(topicId);
+                setPracticeTopic('');
               }}
             />
           )}
@@ -474,32 +487,18 @@ export default function App() {
           )}
 
           {activeNav === 'AI Tutor' && (
-            <div style={{ background: '#fff', borderRadius: '18px', padding: '24px', border: '1px solid #e2e8f0' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>AI Study Tutor</h2>
-              <p style={{ color: '#64748b', fontSize: '0.86rem', marginBottom: '20px' }}>
-                Your 24/7 dedicated learning assistant. Use the chat panel on the right to ask questions anytime!
-              </p>
-              <div style={{ padding: '20px', background: '#eff6ff', borderRadius: '12px', border: '1px solid #bfdbfe', color: '#1e3a8a', fontSize: '0.9rem' }}>
-                💡 <strong>Tutor Tip:</strong> Type any concept or algorithmic problem (such as <em>"Explain Dijkstra's shortest path"</em> or <em>"How does B-Tree indexing work?"</em>) in the right panel input bar to receive immediate grounded assistance.
-              </div>
-            </div>
+            <TutorPanel
+              aiModel={aiModel}
+              setAiModel={setAiModel}
+              chatMessages={chatMessages}
+              chatInput={chatInput}
+              setChatInput={setChatInput}
+              handleSendChat={handleSendChat}
+              tutorThinking={tutorThinking}
+              embedded
+            />
           )}
         </main>
-
-        {/* Dedicated AI Tutor Panel */}
-        <TutorPanel
-          aiModel={aiModel}
-          setAiModel={setAiModel}
-          chatMessages={chatMessages}
-          chatInput={chatInput}
-          setChatInput={setChatInput}
-          handleSendChat={handleSendChat}
-          tutorThinking={tutorThinking}
-          width={tutor.size}
-          onResizeDragStart={tutor.handleMouseDown}
-          onResizeReset={tutor.resetSize}
-          isResizing={tutor.isResizing}
-        />
       </div>
 
       {/* Modern Authentication Modal */}

@@ -5,6 +5,22 @@ import {
   Zap, Clock, RotateCcw, Sparkles, Layers
 } from 'lucide-react';
 
+const getChecklistResource = (subtopic, stageResources, subject) => {
+  const terms = new Set(String(subtopic || '').toLowerCase().match(/[a-z0-9+#.]{3,}/g) || []);
+  const match = (stageResources || []).reduce((best, resource) => {
+    const resourceTerms = new Set(`${resource.title || ''} ${resource.summary || ''}`.toLowerCase().match(/[a-z0-9+#.]{3,}/g) || []);
+    const score = [...terms].filter((term) => resourceTerms.has(term)).length;
+    return score > best.score ? { resource, score } : best;
+  }, { resource: null, score: 0 });
+
+  return match.resource && match.score > 0 && match.resource.url
+    ? { url: match.resource.url, label: 'Open resource' }
+    : {
+      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${subject || 'study'} ${subtopic} tutorial`)}`,
+      label: 'Find tutorial',
+    };
+};
+
 // ── Rich curated subject roadmaps with real internet resources ──────────────────
 const SUBJECT_ROADMAPS = {
   'DSA': {
@@ -1096,6 +1112,7 @@ export default function LearnView({
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                               {(m.subtopics || []).map((sub, sIdx) => {
                                 const isDone = completedSubs.includes(sub);
+                                const checklistResource = getChecklistResource(sub, m.resources, customPlan.subject);
                                 return (
                                   <div
                                     key={sIdx}
@@ -1147,6 +1164,25 @@ export default function LearnView({
                                     >
                                       {sub}
                                     </span>
+
+                                    <a
+                                      href={checklistResource.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      onClick={(event) => event.stopPropagation()}
+                                      style={{
+                                        flexShrink: 0,
+                                        fontSize: '0.72rem',
+                                        color: '#2563eb',
+                                        fontWeight: 700,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '3px',
+                                        textDecoration: 'none',
+                                      }}
+                                    >
+                                      {checklistResource.label} <ExternalLink size={11} />
+                                    </a>
 
                                     <span style={{ fontSize: '0.72rem', color: isDone ? '#15803d' : '#94a3b8' }}>
                                       {isDone ? 'Done' : 'Click to mark done'}

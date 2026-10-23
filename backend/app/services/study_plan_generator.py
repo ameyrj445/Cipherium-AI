@@ -1224,9 +1224,9 @@ def generate_study_plan(
     if gemini_plan:
         return gemini_plan
 
-    raise RuntimeError('Gemini could not generate this study plan. Check GEMINI_API_KEY and try again.')
-
-    # Legacy blueprint fallback retained below for reference only.
+    # Keep plan generation available when an AI provider is not configured or
+    # temporarily unavailable. Gemini remains the preferred source above; these
+    # vetted blueprints and the dynamic generator provide a useful local fallback.
     blueprint = match_subject_blueprint(subject)
     if blueprint:
         raw_milestones = blueprint["milestones"]

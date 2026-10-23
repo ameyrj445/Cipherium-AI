@@ -9,12 +9,49 @@ const api = axios.create({
   },
 });
 
-// Interceptor to automatically attach JWT Bearer token
+const SESSION_STORAGE_KEY = 'cipherium_session';
+const SESSION_DURATION_MS = 2 * 60 * 60 * 1000;
+
+// Keep the active token in memory, and retain it in browser storage only until
+// its two-hour expiry so a refresh can restore a still-valid sign-in.
+let sessionToken = '';
+
+export const setSessionToken = (token) => {
+  sessionToken = token || '';
+};
+
+export const getStoredSession = () => {
+  try {
+    const session = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || 'null');
+    if (!session?.token || !session?.expiresAt || session.expiresAt <= Date.now()) {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+    setSessionToken(session.token);
+    return session;
+  } catch {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+    return null;
+  }
+};
+
+export const startSession = (token, user) => {
+  const session = { token, user, expiresAt: Date.now() + SESSION_DURATION_MS };
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  setSessionToken(token);
+  return session;
+};
+
+export const endSession = () => {
+  localStorage.removeItem(SESSION_STORAGE_KEY);
+  setSessionToken('');
+};
+
+// Interceptor to automatically attach the active-session JWT Bearer token.
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('cipherium_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (sessionToken) {
+      config.headers.Authorization = `Bearer ${sessionToken}`;
     }
     return config;
   },

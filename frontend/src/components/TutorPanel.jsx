@@ -13,24 +13,26 @@ export default function TutorPanel({
   onResizeDragStart,
   onResizeReset,
   isResizing,
+  embedded = false,
 }) {
   return (
     <aside
       style={{
-        width: `${width}px`,
+        width: embedded ? '100%' : `${width}px`,
         background: 'linear-gradient(180deg, #0b1536 0%, #0a0e23 100%)',
         color: '#fff',
         display: 'flex',
         flexDirection: 'column',
-        borderLeft: '1px solid #1e293b',
+        border: embedded ? '1px solid #1e293b' : undefined,
+        borderLeft: embedded ? undefined : '1px solid #1e293b',
         flexShrink: 0,
-        maxHeight: '100vh',
+        maxHeight: embedded ? 'calc(100vh - 48px)' : '100vh',
         position: 'relative',
         transition: isResizing ? 'none' : undefined,
       }}
     >
       {/* ── Drag Handle (left edge) ── */}
-      <div
+      {!embedded && <div
         onMouseDown={onResizeDragStart}
         onDoubleClick={onResizeReset}
         title="Drag to resize · Double-click to reset"
@@ -56,7 +58,7 @@ export default function TutorPanel({
             transition: 'background 0.15s ease',
           }}
         />
-      </div>
+      </div>}
 
       {/* Header */}
       <div
