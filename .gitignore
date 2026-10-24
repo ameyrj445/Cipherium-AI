@@ -51,7 +51,9 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+*.db
 
 # Project documentation exports
 /Cipherium_AI_Implementation_Guide.docx
 /Cipherium_AI_Implementation_Guide.pdf
+/PRODUCT_REQUIREMENTS_DOCUMENT.md
