@@ -24,7 +24,6 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
-backend/app/data/subject_roadmaps.json
 
 # Node / Vite
 node_modules/

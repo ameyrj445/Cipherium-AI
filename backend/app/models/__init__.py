@@ -1,7 +1,10 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import Base
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 class User(Base):
     __tablename__ = "users"
@@ -11,12 +14,14 @@ class User(Base):
     email = Column(String(150), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), default="student")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     attempts = relationship("QuizAttempt", back_populates="user")
     masteries = relationship("TopicMastery", back_populates="user")
     study_plans = relationship("StudyPlan", back_populates="user")
     messages = relationship("TutorMessage", back_populates="user")
+    settings = relationship("UserSettings", back_populates="user", uselist=False)
+    tasks = relationship("DailyTask", back_populates="user")
 
 class Topic(Base):
     __tablename__ = "topics"
@@ -56,7 +61,7 @@ class QuizAttempt(Base):
     selected_answer = Column(String(255), nullable=False)
     is_correct = Column(Boolean, nullable=False)
     time_taken_seconds = Column(Integer, default=0)
-    attempted_at = Column(DateTime, default=datetime.utcnow)
+    attempted_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="attempts")
     question = relationship("Question", back_populates="attempts")
@@ -71,7 +76,7 @@ class TopicMastery(Base):
     status = Column(String(50), default="insufficient_data") # insufficient_data, weak, developing, strong
     attempt_count = Column(Integer, default=0)
     correct_count = Column(Integer, default=0)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     user = relationship("User", back_populates="masteries")
     topic = relationship("Topic", back_populates="masteries")
@@ -97,8 +102,8 @@ class StudyPlan(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     target_hours_per_week = Column(Integer, default=10)
     plan_json = Column(Text, nullable=False) # JSON generated roadmap items
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     user = relationship("User", back_populates="study_plans")
 
@@ -120,6 +125,37 @@ class TutorMessage(Base):
     role = Column(String(20), nullable=False) # user or assistant
     message = Column(Text, nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="messages")
+    topic = relationship("Topic")
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    target_role = Column(String(100), default="Full-Stack Software Engineer")
+    weekly_hours = Column(Integer, default=6)
+    difficulty_mode = Column(String(50), default="standard") # standard, rigorous, gradual
+    daily_streak_reminder = Column(Boolean, default=True)
+    diagnostic_quiz_alert = Column(Boolean, default=True)
+    weak_topic_ping = Column(Boolean, default=True)
+    custom_gemini_api_key = Column(String(255), nullable=True)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    user = relationship("User", back_populates="settings")
+
+class DailyTask(Base):
+    __tablename__ = "daily_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    duration = Column(String(50), default="15 min")
+    is_done = Column(Boolean, default=False)
+    date_str = Column(String(20), nullable=False) # e.g. "2026-10-25"
+    created_at = Column(DateTime, default=utc_now)
+
+    user = relationship("User", back_populates="tasks")
+
