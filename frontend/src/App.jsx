@@ -51,11 +51,7 @@ export default function App() {
     if (!token || !sessionExpiresAt) return undefined;
 
     const timeout = window.setTimeout(() => {
-      endSession();
-      setToken('');
-      setUser(null);
-      setSessionExpiresAt(null);
-      setShowAuthModal(true);
+      endInvalidSession();
     }, Math.max(sessionExpiresAt - Date.now(), 0));
 
     return () => window.clearTimeout(timeout);
@@ -123,9 +119,21 @@ export default function App() {
     if (plansStorageKey) localStorage.setItem(plansStorageKey, JSON.stringify(plans));
   };
 
+  const endInvalidSession = () => {
+    endSession();
+    setToken('');
+    setUser(null);
+    setSessionExpiresAt(null);
+    setShowAuthModal(true);
+  };
+
   // Load user data whenever token changes
   const loadUserData = async () => {
     try {
+      // Confirm a restored token before allowing plan generation or other
+      // authenticated actions to be shown.
+      const profileRes = await authAPI.getProfile();
+      if (profileRes.data) setUser(profileRes.data);
       const [topRes, anaRes, recRes, roadRes, planRes, plansRes] = await Promise.all([
         quizAPI.getTopics().catch(() => ({ data: [] })),
         analyticsAPI.getMastery().catch(() => ({ data: null })),
@@ -147,6 +155,7 @@ export default function App() {
       setCustomPlan(currentPlan);
     } catch (err) {
       console.error('Initialization error:', err);
+      if (err.response?.status === 401) endInvalidSession();
     }
   };
 
