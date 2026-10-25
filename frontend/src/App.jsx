@@ -1,14 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { authAPI, quizAPI, analyticsAPI, tutorAPI, getStoredSession, startSession, endSession } from './services/api';
+/**
+ * Cipherium AI - Primary Application Root & Dynamic Router
+ *
+ * Architecture:
+ *   - Manages client authentication state with 12-hour structured token persistence.
+ *   - Routes views seamlessly between Dashboard, Learn, Practice, Study Plan,
+ *     Analytics, Resources, and AI Tutor.
+ *   - Synchronizes learning analytics, adaptive quizzes, and study progress across views.
+ *   - Wraps the entire component tree in an Error Boundary for crash resilience.
+ */
 
-// Modular Components
-import Sidebar from './components/Sidebar';
-import TopHeader from './components/TopHeader';
+import React, { useState, useEffect, useCallback } from 'react';
+import { authAPI, quizAPI, analyticsAPI, tutorAPI, tasksAPI, getStoredSession, startSession, endSession } from './services/api';
+
+// Error Boundary & Modular Components
+import ErrorBoundary from './components/ErrorBoundary';
+import AppShell from './components/layout/AppShell';
+import PageContainer from './components/layout/PageContainer';
+import StickyRail from './components/layout/StickyRail';
 import HeroBanner from './components/HeroBanner';
 import StatCards from './components/StatCards';
-import ContinueLearningRow from './components/ContinueLearningRow';
+import { ContinueLearningCards, TodaysTasksCard } from './components/ContinueLearningRow';
 import AnalyticsPanel from './components/AnalyticsPanel';
-import StudyPlanPanel from './components/StudyPlanPanel';
 import RecommendedPanel from './components/RecommendedPanel';
 import TutorPanel from './components/TutorPanel';
 import AuthModal from './components/AuthModal';
@@ -20,10 +32,11 @@ import PracticeView from './components/PracticeView';
 import AnalyticsFullView from './components/AnalyticsFullView';
 import ResourcesFullView from './components/ResourcesFullView';
 import StudyPlanView from './components/StudyPlanView';
+import SettingsView from './components/SettingsView';
+
+import { useDocumentMetadata } from './hooks/useDocumentMetadata';
 
 export default function App() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   // Session & Auth
   const [restoredSession] = useState(() => getStoredSession());
   const [token, setToken] = useState(restoredSession?.token || '');
@@ -36,6 +49,15 @@ export default function App() {
   const [authName, setAuthName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+
+  // Define session expiration handler before useEffect to satisfy temporal ordering
+  const endInvalidSession = useCallback(() => {
+    endSession();
+    setToken('');
+    setUser(null);
+    setSessionExpiresAt(null);
+    setShowAuthModal(true);
+  }, []);
 
   // Legacy keys are no longer used; the structured session above expires after twelve hours.
   useEffect(() => {
@@ -51,18 +73,22 @@ export default function App() {
     }, Math.max(sessionExpiresAt - Date.now(), 0));
 
     return () => window.clearTimeout(timeout);
-  }, [token, sessionExpiresAt]);
+  }, [token, sessionExpiresAt, endInvalidSession]);
 
   // Active Navigation Tab
   const [activeNav, setActiveNav] = useState('Dashboard');
   const [activeResourceFilter, setActiveResourceFilter] = useState('All');
   const [analyticsPeriod, setAnalyticsPeriod] = useState('Month');
 
+  // Dynamic document title & meta tagging
+  const activePageKey = !token ? (authMode === 'login' ? 'Login' : 'Register') : activeNav;
+  useDocumentMetadata(activePageKey);
+
   // Live Data States
   const [analytics, setAnalytics] = useState(null);
   const [topics, setTopics] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  const [roadmap, setRoadmap] = useState(null);
+  const [_roadmap, setRoadmap] = useState(null);
   const [customPlan, setCustomPlan] = useState(null);
   const [customPlans, setCustomPlans] = useState([]);
   const [planLoading, setPlanLoading] = useState(false);
@@ -77,7 +103,8 @@ export default function App() {
   const [quizLoading, setQuizLoading] = useState(false);
 
   // AI Tutor State
-  const [aiModel, setAiModel] = useState('GPT-4o');
+  const [aiModel, setAiModel] = useState('gemini-2.5-flash');
+  const [tutorTopicId, setTutorTopicId] = useState(null);
   const [chatInput, setChatInput] = useState('');
   const [tutorThinking, setTutorThinking] = useState(false);
   const [chatMessages, setChatMessages] = useState([
@@ -111,37 +138,46 @@ export default function App() {
   ]);
 
   const plansStorageKey = user?.id ? `cipherium_saved_plans_${user.id}` : '';
-  const cachePlans = (plans) => {
+  const cachePlans = useCallback((plans) => {
     if (plansStorageKey) localStorage.setItem(plansStorageKey, JSON.stringify(plans));
-  };
-
-  const endInvalidSession = () => {
-    endSession();
-    setToken('');
-    setUser(null);
-    setSessionExpiresAt(null);
-    setShowAuthModal(true);
-  };
+  }, [plansStorageKey]);
 
   // Load user data whenever token changes
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     try {
       // Confirm a restored token before allowing plan generation or other
       // authenticated actions to be shown.
       const profileRes = await authAPI.getProfile();
       if (profileRes.data) setUser(profileRes.data);
-      const [topRes, anaRes, recRes, roadRes, planRes, plansRes] = await Promise.all([
+      const [topRes, anaRes, recRes, roadRes, planRes, plansRes, tasksRes, historyRes] = await Promise.all([
         quizAPI.getTopics().catch(() => ({ data: [] })),
         analyticsAPI.getMastery().catch(() => ({ data: null })),
         analyticsAPI.getRecommendations().catch(() => ({ data: [] })),
         analyticsAPI.generateRoadmap(10).catch(() => ({ data: null })),
         analyticsAPI.getCurrentPlan().catch(() => null),
         analyticsAPI.getCustomPlans().catch(() => ({ data: [] })),
+        tasksAPI.getTodayTasks().catch(() => ({ data: [] })),
+        tutorAPI.getHistory(30).catch(() => ({ data: [] })),
       ]);
       if (topRes.data) setTopics(topRes.data);
       if (anaRes.data) setAnalytics(anaRes.data);
       if (recRes.data) setRecommendations(recRes.data);
       if (roadRes.data) setRoadmap(roadRes.data);
+      if (Array.isArray(tasksRes.data) && tasksRes.data.length > 0) {
+        setTodayTasks(tasksRes.data.map((t) => ({
+          id: t.id,
+          title: t.title,
+          duration: t.duration || '15 min',
+          done: !!t.is_done,
+        })));
+      }
+      if (Array.isArray(historyRes.data) && historyRes.data.length > 0) {
+        setChatMessages(historyRes.data.map((msg) => ({
+          role: msg.role,
+          text: msg.message,
+          created_at: msg.created_at,
+        })));
+      }
       const savedPlans = Array.isArray(plansRes.data) && plansRes.data.length
         ? plansRes.data
         : JSON.parse(localStorage.getItem(plansStorageKey) || '[]');
@@ -153,13 +189,13 @@ export default function App() {
       console.error('Initialization error:', err);
       if (err.response?.status === 401) endInvalidSession();
     }
-  };
+  }, [endInvalidSession, plansStorageKey, cachePlans]);
 
   useEffect(() => {
     if (token) {
       loadUserData();
     }
-  }, [token]);
+  }, [token, loadUserData]);
 
   // Authentication submission
   const handleAuth = async (e) => {
@@ -298,9 +334,18 @@ export default function App() {
     setTutorThinking(true);
 
     try {
-      const res = await tutorAPI.sendMessage({ message: userMsg });
-      setChatMessages([...updated, { role: 'assistant', text: res.data.response }]);
+      const res = await tutorAPI.sendMessage({
+        message: userMsg,
+        topic_id: tutorTopicId || undefined,
+      });
+      const assistantMsg = {
+        role: 'assistant',
+        text: res.data.response,
+        suggested_resources: res.data.suggested_resources || [],
+      };
+      setChatMessages([...updated, assistantMsg]);
     } catch (err) {
+      console.error('Tutor chat error:', err);
       setChatMessages([...updated, { role: 'assistant', text: "I'm synthesizing an answer using syllabus and RAG notes..." }]);
     } finally {
       setTutorThinking(false);
@@ -346,8 +391,17 @@ export default function App() {
     }
   };
 
-  const handleToggleTask = (id) => {
-    setTodayTasks(todayTasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+  const handleToggleTask = async (id) => {
+    setTodayTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
+    );
+    try {
+      if (typeof id === 'number') {
+        await tasksAPI.toggleTask(id);
+      }
+    } catch (err) {
+      console.error('Failed to toggle daily task in backend:', err);
+    }
   };
 
   // Dashboard metrics deliberately use only the plan added to Learn. No plan
@@ -387,7 +441,7 @@ export default function App() {
       return {
         topic: milestone.title || `Stage ${index + 1}`,
         pct: trackedItems ? Math.round((completedItems / trackedItems) * 100) : 0,
-        color: ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#38bdf8', '#a78bfa'][index % 6],
+        color: ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#38bdf8', '#f43f5e'][index % 6],
       };
     });
     const totalTrackedItems = totalTopics + totalResources;
@@ -411,82 +465,100 @@ export default function App() {
   // ── Show Login Interface First: Workspace is only unlocked after authentication ──
   if (!token) {
     return (
-      <LoginScreen
-        authMode={authMode}
-        setAuthMode={setAuthMode}
-        authName={authName}
-        setAuthName={setAuthName}
-        authEmail={authEmail}
-        setAuthEmail={setAuthEmail}
-        authPassword={authPassword}
-        setAuthPassword={setAuthPassword}
-        authError={authError}
-        setAuthError={setAuthError}
-        handleAuth={handleAuth}
-        loading={authLoading}
-      />
+      <ErrorBoundary>
+        <LoginScreen
+          authMode={authMode}
+          setAuthMode={setAuthMode}
+          authName={authName}
+          setAuthName={setAuthName}
+          authEmail={authEmail}
+          setAuthEmail={setAuthEmail}
+          authPassword={authPassword}
+          setAuthPassword={setAuthPassword}
+          authError={authError}
+          setAuthError={setAuthError}
+          handleAuth={handleAuth}
+          loading={authLoading}
+        />
+      </ErrorBoundary>
     );
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        minHeight: '100vh',
-        background: '#f8fafc',
-        color: '#0f172a',
-      }}
-    >
-      {/* 1. Left Sidebar */}
-      <Sidebar
+    <ErrorBoundary>
+      <AppShell
         activeNav={activeNav}
-        setActiveNav={(nav) => {
-          setActiveNav(nav);
-        }}
+        setActiveNav={setActiveNav}
         handleOpenQuiz={() => {
           setActiveNav('Practice');
           setPracticeTopic('');
         }}
         user={user}
-        width={sidebarCollapsed ? 72 : 220}
-        onToggleCollapse={() => setSidebarCollapsed((collapsed) => !collapsed)}
+        token={token}
         onOpenAuth={() => setShowAuthModal(true)}
-      />
-
-      {/* Main Center + Right Columns Container */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        
-        {/* Center Workspace Scrollable View */}
-        <main style={{ flex: 1, padding: '24px 28px', overflowY: 'auto', maxHeight: '100vh' }}>
-          {/* Top Header Bar */}
-          <TopHeader
-            userName={user?.name?.split(' ')[0] || 'Student'}
-            userEmail={user?.email || ''}
-            isAuthenticated={!!token}
-            onOpenAuth={() => setShowAuthModal(true)}
-            onLogout={handleLogout}
-          />
-
-          {/* DYNAMIC ROUTING ACCORDING TO ACTIVENAV */}
-          {activeNav === 'Dashboard' && (
-            <>
-              {/* Hero Banner Card */}
+        onLogout={handleLogout}
+        onOpenSettings={() => setActiveNav('Settings')}
+        onNavigate={(nav, payload) => {
+          setActiveNav(nav);
+          if (payload?.topic) {
+            setPracticeTopic(payload.topic);
+          }
+        }}
+        topics={topics}
+        customPlan={learningPlan || customPlan}
+        customPlans={customPlans}
+        recommendations={recommendations}
+      >
+        {/* DYNAMIC ROUTING ACCORDING TO ACTIVENAV */}
+        {activeNav === 'Dashboard' && (
+          <PageContainer>
+            {/* Row 1: Slim Hero / Onboarding Banner (Full width: 12 cols) */}
+            <div style={{ gridColumn: '1 / -1' }}>
               <HeroBanner
+                customPlan={learningPlan}
                 onContinueLearning={() => setActiveNav('Learn')}
                 onViewStudyPlan={() => setActiveNav('Study Plan')}
               />
+            </div>
 
-              {/* Four Summary Stat Cards */}
+            {/* Row 2: Four Summary Stat Cards (Full width: 12 cols) */}
+            <div style={{ gridColumn: '1 / -1' }}>
               <StatCards
                 customPlan={learningPlan}
                 overallProgress={dashboardData.completion}
                 topicsCompleted={dashboardData.topicsDone}
-                weakTopics={0}
-                dayStreak={0}
+                studyHours={dashboardData.studyHours}
+                dayStreak={analytics?.day_streak || 0}
               />
 
-              {/* Continue Learning & Today's Plan Row */}
-              <ContinueLearningRow
+            </div>
+
+            {/* Main Column (8 of 12 cols): Continue Learning + Performance Analytics */}
+            <div style={{ gridColumn: '1 / span 8', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <ContinueLearningCards
+                customPlan={learningPlan}
+                onOpenStudyPlan={() => setActiveNav('Study Plan')}
+                onOpenLearn={() => setActiveNav('Learn')}
+                onOpenPractice={() => {
+                  setActiveNav('Practice');
+                  setPracticeTopic('');
+                }}
+              />
+
+              <AnalyticsPanel
+                analyticsPeriod={analyticsPeriod}
+                setAnalyticsPeriod={setAnalyticsPeriod}
+                dashboardData={dashboardData}
+                onStartPractice={() => {
+                  setActiveNav('Practice');
+                  setPracticeTopic('');
+                }}
+              />
+            </div>
+
+            {/* Sticky Right Rail (4 of 12 cols): Today's Tasks + Recommended for You */}
+            <StickyRail columns={4} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <TodaysTasksCard
                 customPlan={learningPlan}
                 todayTasks={todayTasks}
                 onToggleTask={handleToggleTask}
@@ -495,104 +567,114 @@ export default function App() {
                 onUpdatePlanProgress={handleUpdatePlanProgress}
               />
 
-              {/* Three Lower Analytics & Planning Panels */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.3fr 1.2fr', gap: '20px' }}>
-                <AnalyticsPanel
-                  analyticsPeriod={analyticsPeriod}
-                  setAnalyticsPeriod={setAnalyticsPeriod}
-                  dashboardData={dashboardData}
-                />
+              <RecommendedPanel
+                customPlan={learningPlan}
+                activeResourceFilter={activeResourceFilter}
+                setActiveResourceFilter={setActiveResourceFilter}
+                onOpenResources={() => setActiveNav('Resources')}
+              />
+            </StickyRail>
+          </PageContainer>
+        )}
 
-                <StudyPlanPanel
-                  plan={learningPlan}
-                  onOpenFullPlan={() => setActiveNav('Study Plan')}
-                  onUpdateProgress={handleUpdatePlanProgress}
-                  onRegeneratePlan={() => setActiveNav('Study Plan')}
-                />
+        {activeNav === 'Learn' && (
+          <LearnView
+            topics={topics}
+            customPlan={learningPlan}
+            customPlans={customPlans}
+            onSelectPlan={setCustomPlan}
+            onDeletePlan={handleDeletePlan}
+            onUpdateProgress={handleUpdatePlanProgress}
+            onOpenStudyPlan={() => setActiveNav('Study Plan')}
+            user={user}
+            onSelectTopic={() => {
+              setActiveNav('Practice');
+              loadNextQuestion();
+            }}
+          />
+        )}
 
-                <RecommendedPanel
-                  customPlan={learningPlan}
-                  activeResourceFilter={activeResourceFilter}
-                  setActiveResourceFilter={setActiveResourceFilter}
-                  onOpenResources={() => setActiveNav('Resources')}
-                />
-              </div>
-            </>
-          )}
+        {activeNav === 'Practice' && (
+          <PracticeView
+            plans={customPlans.filter((plan) => plan.is_added_to_learn)}
+            topics={topics}
+            currentQuestion={currentQuestion}
+            selectedOption={selectedOption}
+            setSelectedOption={setSelectedOption}
+            quizResult={quizResult}
+            quizLoading={quizLoading}
+            loadNextQuestion={loadNextQuestion}
+            handleSubmitQuiz={handleSubmitQuiz}
+            selectedTopicId={selectedTopicId}
+            setSelectedTopicId={setSelectedTopicId}
+            initialTopic={practiceTopic}
+            onUpdateProgress={handleUpdatePlanProgress}
+            onOpenStudyPlan={() => setActiveNav('Study Plan')}
+          />
+        )}
 
-          {activeNav === 'Learn' && (
-            <LearnView
-              topics={topics}
-              customPlan={learningPlan}
-              customPlans={customPlans}
-              onSelectPlan={setCustomPlan}
-              onDeletePlan={handleDeletePlan}
-              onUpdateProgress={handleUpdatePlanProgress}
-              onOpenStudyPlan={() => setActiveNav('Study Plan')}
-              user={user}
-              onSelectTopic={(title) => {
-                setActiveNav('Practice');
-                loadNextQuestion();
-              }}
-            />
-          )}
+        {activeNav === 'Study Plan' && (
+          <StudyPlanView
+            plan={customPlan}
+            loading={planLoading}
+            error={planError}
+            onGeneratePlan={handleGenerateCustomPlan}
+            onUpdateProgress={handleUpdatePlanProgress}
+            onAddToLearn={handleAddPlanToLearn}
+            onPracticeTopic={(topicName) => {
+              setActiveNav('Practice');
+              setPracticeTopic(topicName);
+            }}
+          />
+        )}
 
-          {activeNav === 'Practice' && (
-            <PracticeView
-              plans={customPlans.filter((plan) => plan.is_added_to_learn)}
-              initialTopic={practiceTopic}
-              onUpdateProgress={handleUpdatePlanProgress}
-              onOpenStudyPlan={() => setActiveNav('Study Plan')}
-            />
-          )}
+        {activeNav === 'Analytics' && (
+          <AnalyticsFullView
+            analytics={analytics}
+            plans={customPlans.filter((plan) => plan.is_added_to_learn)}
+            onPracticeTopic={(topicName) => {
+              setActiveNav('Practice');
+              setPracticeTopic(topicName);
+            }}
+          />
+        )}
 
-          {activeNav === 'Study Plan' && (
-            <StudyPlanView
-              plan={customPlan}
-              loading={planLoading}
-              error={planError}
-              onGeneratePlan={handleGenerateCustomPlan}
-              onUpdateProgress={handleUpdatePlanProgress}
-              onAddToLearn={handleAddPlanToLearn}
-              onPracticeTopic={(topicName) => {
-                setActiveNav('Practice');
-                setPracticeTopic(topicName);
-              }}
-            />
-          )}
+        {activeNav === 'Resources' && (
+          <ResourcesFullView
+            recommendations={recommendations}
+            customPlan={learningPlan}
+          />
+        )}
 
-          {activeNav === 'Analytics' && (
-            <AnalyticsFullView
-              analytics={analytics}
-              plans={customPlans.filter((plan) => plan.is_added_to_learn)}
-              onPracticeTopic={(topicId) => {
-                setActiveNav('Practice');
-                setPracticeTopic('');
-              }}
-            />
-          )}
+        {activeNav === 'AI Tutor' && (
+          <TutorPanel
+            aiModel={aiModel}
+            setAiModel={setAiModel}
+            chatMessages={chatMessages}
+            chatInput={chatInput}
+            setChatInput={setChatInput}
+            handleSendChat={handleSendChat}
+            tutorThinking={tutorThinking}
+            topics={topics}
+            tutorTopicId={tutorTopicId}
+            setTutorTopicId={setTutorTopicId}
+            onClearHistory={() => setChatMessages([])}
+            embedded
 
-          {activeNav === 'Resources' && (
-            <ResourcesFullView
-              recommendations={recommendations}
-              customPlan={learningPlan}
-            />
-          )}
+          />
+        )}
 
-          {activeNav === 'AI Tutor' && (
-            <TutorPanel
-              aiModel={aiModel}
-              setAiModel={setAiModel}
-              chatMessages={chatMessages}
-              chatInput={chatInput}
-              setChatInput={setChatInput}
-              handleSendChat={handleSendChat}
-              tutorThinking={tutorThinking}
-              embedded
-            />
-          )}
-        </main>
-      </div>
+        {activeNav === 'Settings' && (
+          <SettingsView
+            user={user}
+            aiModel={aiModel}
+            setAiModel={setAiModel}
+            sessionExpiresAt={sessionExpiresAt}
+            onLogout={handleLogout}
+            customPlan={learningPlan}
+          />
+        )}
+      </AppShell>
 
       {/* Modern Authentication Modal */}
       <AuthModal
@@ -611,6 +693,6 @@ export default function App() {
         handleAuth={handleAuth}
         loading={authLoading}
       />
-    </div>
+    </ErrorBoundary>
   );
 }

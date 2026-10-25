@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 
 /**
- * useResizable — drag-to-resize hook for a panel.
+ * useResizable - drag-to-resize hook for a panel.
  *
  * @param {object} opts
- * @param {number}  opts.initialSize  — starting width (px)
- * @param {number}  opts.min          — minimum allowed width (px)
- * @param {number}  opts.max          — maximum allowed width (px)
- * @param {'left'|'right'} opts.side  — which edge of the panel is being dragged
+ * @param {number}  opts.initialSize  - starting width (px)
+ * @param {number}  opts.min          - minimum allowed width (px)
+ * @param {number}  opts.max          - maximum allowed width (px)
+ * @param {'left'|'right'} opts.side  - which edge of the panel is being dragged
  *                                      'right'  → resize handle sits on the right edge (sidebar)
  *                                      'left'   → resize handle sits on the left  edge (tutor panel)
  * @returns {{ size, isResizing, handleMouseDown, resetSize }}
