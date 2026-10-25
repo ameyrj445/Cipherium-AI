@@ -16,7 +16,6 @@ import {
   Zap,
   RotateCcw,
   Plus,
-  Flame,
   Search,
   Filter,
   Layers,
@@ -468,7 +467,7 @@ export default function StudyPlanView({
             </div>
 
             {/* Tracker Metric Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
               {/* Card 1: Overall Progress */}
               <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '14px 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -517,21 +516,6 @@ export default function StudyPlanView({
                 </div>
               </div>
 
-              {/* Card 4: Study Streak */}
-              <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '12px', padding: '14px 16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '0.72rem', color: '#881337', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Active Streak
-                  </span>
-                  <Flame size={16} color="#e11d48" />
-                </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#be123c' }}>
-                  18 Days 🔥
-                </div>
-                <div style={{ fontSize: '0.72rem', color: '#9f1239', marginTop: '4px' }}>
-                  Consistency multiplier: 1.25x
-                </div>
-              </div>
             </div>
           </div>
 

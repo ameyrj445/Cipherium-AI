@@ -21,6 +21,21 @@ const getChecklistResource = (subtopic, stageResources, subject) => {
     };
 };
 
+function InlinePlanDetails({ plan, onUpdateProgress }) {
+  return <div style={{ marginTop: '-4px', marginBottom: '10px', padding: '18px 22px', border: '1px solid #bfdbfe', borderTop: 'none', borderRadius: '0 0 16px 16px', background: '#fff' }}>
+    {(plan.milestones || []).map((milestone, index) => {
+      const completed = milestone.completed_subtopics || [];
+      return <details key={milestone.id || index} open={index === 0} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+        <summary style={{ cursor: 'pointer', padding: '13px 16px', fontWeight: 800, color: '#0f172a', background: '#f8fafc' }}>Stage {index + 1}: {milestone.title} <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 500 }}>— {completed.length}/{(milestone.subtopics || []).length} topics done</span></summary>
+        <div style={{ padding: '14px 16px' }}>
+          {(milestone.subtopics || []).map((subtopic) => { const done = completed.includes(subtopic); const resource = getChecklistResource(subtopic, milestone.resources, plan.subject); return <div key={subtopic} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}><input type="checkbox" checked={done} onChange={() => onUpdateProgress?.({ plan_id: plan.id, milestone_id: milestone.id, subtopic_name: subtopic, subtopic_completed: !done })} /><span style={{ flex: 1, color: done ? '#15803d' : '#1e293b', textDecoration: done ? 'line-through' : 'none', fontSize: '0.84rem' }}>{subtopic}</span><a href={resource.url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: '0.74rem', fontWeight: 700, textDecoration: 'none' }}>{resource.label} <ExternalLink size={11} style={{ verticalAlign: 'middle' }} /></a></div>; })}
+          {(milestone.resources || []).length > 0 && <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>{milestone.resources.map((resource) => <a key={resource.id} href={resource.url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: '0.75rem', padding: '6px 9px', background: '#eff6ff', borderRadius: '7px', textDecoration: 'none' }}>{resource.title} <ExternalLink size={11} style={{ verticalAlign: 'middle' }} /></a>)}</div>}
+        </div>
+      </details>;
+    })}
+  </div>;
+}
+
 // ── Rich curated subject roadmaps with real internet resources ──────────────────
 const SUBJECT_ROADMAPS = {
   'DSA': {
@@ -621,7 +636,7 @@ export default function LearnView({
   onOpenStudyPlan,
   user = null,
 }) {
-  const [activeTab, setActiveTab] = useState(customPlan?.is_added_to_learn ? 'activePlan' : 'explore');
+  const [activeTab, setActiveTab] = useState('activePlan');
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
   const [expandedStages, setExpandedStages] = useState({ 0: true, 1: true });
   const [searchQuery, setSearchQuery] = useState('');
@@ -963,36 +978,24 @@ export default function LearnView({
       {activeTab === 'activePlan' && (
         <div>
           {customPlans.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '18px' }}>
               {customPlans.map((plan) => {
-                const total = (plan.milestones || []).reduce((sum, milestone) => sum + (milestone.subtopics || []).length, 0);
-                const done = (plan.milestones || []).reduce((sum, milestone) => sum + (milestone.completed_subtopics || []).length, 0);
-                const progress = total ? Math.round((done / total) * 100) : 0;
-                const isExpanded = expandedPlanId === plan.id;
-                return (
-                  <div key={plan.id} className="ui-card" style={{ border: isExpanded ? '1.5px solid #93c5fd' : '1px solid #e2e8f0', overflow: 'hidden' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isExpanded) {
-                          setExpandedPlanId(null);
-                        } else {
-                          onSelectPlan?.(plan);
-                          setExpandedPlanId(plan.id);
-                          setExpandedStages({ 0: true });
-                        }
-                      }}
-                      style={{ width: '100%', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', border: 'none', background: isExpanded ? '#eff6ff' : '#fff', cursor: 'pointer', textAlign: 'left' }}
-                    >
-                      <div><div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{plan.subject}</div><div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>{plan.duration_weeks} weeks · {plan.target_hours_per_week} hrs/week · {done}/{total} topics</div></div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#2563eb', fontWeight: 800, fontSize: '0.82rem' }}><span>{progress}%</span>{isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>
-                    </button>
-                  </div>
-                );
+                const totalTopics = (plan.milestones || []).reduce((total, milestone) => total + (milestone.subtopics || []).length, 0);
+                const completedTopics = (plan.milestones || []).reduce((total, milestone) => total + (milestone.completed_subtopics || []).length, 0);
+                const progress = totalTopics ? Math.round((completedTopics / totalTopics) * 100) : 0;
+                const totalHours = plan.total_estimated_hours || (plan.duration_weeks || 0) * (plan.target_hours_per_week || 0);
+                const loggedHours = plan.completed_hours || 0;
+                const selected = plan.id === customPlan?.id;
+                const expanded = expandedPlanId === plan.id;
+                return <React.Fragment key={plan.id}><div className="ui-card" style={{ padding: '20px 24px', textAlign: 'left', border: selected ? '1.5px solid #93c5fd' : '1px solid #e2e8f0', background: selected ? 'linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)' : '#fff' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center' }}><div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563eb', background: '#dbeafe', padding: '3px 9px', borderRadius: '10px' }}>⚡ Active Roadmap</span><div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', marginTop: '9px' }}>{plan.subject}</div><div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '4px' }}>Level: {plan.skill_level || 'Beginner'} · Target: {plan.target_hours_per_week} hrs/week · Duration: {plan.duration_weeks} weeks</div></div><div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}><div style={{ textAlign: 'right' }}><div style={{ color: '#2563eb', fontWeight: 800, fontSize: '1.55rem' }}>{progress}%</div><div style={{ color: '#64748b', fontSize: '0.72rem' }}>{completedTopics} of {totalTopics} subtopics completed</div></div><button type="button" onClick={() => { onSelectPlan?.(plan); setExpandedPlanId(expanded ? null : plan.id); setExpandedStages({ 0: true }); }} style={{ width: '38px', height: '38px', borderRadius: '10px', border: '1px solid #bfdbfe', background: '#fff', color: '#2563eb', cursor: 'pointer' }}>{expanded ? <ChevronUp size={19} /> : <ChevronDown size={19} />}</button></div></div>
+                  <div style={{ height: '8px', background: '#dbeafe', borderRadius: '8px', overflow: 'hidden', marginTop: '16px' }}><div style={{ height: '100%', width: `${progress}%`, background: '#2563eb', borderRadius: '8px' }} /></div>
+                  <div style={{ display: 'flex', gap: '26px', marginTop: '12px', fontSize: '0.76rem', color: '#64748b' }}><span>Total hours: <strong style={{ color: '#0f172a' }}>{totalHours}h</strong></span><span>Hours logged: <strong style={{ color: '#0f172a' }}>{loggedHours}h</strong></span><span>Hours remaining: <strong style={{ color: '#0f172a' }}>{Math.max(totalHours - loggedHours, 0)}h</strong></span></div>
+                </div>{expanded && <InlinePlanDetails plan={plan} onUpdateProgress={onUpdateProgress} />}</React.Fragment>;
               })}
             </div>
           )}
-          {customPlan?.is_added_to_learn && expandedPlanId === customPlan.id ? (
+          {false && customPlan?.is_added_to_learn && expandedPlanId === customPlan.id ? (
             <div>
               {/* Plan Overview Card */}
               <div
@@ -1040,6 +1043,14 @@ export default function LearnView({
                         {planStats.doneSubs} of {planStats.totalSubs} subtopics completed
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedPlanId(expandedPlanId === customPlan.id ? null : customPlan.id)}
+                      title={expandedPlanId === customPlan.id ? 'Collapse plan details' : 'Expand plan details'}
+                      style={{ width: '34px', height: '34px', borderRadius: '9px', border: '1px solid #bfdbfe', background: '#fff', color: '#2563eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      {expandedPlanId === customPlan.id ? <ChevronUp size={19} /> : <ChevronDown size={19} />}
+                    </button>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {onOpenStudyPlan && (
                         <button
@@ -1091,7 +1102,7 @@ export default function LearnView({
               </div>
 
               {/* Milestones Accordion */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {expandedPlanId === customPlan.id && (<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {(customPlan.milestones || []).map((m, mIdx) => {
                   const isExpanded = expandedStages[mIdx] !== false;
                   const completedSubs = m.completed_subtopics || [];
@@ -1368,7 +1379,7 @@ export default function LearnView({
                     </div>
                   );
                 })}
-              </div>
+              </div>)}
             </div>
           ) : (
             <div
