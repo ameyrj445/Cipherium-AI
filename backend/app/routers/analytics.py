@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 from app.database import get_db
-from app.models import Topic, TopicMastery, QuizAttempt, Resource, StudyPlan, User
+from app.models import Topic, TopicMastery, QuizAttempt, Resource, StudyPlan, SubjectRoadmap, User
 from app.schemas import (
     MasteryAnalyticsResponse,
     TopicMasteryDetail,
@@ -24,6 +24,28 @@ from app.services.study_plan_generator import generate_study_plan
 
 
 router = APIRouter(tags=["Analytics, Recommendations & Roadmaps"])
+
+@router.get("/roadmaps/subjects")
+def list_subject_roadmaps(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Return the curated Explore All Subjects roadmaps stored in the database."""
+    records = (
+        db.query(SubjectRoadmap)
+        .filter(SubjectRoadmap.is_active.is_(True))
+        .order_by(SubjectRoadmap.id.asc())
+        .all()
+    )
+    roadmaps = []
+    for record in records:
+        try:
+            roadmap = json.loads(record.roadmap_json)
+            if isinstance(roadmap, dict):
+                roadmaps.append(roadmap)
+        except json.JSONDecodeError:
+            continue
+    return roadmaps
 
 @router.get("/analytics/mastery", response_model=MasteryAnalyticsResponse)
 def get_mastery_analytics(

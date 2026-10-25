@@ -74,6 +74,7 @@ export const analyticsAPI = {
   getMastery: () => api.get('/analytics/mastery'),
   getRecommendations: () => api.get('/recommendations'),
   generateRoadmap: (targetHours) => api.post('/roadmaps/generate', { target_hours_per_week: targetHours }),
+  getSubjectRoadmaps: () => api.get('/roadmaps/subjects'),
   createCustomPlan: (data) => api.post('/roadmaps/custom', data),
   getCustomPlans: () => api.get('/roadmaps/custom'),
   deleteCustomPlan: (planId) => api.delete(`/roadmaps/custom/${planId}`),

@@ -1,5 +1,6 @@
 import json
-from app.models import Topic, Question, Resource
+from pathlib import Path
+from app.models import Topic, Question, Resource, SubjectRoadmap
 
 TOPICS_DATA = [
     {
@@ -258,6 +259,17 @@ RESOURCES_DATA = [
 ]
 
 def seed_database(db):
+    # Curated Explore subjects live in the database. A local fixture may seed
+    # an empty database, but it is optional and intentionally not committed.
+    if db.query(SubjectRoadmap).count() == 0:
+        fixture_path = Path(__file__).with_name("subject_roadmaps.json")
+        if fixture_path.exists():
+            with fixture_path.open(encoding="utf-8") as fixture:
+                roadmaps = json.load(fixture)
+            for slug, roadmap in roadmaps.items():
+                db.add(SubjectRoadmap(slug=slug, roadmap_json=json.dumps(roadmap)))
+            db.commit()
+
     # Seed Topics if empty
     if db.query(Topic).count() == 0:
         topic_map = {}

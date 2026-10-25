@@ -102,6 +102,16 @@ class StudyPlan(Base):
 
     user = relationship("User", back_populates="study_plans")
 
+class SubjectRoadmap(Base):
+    __tablename__ = "subject_roadmaps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String(50), unique=True, index=True, nullable=False)
+    roadmap_json = Column(Text, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class TutorMessage(Base):
     __tablename__ = "tutor_messages"
 

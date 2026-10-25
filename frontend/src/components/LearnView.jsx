@@ -4,6 +4,7 @@ import {
   Code2, ChevronDown, ChevronUp, ChevronRight, Search,
   Zap, Clock, RotateCcw, Sparkles, Layers
 } from 'lucide-react';
+import { analyticsAPI } from '../services/api';
 
 const getChecklistResource = (subtopic, stageResources, subject) => {
   const terms = new Set(String(subtopic || '').toLowerCase().match(/[a-z0-9+#.]{3,}/g) || []);
@@ -35,572 +36,6 @@ function InlinePlanDetails({ plan, onUpdateProgress }) {
     })}
   </div>;
 }
-
-// ── Rich curated subject roadmaps with real internet resources ──────────────────
-const SUBJECT_ROADMAPS = {
-  'DSA': {
-    id: 'DSA',
-    title: 'Data Structures & Algorithms',
-    icon: '⚡',
-    color: '#2563eb',
-    bgColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    tagline: 'From arrays to dynamic programming — master it all.',
-    totalTopics: 32,
-    stages: [
-      {
-        id: 'dsa-s1',
-        title: 'Arrays, Hashing & Two Pointers',
-        icon: '🔢',
-        topics: [
-          {
-            id: 'dsa-t1', title: 'Arrays & Dynamic Arrays',
-            resources: [
-              { label: 'GeeksForGeeks — Arrays in C/C++', url: 'https://www.geeksforgeeks.org/arrays-in-c-cpp/', type: 'article', site: 'gfg' },
-              { label: 'NeetCode — Arrays Intro', url: 'https://neetcode.io/courses/dsa-for-beginners/0', type: 'video', site: 'neetcode' },
-              { label: 'LeetCode — Two Sum (Easy)', url: 'https://leetcode.com/problems/two-sum/', type: 'practice', site: 'leetcode' },
-              { label: 'Programiz — Arrays Tutorial', url: 'https://www.programiz.com/c-programming/c-arrays', type: 'article', site: 'programiz' },
-            ]
-          },
-          {
-            id: 'dsa-t2', title: 'HashMap & HashSet',
-            resources: [
-              { label: 'GeeksForGeeks — HashMap in Java', url: 'https://www.geeksforgeeks.org/java-util-hashmap-in-java/', type: 'article', site: 'gfg' },
-              { label: 'NeetCode — Contains Duplicate', url: 'https://leetcode.com/problems/contains-duplicate/', type: 'practice', site: 'leetcode' },
-              { label: 'Striver — Hashing in C++', url: 'https://takeuforward.org/hashing/hashing-maps-time-complexity-discussion/', type: 'article', site: 'striver' },
-              { label: 'LeetCode — Group Anagrams', url: 'https://leetcode.com/problems/group-anagrams/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t3', title: 'Two Pointer Technique',
-            resources: [
-              { label: 'GFG — Two Pointers Technique', url: 'https://www.geeksforgeeks.org/two-pointers-technique/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Valid Palindrome', url: 'https://leetcode.com/problems/valid-palindrome/', type: 'practice', site: 'leetcode' },
-              { label: 'NeetCode — Two Sum II', url: 'https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/', type: 'practice', site: 'leetcode' },
-              { label: 'Striver — Two Pointer Problems', url: 'https://takeuforward.org/two-pointer-technique/', type: 'article', site: 'striver' },
-            ]
-          },
-          {
-            id: 'dsa-t4', title: 'Sliding Window',
-            resources: [
-              { label: 'NeetCode — Sliding Window Pattern', url: 'https://neetcode.io/roadmap', type: 'video', site: 'neetcode' },
-              { label: 'GFG — Sliding Window Technique', url: 'https://www.geeksforgeeks.org/window-sliding-technique/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Longest Substring Without Repeating', url: 'https://leetcode.com/problems/longest-substring-without-repeating-characters/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — Minimum Window Substring', url: 'https://leetcode.com/problems/minimum-window-substring/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t5', title: 'Prefix Sums & Range Queries',
-            resources: [
-              { label: 'GFG — Prefix Sum Array', url: 'https://www.geeksforgeeks.org/prefix-sum-array-implementation-applications-competitive-programming/', type: 'article', site: 'gfg' },
-              { label: 'CP-Algorithms — Prefix Sums', url: 'https://cp-algorithms.com/algebra/prefix-sums.html', type: 'article', site: 'cpalgo' },
-              { label: 'LeetCode — Range Sum Query', url: 'https://leetcode.com/problems/range-sum-query-immutable/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t6', title: 'Binary Search',
-            resources: [
-              { label: 'Striver — Binary Search Playlist', url: 'https://takeuforward.org/binary-search/binary-search-introduction/', type: 'article', site: 'striver' },
-              { label: 'NeetCode — Binary Search', url: 'https://leetcode.com/problems/binary-search/', type: 'practice', site: 'leetcode' },
-              { label: 'GFG — Binary Search', url: 'https://www.geeksforgeeks.org/binary-search/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Search in Rotated Sorted Array', url: 'https://leetcode.com/problems/search-in-rotated-sorted-array/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-        ]
-      },
-      {
-        id: 'dsa-s2',
-        title: 'Linked Lists, Stacks & Queues',
-        icon: '🔗',
-        topics: [
-          {
-            id: 'dsa-t7', title: 'Singly & Doubly Linked Lists',
-            resources: [
-              { label: 'Striver — Linked List Series', url: 'https://takeuforward.org/linked-list/', type: 'article', site: 'striver' },
-              { label: 'GFG — Linked List Data Structure', url: 'https://www.geeksforgeeks.org/data-structures/linked-list/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Reverse Linked List', url: 'https://leetcode.com/problems/reverse-linked-list/', type: 'practice', site: 'leetcode' },
-              { label: 'NeetCode — Linked List Playlist', url: 'https://neetcode.io/roadmap', type: 'video', site: 'neetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t8', title: 'Fast & Slow Pointers (Floyd\'s Algorithm)',
-            resources: [
-              { label: 'GFG — Floyd\'s Cycle Detection', url: 'https://www.geeksforgeeks.org/how-does-floyds-slow-and-fast-pointers-approach-work/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Linked List Cycle', url: 'https://leetcode.com/problems/linked-list-cycle/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — Find the Duplicate Number', url: 'https://leetcode.com/problems/find-the-duplicate-number/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t9', title: 'Stack & Monotonic Stack',
-            resources: [
-              { label: 'GFG — Stack Data Structure', url: 'https://www.geeksforgeeks.org/stack-data-structure/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Valid Parentheses', url: 'https://leetcode.com/problems/valid-parentheses/', type: 'practice', site: 'leetcode' },
-              { label: 'NeetCode — Daily Temperatures', url: 'https://leetcode.com/problems/daily-temperatures/', type: 'practice', site: 'leetcode' },
-              { label: 'GFG — Monotonic Stack', url: 'https://www.geeksforgeeks.org/monotonic-stack/', type: 'article', site: 'gfg' },
-            ]
-          },
-          {
-            id: 'dsa-t10', title: 'Queue & Deque',
-            resources: [
-              { label: 'GFG — Queue Data Structure', url: 'https://www.geeksforgeeks.org/queue-data-structure/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Sliding Window Maximum', url: 'https://leetcode.com/problems/sliding-window-maximum/', type: 'practice', site: 'leetcode' },
-              { label: 'Programiz — Deque in Python', url: 'https://www.programiz.com/python-programming/deque', type: 'article', site: 'programiz' },
-            ]
-          },
-        ]
-      },
-      {
-        id: 'dsa-s3',
-        title: 'Trees & Recursion',
-        icon: '🌳',
-        topics: [
-          {
-            id: 'dsa-t11', title: 'Binary Trees & Traversals',
-            resources: [
-              { label: 'Striver — Binary Tree Series', url: 'https://takeuforward.org/binary-tree/', type: 'article', site: 'striver' },
-              { label: 'Visualgo — Tree Visualizer', url: 'https://visualgo.net/en/bst', type: 'article', site: 'visualgo' },
-              { label: 'LeetCode — Inorder Traversal', url: 'https://leetcode.com/problems/binary-tree-inorder-traversal/', type: 'practice', site: 'leetcode' },
-              { label: 'GFG — Tree Traversals', url: 'https://www.geeksforgeeks.org/tree-traversals-inorder-preorder-and-postorder/', type: 'article', site: 'gfg' },
-            ]
-          },
-          {
-            id: 'dsa-t12', title: 'Binary Search Trees (BST)',
-            resources: [
-              { label: 'GFG — BST Operations', url: 'https://www.geeksforgeeks.org/binary-search-tree-data-structure/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Validate BST', url: 'https://leetcode.com/problems/validate-binary-search-tree/', type: 'practice', site: 'leetcode' },
-              { label: 'NeetCode — Kth Smallest in BST', url: 'https://leetcode.com/problems/kth-smallest-element-in-a-bst/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t13', title: 'Depth-First Search (DFS)',
-            resources: [
-              { label: 'GFG — DFS in Trees', url: 'https://www.geeksforgeeks.org/depth-first-search-or-dfs-for-a-graph/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Max Depth Binary Tree', url: 'https://leetcode.com/problems/maximum-depth-of-binary-tree/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — Path Sum', url: 'https://leetcode.com/problems/path-sum/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t14', title: 'BFS & Level Order Traversal',
-            resources: [
-              { label: 'GFG — BFS for Trees', url: 'https://www.geeksforgeeks.org/level-order-tree-traversal/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Binary Tree Level Order', url: 'https://leetcode.com/problems/binary-tree-level-order-traversal/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — Right Side View', url: 'https://leetcode.com/problems/binary-tree-right-side-view/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t15', title: 'Lowest Common Ancestor (LCA)',
-            resources: [
-              { label: 'GFG — LCA in Binary Tree', url: 'https://www.geeksforgeeks.org/lowest-common-ancestor-binary-tree-set-1/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — LCA of BST', url: 'https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-        ]
-      },
-      {
-        id: 'dsa-s4',
-        title: 'Graphs & Shortest Paths',
-        icon: '🕸️',
-        topics: [
-          {
-            id: 'dsa-t16', title: 'Graph Representation & BFS',
-            resources: [
-              { label: 'Striver — Graph Series', url: 'https://takeuforward.org/graph/', type: 'article', site: 'striver' },
-              { label: 'GFG — Graph BFS', url: 'https://www.geeksforgeeks.org/breadth-first-search-or-bfs-for-a-graph/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Number of Islands', url: 'https://leetcode.com/problems/number-of-islands/', type: 'practice', site: 'leetcode' },
-              { label: 'Visualgo — Graph Visualizer', url: 'https://visualgo.net/en/sssp', type: 'article', site: 'visualgo' },
-            ]
-          },
-          {
-            id: 'dsa-t17', title: 'DFS, Topological Sort & Cycle Detection',
-            resources: [
-              { label: 'GFG — Topological Sort', url: 'https://www.geeksforgeeks.org/topological-sorting/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Course Schedule', url: 'https://leetcode.com/problems/course-schedule/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — Course Schedule II', url: 'https://leetcode.com/problems/course-schedule-ii/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t18', title: 'Union-Find / Disjoint Set Union (DSU)',
-            resources: [
-              { label: 'GFG — Union Find', url: 'https://www.geeksforgeeks.org/union-find/', type: 'article', site: 'gfg' },
-              { label: 'CP-Algorithms — DSU', url: 'https://cp-algorithms.com/data_structures/disjoint_set_union.html', type: 'article', site: 'cpalgo' },
-              { label: 'LeetCode — Number of Connected Components', url: 'https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t19', title: 'Dijkstra\'s Shortest Path',
-            resources: [
-              { label: 'GFG — Dijkstra\'s Algorithm', url: 'https://www.geeksforgeeks.org/dijkstras-shortest-path-algorithm-greedy-algo-7/', type: 'article', site: 'gfg' },
-              { label: 'Visualgo — SSSP Visualizer', url: 'https://visualgo.net/en/sssp', type: 'article', site: 'visualgo' },
-              { label: 'LeetCode — Network Delay Time', url: 'https://leetcode.com/problems/network-delay-time/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-        ]
-      },
-      {
-        id: 'dsa-s5',
-        title: 'Dynamic Programming',
-        icon: '🧩',
-        topics: [
-          {
-            id: 'dsa-t20', title: '1D DP — Fibonacci, Climbing Stairs',
-            resources: [
-              { label: 'Striver — DP Series from Scratch', url: 'https://takeuforward.org/dynamic-programming/', type: 'article', site: 'striver' },
-              { label: 'LeetCode — Climbing Stairs', url: 'https://leetcode.com/problems/climbing-stairs/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — House Robber', url: 'https://leetcode.com/problems/house-robber/', type: 'practice', site: 'leetcode' },
-              { label: 'GFG — 1D DP Problems', url: 'https://www.geeksforgeeks.org/dynamic-programming/', type: 'article', site: 'gfg' },
-            ]
-          },
-          {
-            id: 'dsa-t21', title: '2D DP — Grid & Matrix Problems',
-            resources: [
-              { label: 'LeetCode — Unique Paths', url: 'https://leetcode.com/problems/unique-paths/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — Minimum Path Sum', url: 'https://leetcode.com/problems/minimum-path-sum/', type: 'practice', site: 'leetcode' },
-              { label: 'GFG — 2D DP', url: 'https://www.geeksforgeeks.org/problems/grid-unique-paths2/0', type: 'article', site: 'gfg' },
-            ]
-          },
-          {
-            id: 'dsa-t22', title: 'Knapsack, LCS & Subsequences',
-            resources: [
-              { label: 'Striver — 0/1 Knapsack', url: 'https://takeuforward.org/dynamic-programming/0-1-knapsack-dp-19/', type: 'article', site: 'striver' },
-              { label: 'GFG — Longest Common Subsequence', url: 'https://www.geeksforgeeks.org/longest-common-subsequence-dp-4/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — LCS', url: 'https://leetcode.com/problems/longest-common-subsequence/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — Coin Change', url: 'https://leetcode.com/problems/coin-change/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-        ]
-      },
-      {
-        id: 'dsa-s6',
-        title: 'Heaps, Tries & Advanced Structures',
-        icon: '🏔️',
-        topics: [
-          {
-            id: 'dsa-t23', title: 'Heaps & Priority Queue',
-            resources: [
-              { label: 'GFG — Heap Data Structure', url: 'https://www.geeksforgeeks.org/heap-data-structure/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Top K Frequent Elements', url: 'https://leetcode.com/problems/top-k-frequent-elements/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — Kth Largest Element', url: 'https://leetcode.com/problems/kth-largest-element-in-an-array/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t24', title: 'Trie (Prefix Tree)',
-            resources: [
-              { label: 'GFG — Trie Data Structure', url: 'https://www.geeksforgeeks.org/trie-insert-and-search/', type: 'article', site: 'gfg' },
-              { label: 'NeetCode — Implement Trie', url: 'https://leetcode.com/problems/implement-trie-prefix-tree/', type: 'practice', site: 'leetcode' },
-              { label: 'LeetCode — Word Search II', url: 'https://leetcode.com/problems/word-search-ii/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-          {
-            id: 'dsa-t25', title: 'Segment Trees & BIT / Fenwick Tree',
-            resources: [
-              { label: 'CP-Algorithms — Fenwick Tree', url: 'https://cp-algorithms.com/data_structures/fenwick.html', type: 'article', site: 'cpalgo' },
-              { label: 'GFG — Segment Tree', url: 'https://www.geeksforgeeks.org/segment-tree-set-1-sum-of-given-range/', type: 'article', site: 'gfg' },
-              { label: 'LeetCode — Range Sum Query Mutable', url: 'https://leetcode.com/problems/range-sum-query-mutable/', type: 'practice', site: 'leetcode' },
-            ]
-          },
-        ]
-      },
-    ]
-  },
-  'OS': {
-    id: 'OS',
-    title: 'Operating Systems',
-    icon: '💻',
-    color: '#7c3aed',
-    bgColor: '#f5f3ff',
-    borderColor: '#ddd6fe',
-    tagline: 'Processes, memory, concurrency and file systems demystified.',
-    totalTopics: 18,
-    stages: [
-      {
-        id: 'os-s1', title: 'Processes & System Calls', icon: '⚙️',
-        topics: [
-          {
-            id: 'os-t1', title: 'Process Lifecycle & PCB',
-            resources: [
-              { label: 'GFG — Process in OS', url: 'https://www.geeksforgeeks.org/process-in-operating-system/', type: 'article', site: 'gfg' },
-              { label: 'OSTEP — Processes (Free Textbook)', url: 'https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf', type: 'article', site: 'ostep' },
-              { label: 'GFG — Process Control Block', url: 'https://www.geeksforgeeks.org/process-control-block-pcb/', type: 'article', site: 'gfg' },
-            ]
-          },
-          {
-            id: 'os-t2', title: 'CPU Scheduling Algorithms',
-            resources: [
-              { label: 'GFG — CPU Scheduling', url: 'https://www.geeksforgeeks.org/cpu-scheduling-in-operating-systems/', type: 'article', site: 'gfg' },
-              { label: 'Programiz — FCFS, SJF, RR', url: 'https://www.programiz.com/operating-system/cpu-scheduling', type: 'article', site: 'programiz' },
-              { label: 'GFG Practice — Scheduling', url: 'https://www.geeksforgeeks.org/problems/fcfs-scheduling/1', type: 'practice', site: 'gfg' },
-            ]
-          },
-          {
-            id: 'os-t3', title: 'Threads vs Processes & IPC',
-            resources: [
-              { label: 'GFG — Threads in OS', url: 'https://www.geeksforgeeks.org/threads-and-its-types-in-operating-system/', type: 'article', site: 'gfg' },
-              { label: 'GFG — Inter Process Communication', url: 'https://www.geeksforgeeks.org/inter-process-communication-ipc/', type: 'article', site: 'gfg' },
-            ]
-          },
-        ]
-      },
-      {
-        id: 'os-s2', title: 'Synchronization & Deadlocks', icon: '🔒',
-        topics: [
-          {
-            id: 'os-t4', title: 'Critical Section & Mutex',
-            resources: [
-              { label: 'GFG — Critical Section Problem', url: 'https://www.geeksforgeeks.org/g-fact-70/', type: 'article', site: 'gfg' },
-              { label: 'GFG — Mutex vs Semaphore', url: 'https://www.geeksforgeeks.org/mutex-vs-semaphore/', type: 'article', site: 'gfg' },
-              { label: 'OSTEP — Locks Chapter', url: 'https://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks.pdf', type: 'article', site: 'ostep' },
-            ]
-          },
-          {
-            id: 'os-t5', title: 'Semaphores & Classic Problems',
-            resources: [
-              { label: 'GFG — Producer Consumer Problem', url: 'https://www.geeksforgeeks.org/producer-consumer-problem-using-semaphores-set-1/', type: 'article', site: 'gfg' },
-              { label: 'GFG — Dining Philosophers', url: 'https://www.geeksforgeeks.org/dining-philosopher-problem-using-semaphores/', type: 'article', site: 'gfg' },
-            ]
-          },
-          {
-            id: 'os-t6', title: 'Deadlocks & Banker\'s Algorithm',
-            resources: [
-              { label: 'GFG — Deadlock in OS', url: 'https://www.geeksforgeeks.org/introduction-of-deadlock-in-operating-system/', type: 'article', site: 'gfg' },
-              { label: 'GFG — Banker\'s Algorithm', url: 'https://www.geeksforgeeks.org/bankers-algorithm-in-operating-system-2/', type: 'article', site: 'gfg' },
-              { label: 'GFG Practice — Deadlock', url: 'https://www.geeksforgeeks.org/problems/deadlock-detection/', type: 'practice', site: 'gfg' },
-            ]
-          },
-        ]
-      },
-      {
-        id: 'os-s3', title: 'Memory Management', icon: '🧠',
-        topics: [
-          {
-            id: 'os-t7', title: 'Paging & Page Tables',
-            resources: [
-              { label: 'GFG — Paging in OS', url: 'https://www.geeksforgeeks.org/paging-in-operating-system/', type: 'article', site: 'gfg' },
-              { label: 'OSTEP — Paging (Free PDF)', url: 'https://pages.cs.wisc.edu/~remzi/OSTEP/vm-paging.pdf', type: 'article', site: 'ostep' },
-            ]
-          },
-          {
-            id: 'os-t8', title: 'Page Replacement Algorithms',
-            resources: [
-              { label: 'GFG — Page Replacement Algorithms', url: 'https://www.geeksforgeeks.org/page-replacement-algorithms-in-operating-systems/', type: 'article', site: 'gfg' },
-              { label: 'GFG Practice — FIFO Page Replacement', url: 'https://www.geeksforgeeks.org/problems/fifo-page-replacement/', type: 'practice', site: 'gfg' },
-              { label: 'GFG — LRU Page Replacement', url: 'https://www.geeksforgeeks.org/program-for-least-recently-used-lru-page-replacement-algorithm/', type: 'article', site: 'gfg' },
-            ]
-          },
-          {
-            id: 'os-t9', title: 'File Systems & Disk Scheduling',
-            resources: [
-              { label: 'GFG — File System in OS', url: 'https://www.geeksforgeeks.org/file-systems-in-operating-system/', type: 'article', site: 'gfg' },
-              { label: 'GFG — Disk Scheduling SSTF, SCAN', url: 'https://www.geeksforgeeks.org/disk-scheduling-algorithms/', type: 'article', site: 'gfg' },
-            ]
-          },
-        ]
-      },
-    ]
-  },
-  'NETWORKS': {
-    id: 'NETWORKS',
-    title: 'Computer Networks',
-    icon: '🌐',
-    color: '#0891b2',
-    bgColor: '#ecfeff',
-    borderColor: '#a5f3fc',
-    tagline: 'OSI model, TCP/IP, DNS, TLS — how the internet works.',
-    totalTopics: 16,
-    stages: [
-      {
-        id: 'net-s1', title: 'OSI Model & Physical Layer', icon: '📡',
-        topics: [
-          { id: 'net-t1', title: 'OSI 7-Layer Model', resources: [
-            { label: 'GFG — OSI Model', url: 'https://www.geeksforgeeks.org/open-systems-interconnection-model-osi/', type: 'article', site: 'gfg' },
-            { label: 'GFG Practice — OSI Model MCQs', url: 'https://www.geeksforgeeks.org/quiz-on-osi-model/', type: 'practice', site: 'gfg' },
-          ]},
-          { id: 'net-t2', title: 'TCP vs UDP', resources: [
-            { label: 'GFG — TCP vs UDP', url: 'https://www.geeksforgeeks.org/differences-between-tcp-and-udp/', type: 'article', site: 'gfg' },
-            { label: 'GFG — TCP 3-Way Handshake', url: 'https://www.geeksforgeeks.org/tcp-3-way-handshake-process/', type: 'article', site: 'gfg' },
-          ]},
-          { id: 'net-t3', title: 'IP Addressing & Subnetting', resources: [
-            { label: 'GFG — Subnetting', url: 'https://www.geeksforgeeks.org/introduction-of-subnetting/', type: 'article', site: 'gfg' },
-            { label: 'GFG Practice — IP Addressing', url: 'https://www.geeksforgeeks.org/quiz-on-ip-addressing/', type: 'practice', site: 'gfg' },
-          ]},
-        ]
-      },
-      {
-        id: 'net-s2', title: 'Application Layer — HTTP, DNS & TLS', icon: '🔐',
-        topics: [
-          { id: 'net-t4', title: 'HTTP/1.1 vs HTTP/2 vs HTTP/3', resources: [
-            { label: 'MDN — HTTP Overview', url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview', type: 'article', site: 'mdn' },
-            { label: 'GFG — HTTP and HTTPS', url: 'https://www.geeksforgeeks.org/difference-between-http-and-https/', type: 'article', site: 'gfg' },
-          ]},
-          { id: 'net-t5', title: 'DNS Resolution', resources: [
-            { label: 'GFG — DNS in Computer Networks', url: 'https://www.geeksforgeeks.org/domain-name-system-dns-in-application-layer/', type: 'article', site: 'gfg' },
-            { label: 'Cloudflare — What is DNS?', url: 'https://www.cloudflare.com/learning/dns/what-is-dns/', type: 'article', site: 'other' },
-          ]},
-          { id: 'net-t6', title: 'TLS/SSL Handshake', resources: [
-            { label: 'MDN — TLS Overview', url: 'https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security', type: 'article', site: 'mdn' },
-            { label: 'Cloudflare — What is TLS?', url: 'https://www.cloudflare.com/learning/ssl/transport-layer-security-tls/', type: 'article', site: 'other' },
-          ]},
-        ]
-      },
-    ]
-  },
-  'DBMS': {
-    id: 'DBMS',
-    title: 'Database Management & SQL',
-    icon: '🗄️',
-    color: '#059669',
-    bgColor: '#f0fdf4',
-    borderColor: '#86efac',
-    tagline: 'Normalization, indexing, transactions, and advanced SQL.',
-    totalTopics: 20,
-    stages: [
-      {
-        id: 'dbms-s1', title: 'Relational Model & SQL Basics', icon: '📋',
-        topics: [
-          { id: 'dbms-t1', title: 'ER Diagrams & Normalization (1NF-BCNF)', resources: [
-            { label: 'GFG — Database Normalization', url: 'https://www.geeksforgeeks.org/introduction-of-database-normalization/', type: 'article', site: 'gfg' },
-            { label: 'GFG — ER Diagram', url: 'https://www.geeksforgeeks.org/introduction-of-er-model/', type: 'article', site: 'gfg' },
-            { label: 'GFG Practice — Normalization', url: 'https://www.geeksforgeeks.org/quiz-on-normalization/', type: 'practice', site: 'gfg' },
-          ]},
-          { id: 'dbms-t2', title: 'SQL Joins, Aggregation & GROUP BY', resources: [
-            { label: 'W3Schools — SQL Joins', url: 'https://www.w3schools.com/sql/sql_join.asp', type: 'article', site: 'w3s' },
-            { label: 'LeetCode — Combine Two Tables', url: 'https://leetcode.com/problems/combine-two-tables/', type: 'practice', site: 'leetcode' },
-            { label: 'LeetCode — Employees Earning More Than Managers', url: 'https://leetcode.com/problems/employees-earning-more-than-their-managers/', type: 'practice', site: 'leetcode' },
-          ]},
-          { id: 'dbms-t3', title: 'Window Functions & CTEs', resources: [
-            { label: 'Mode Analytics — SQL Window Functions', url: 'https://mode.com/sql-tutorial/sql-window-functions/', type: 'article', site: 'other' },
-            { label: 'LeetCode — Rank Scores', url: 'https://leetcode.com/problems/rank-scores/', type: 'practice', site: 'leetcode' },
-            { label: 'GFG — Window Functions in SQL', url: 'https://www.geeksforgeeks.org/window-functions-in-sql/', type: 'article', site: 'gfg' },
-          ]},
-        ]
-      },
-      {
-        id: 'dbms-s2', title: 'Indexing, Transactions & Concurrency', icon: '⚡',
-        topics: [
-          { id: 'dbms-t4', title: 'B-Tree Indexes & Query Optimization', resources: [
-            { label: 'Use The Index, Luke!', url: 'https://use-the-index-luke.com/', type: 'article', site: 'other' },
-            { label: 'GFG — Indexing in Databases', url: 'https://www.geeksforgeeks.org/indexing-in-databases/', type: 'article', site: 'gfg' },
-          ]},
-          { id: 'dbms-t5', title: 'ACID Properties & Transactions', resources: [
-            { label: 'GFG — ACID Properties in DBMS', url: 'https://www.geeksforgeeks.org/acid-properties-in-dbms/', type: 'article', site: 'gfg' },
-            { label: 'GFG Practice — ACID', url: 'https://www.geeksforgeeks.org/quiz-on-transactions-and-concurrency-control/', type: 'practice', site: 'gfg' },
-          ]},
-          { id: 'dbms-t6', title: 'Isolation Levels & MVCC', resources: [
-            { label: 'GFG — Transaction Isolation Levels', url: 'https://www.geeksforgeeks.org/transaction-isolation-levels-dbms/', type: 'article', site: 'gfg' },
-            { label: 'PostgreSQL Docs — Isolation', url: 'https://www.postgresql.org/docs/current/transaction-iso.html', type: 'article', site: 'other' },
-          ]},
-        ]
-      },
-    ]
-  },
-  'ML': {
-    id: 'ML',
-    title: 'Machine Learning & AI',
-    icon: '🤖',
-    color: '#dc2626',
-    bgColor: '#fef2f2',
-    borderColor: '#fecaca',
-    tagline: 'Mathematics, supervised models, deep learning, and evaluation.',
-    totalTopics: 16,
-    stages: [
-      {
-        id: 'ml-s1', title: 'Math Foundations & Data Prep', icon: '📐',
-        topics: [
-          { id: 'ml-t1', title: 'Linear Algebra & Calculus for ML', resources: [
-            { label: 'freeCodeCamp — Linear Algebra Full Course', url: 'https://www.freecodecamp.org/learn', type: 'article', site: 'fcc' },
-            { label: 'GFG — Mathematics for Machine Learning', url: 'https://www.geeksforgeeks.org/machine-learning/', type: 'article', site: 'gfg' },
-          ]},
-          { id: 'ml-t2', title: 'NumPy, Pandas & Data Preprocessing', resources: [
-            { label: 'GFG — NumPy Tutorial', url: 'https://www.geeksforgeeks.org/numpy-tutorial/', type: 'article', site: 'gfg' },
-            { label: 'GFG — Pandas Tutorial', url: 'https://www.geeksforgeeks.org/pandas-tutorial/', type: 'article', site: 'gfg' },
-            { label: 'Kaggle — Pandas Course (Free)', url: 'https://www.kaggle.com/learn/pandas', type: 'practice', site: 'other' },
-          ]},
-        ]
-      },
-      {
-        id: 'ml-s2', title: 'Supervised Learning & Evaluation', icon: '📊',
-        topics: [
-          { id: 'ml-t3', title: 'Linear & Logistic Regression', resources: [
-            { label: 'GFG — Linear Regression', url: 'https://www.geeksforgeeks.org/ml-linear-regression/', type: 'article', site: 'gfg' },
-            { label: 'GFG — Logistic Regression', url: 'https://www.geeksforgeeks.org/understanding-logistic-regression/', type: 'article', site: 'gfg' },
-          ]},
-          { id: 'ml-t4', title: 'Decision Trees & Random Forests', resources: [
-            { label: 'GFG — Decision Tree in ML', url: 'https://www.geeksforgeeks.org/decision-tree/', type: 'article', site: 'gfg' },
-            { label: 'GFG — Random Forest', url: 'https://www.geeksforgeeks.org/random-forest-regression-in-python/', type: 'article', site: 'gfg' },
-            { label: 'Kaggle — Intro to ML', url: 'https://www.kaggle.com/learn/intro-to-machine-learning', type: 'practice', site: 'other' },
-          ]},
-          { id: 'ml-t5', title: 'Model Evaluation: Precision, Recall, AUC-ROC', resources: [
-            { label: 'GFG — Confusion Matrix', url: 'https://www.geeksforgeeks.org/confusion-matrix-machine-learning/', type: 'article', site: 'gfg' },
-            { label: 'GFG — ROC Curve', url: 'https://www.geeksforgeeks.org/auc-roc-curve/', type: 'article', site: 'gfg' },
-          ]},
-        ]
-      },
-      {
-        id: 'ml-s3', title: 'Neural Networks & Deep Learning', icon: '🧠',
-        topics: [
-          { id: 'ml-t6', title: 'Perceptrons, Backpropagation & Gradient Descent', resources: [
-            { label: 'GFG — Neural Networks in Python', url: 'https://www.geeksforgeeks.org/neural-networks-a-beginners-guide/', type: 'article', site: 'gfg' },
-            { label: 'freeCodeCamp — Neural Network Course', url: 'https://www.freecodecamp.org/learn', type: 'article', site: 'fcc' },
-            { label: 'PyTorch 60-Min Blitz', url: 'https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html', type: 'practice', site: 'other' },
-          ]},
-        ]
-      },
-    ]
-  },
-  'WEBDEV': {
-    id: 'WEBDEV',
-    title: 'Full-Stack Web Development',
-    icon: '🚀',
-    color: '#d97706',
-    bgColor: '#fffbeb',
-    borderColor: '#fde68a',
-    tagline: 'React, FastAPI, auth, databases, and deployment.',
-    totalTopics: 18,
-    stages: [
-      {
-        id: 'web-s1', title: 'HTML, CSS & JavaScript Fundamentals', icon: '🎨',
-        topics: [
-          { id: 'web-t1', title: 'HTML5 Semantics & Accessibility', resources: [
-            { label: 'MDN — HTML Basics', url: 'https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML', type: 'article', site: 'mdn' },
-            { label: 'W3Schools — HTML Tutorial', url: 'https://www.w3schools.com/html/', type: 'article', site: 'w3s' },
-            { label: 'freeCodeCamp — Responsive Web Design', url: 'https://www.freecodecamp.org/learn/2022/responsive-web-design/', type: 'practice', site: 'fcc' },
-          ]},
-          { id: 'web-t2', title: 'Modern JavaScript (ES6+) & Async', resources: [
-            { label: 'javascript.info — The Modern JS Tutorial', url: 'https://javascript.info/', type: 'article', site: 'other' },
-            { label: 'MDN — Asynchronous JavaScript', url: 'https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous', type: 'article', site: 'mdn' },
-            { label: 'freeCodeCamp — JavaScript Algorithms', url: 'https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/', type: 'practice', site: 'fcc' },
-          ]},
-        ]
-      },
-      {
-        id: 'web-s2', title: 'React & Component Architecture', icon: '⚛️',
-        topics: [
-          { id: 'web-t3', title: 'React Hooks — useState, useEffect, useMemo', resources: [
-            { label: 'React Official Docs — Thinking in React', url: 'https://react.dev/learn/thinking-in-react', type: 'article', site: 'other' },
-            { label: 'GFG — React Hooks Tutorial', url: 'https://www.geeksforgeeks.org/reactjs-hooks/', type: 'article', site: 'gfg' },
-            { label: 'freeCodeCamp — React Full Course', url: 'https://www.freecodecamp.org/learn/front-end-development-libraries/', type: 'practice', site: 'fcc' },
-          ]},
-          { id: 'web-t4', title: 'State Management & Context API', resources: [
-            { label: 'GFG — React Context API', url: 'https://www.geeksforgeeks.org/context-in-react/', type: 'article', site: 'gfg' },
-            { label: 'MDN — State Management Patterns', url: 'https://developer.mozilla.org/en-US/', type: 'article', site: 'mdn' },
-          ]},
-        ]
-      },
-      {
-        id: 'web-s3', title: 'Backend APIs, Auth & Deployment', icon: '🔧',
-        topics: [
-          { id: 'web-t5', title: 'REST APIs with FastAPI / Express', resources: [
-            { label: 'FastAPI Official Tutorial', url: 'https://fastapi.tiangolo.com/tutorial/', type: 'article', site: 'other' },
-            { label: 'GFG — REST API Design', url: 'https://www.geeksforgeeks.org/rest-api-introduction/', type: 'article', site: 'gfg' },
-          ]},
-          { id: 'web-t6', title: 'JWT Authentication & Password Hashing', resources: [
-            { label: 'GFG — JWT Authentication', url: 'https://www.geeksforgeeks.org/jwt-authentication-with-flask/', type: 'article', site: 'gfg' },
-            { label: 'jwt.io — JWT Intro', url: 'https://jwt.io/introduction', type: 'article', site: 'other' },
-          ]},
-        ]
-      },
-    ]
-  },
-};
 
 // ── Site badge colors ─────────────────────────────────────────────────────────
 const SITE_STYLES = {
@@ -641,6 +76,8 @@ export default function LearnView({
   const [expandedStages, setExpandedStages] = useState({ 0: true, 1: true });
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedPlanId, setExpandedPlanId] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
 
   // Auto-switch to active plan tab if customPlan becomes available
   useEffect(() => {
@@ -648,6 +85,21 @@ export default function LearnView({
       setActiveTab('activePlan');
     }
   }, [customPlan?.id, customPlan?.is_added_to_learn]);
+
+  useEffect(() => {
+    let mounted = true;
+    analyticsAPI.getSubjectRoadmaps()
+      .then(({ data }) => {
+        if (mounted) setSubjects(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (mounted) setSubjects([]);
+      })
+      .finally(() => {
+        if (mounted) setSubjectsLoading(false);
+      });
+    return () => { mounted = false; };
+  }, []);
 
   // User-isolated local tracker state for exploring non-active subjects
   const userStorageKey = user?.email ? `cipherium_learn_done_${user.email}` : 'cipherium_learn_done';
@@ -699,12 +151,19 @@ export default function LearnView({
   };
 
   const planStats = calculatePlanProgress();
-  const subjects = Object.values(SUBJECT_ROADMAPS);
+  const selectedSubject = subjects.find(subject => subject.id === selectedSubjectId);
 
   // ── Render Subject Detail when exploring a specific subject ───────────────────
   if (selectedSubjectId) {
-    const subj = SUBJECT_ROADMAPS[selectedSubjectId];
-    if (!subj) { setSelectedSubjectId(null); return null; }
+    const subj = selectedSubject;
+    if (!subj) {
+      return (
+        <div style={{ maxWidth: '920px', margin: '0 auto', padding: '40px 0', textAlign: 'center', color: '#64748b' }}>
+          <p>{subjectsLoading ? 'Loading subject roadmap…' : 'This subject roadmap is no longer available.'}</p>
+          <button className="btn btn-white" onClick={() => setSelectedSubjectId(null)}>← Back to Subjects</button>
+        </div>
+      );
+    }
 
     let totalTopicCount = 0, doneCount = 0;
     subj.stages.forEach(st => {
@@ -1448,6 +907,8 @@ export default function LearnView({
 
           {/* Subject Cards Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '18px' }}>
+            {subjectsLoading && <p style={{ color: '#64748b', margin: 0 }}>Loading subject roadmaps…</p>}
+            {!subjectsLoading && subjects.length === 0 && <p style={{ color: '#64748b', margin: 0 }}>No subject roadmaps are available yet.</p>}
             {subjects
               .filter(s => !searchQuery || s.title.toLowerCase().includes(searchQuery.toLowerCase()))
               .map((subj) => {
