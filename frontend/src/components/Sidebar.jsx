@@ -9,6 +9,8 @@ import {
   Settings,
   Brain,
   ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -17,9 +19,7 @@ export default function Sidebar({
   handleOpenQuiz,
   user,
   width = 220,
-  onResizeDragStart,
-  onResizeReset,
-  isResizing,
+  onToggleCollapse,
   onOpenAuth,
 }) {
   const collapsed = width < 100;
@@ -46,40 +46,10 @@ export default function Sidebar({
         padding: collapsed ? '24px 8px' : '24px 14px',
         flexShrink: 0,
         position: 'relative',
-        transition: isResizing ? 'none' : 'padding 0.15s ease',
+        transition: 'width 0.2s ease, padding 0.2s ease',
         overflow: 'hidden',
       }}
     >
-      {/* ── Drag Handle (right edge) ── */}
-      <div
-        onMouseDown={onResizeDragStart}
-        onDoubleClick={onResizeReset}
-        title="Drag to resize · Double-click to reset"
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: '6px',
-          height: '100%',
-          cursor: 'ew-resize',
-          zIndex: 50,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {/* Visual grip dot strip */}
-        <div
-          style={{
-            width: '3px',
-            height: '48px',
-            borderRadius: '3px',
-            background: isResizing ? '#3b82f6' : 'rgba(255,255,255,0.18)',
-            transition: 'background 0.15s ease',
-          }}
-        />
-      </div>
-
       <div>
         {/* Logo & Platform Name */}
         <div
@@ -167,6 +137,28 @@ export default function Sidebar({
 
       {/* Footer: Settings & Profile */}
       <div>
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '10px',
+            borderRadius: '12px',
+            border: 'none',
+            background: 'rgba(255,255,255,0.08)',
+            color: '#cbd5e1',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            width: '100%',
+            marginBottom: '8px',
+          }}
+        >
+          {collapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
+        </button>
         <button
           title={collapsed ? 'Settings' : undefined}
           style={{

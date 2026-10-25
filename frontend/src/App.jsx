@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useResizable } from './hooks/useResizable';
 import { authAPI, quizAPI, analyticsAPI, tutorAPI, getStoredSession, startSession, endSession } from './services/api';
 
 // Modular Components
@@ -23,10 +22,7 @@ import ResourcesFullView from './components/ResourcesFullView';
 import StudyPlanView from './components/StudyPlanView';
 
 export default function App() {
-  // Resizable panels
-  const sidebar = useResizable({ initialSize: 220, min: 64, max: 320, side: 'right' });
-  const tutor   = useResizable({ initialSize: 380, min: 240, max: 560, side: 'left' });
-  const isResizingAny = sidebar.isResizing || tutor.isResizing;
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Session & Auth
   const [restoredSession] = useState(() => getStoredSession());
@@ -41,7 +37,7 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Legacy keys are no longer used; the structured session above expires after two hours.
+  // Legacy keys are no longer used; the structured session above expires after twelve hours.
   useEffect(() => {
     localStorage.removeItem('cipherium_token');
     localStorage.removeItem('cipherium_user');
@@ -439,8 +435,6 @@ export default function App() {
         minHeight: '100vh',
         background: '#f8fafc',
         color: '#0f172a',
-        cursor: isResizingAny ? 'ew-resize' : 'default',
-        userSelect: isResizingAny ? 'none' : 'auto',
       }}
     >
       {/* 1. Left Sidebar */}
@@ -454,10 +448,8 @@ export default function App() {
           setPracticeTopic('');
         }}
         user={user}
-        width={sidebar.size}
-        onResizeDragStart={sidebar.handleMouseDown}
-        onResizeReset={sidebar.resetSize}
-        isResizing={sidebar.isResizing}
+        width={sidebarCollapsed ? 72 : 220}
+        onToggleCollapse={() => setSidebarCollapsed((collapsed) => !collapsed)}
         onOpenAuth={() => setShowAuthModal(true)}
       />
 

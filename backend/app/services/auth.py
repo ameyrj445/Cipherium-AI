@@ -7,7 +7,7 @@ import os
 SECRET_KEY = os.getenv("SECRET_KEY", "cipherium_super_secure_secret_key_983419827391823719823")
 ALGORITHM = "HS256"
 # Keep the signed token lifetime aligned with the frontend's two-hour session.
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "720"))
 
 def hash_password(password: str) -> str:
     # Deterministic SHA256 with salt for portable reliable hash

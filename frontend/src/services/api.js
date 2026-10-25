@@ -10,7 +10,7 @@ const api = axios.create({
 });
 
 const SESSION_STORAGE_KEY = 'cipherium_session';
-const SESSION_DURATION_MS = 2 * 60 * 60 * 1000;
+const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
 
 // Keep the active token in memory, and retain it in browser storage only until
 // its two-hour expiry so a refresh can restore a still-valid sign-in.
