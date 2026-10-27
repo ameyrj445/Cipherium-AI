@@ -6,15 +6,17 @@ Endpoints:
   GET  /tutor/history - Retrieve persistent conversation dialogue history
 """
 
+import json
 from typing import List
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Topic, TutorMessage, User
 from app.schemas import TutorChatRequest, TutorChatResponse, ResourceResponse
 from app.routers.auth import get_current_user
-from app.services.tutor import ask_ai_tutor
+from app.services.tutor import ask_ai_tutor, stream_ai_tutor
 
 router = APIRouter(tags=["AI Tutor"])
 
@@ -54,7 +56,8 @@ def chat_with_tutor(
     ai_answer = ask_ai_tutor(
         user_message=req.message,
         topic_code=topic.code if topic else None,
-        topic_name=topic.name if topic else None
+        topic_name=topic.name if topic else None,
+        mode=req.mode or "socratic"
     )
 
     # 3. Record assistant response
@@ -88,7 +91,85 @@ def chat_with_tutor(
     return TutorChatResponse(
         response=ai_answer,
         topic_name=topic.name if topic else None,
-        suggested_resources=suggested_resources
+        suggested_resources=suggested_resources,
+        mode=req.mode or "socratic"
+    )
+
+
+@router.post("/tutor/chat/stream")
+def stream_chat_with_tutor(
+    req: TutorChatRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Streams interactive pedagogical AI Tutor dialogue over Server-Sent Events (SSE).
+    Yields data: {"chunk": "...", "done": false} as tokens generate, followed by
+    data: {"chunk": "", "done": true, "topic_name": "...", "suggested_resources": [...]} on completion.
+    """
+    topic = None
+    if req.topic_id:
+        topic = db.query(Topic).filter(Topic.id == req.topic_id).first()
+
+    # 1. Record incoming student message
+    user_msg_record = TutorMessage(
+        user_id=current_user.id,
+        role="user",
+        message=req.message,
+        topic_id=req.topic_id
+    )
+    db.add(user_msg_record)
+    db.commit()
+
+    # 2. Prepare curated resources
+    suggested_resources = []
+    if topic:
+        for r in topic.resources[:2]:
+            suggested_resources.append({
+                "id": r.id,
+                "topic_id": r.topic_id,
+                "topic_name": topic.name,
+                "title": r.title,
+                "resource_type": r.resource_type,
+                "url": r.url,
+                "difficulty": r.difficulty,
+                "estimated_minutes": r.estimated_minutes,
+                "summary": r.summary
+            })
+
+    def event_stream():
+        accumulated_chunks = []
+        for chunk in stream_ai_tutor(
+            user_message=req.message,
+            topic_code=topic.code if topic else None,
+            topic_name=topic.name if topic else None,
+            mode=req.mode or "socratic"
+        ):
+            accumulated_chunks.append(chunk)
+            yield f"data: {json.dumps({'chunk': chunk, 'done': False})}\n\n"
+
+        full_answer = "".join(accumulated_chunks)
+        # Final event with completion signal and metadata
+        yield f"data: {json.dumps({'chunk': '', 'done': True, 'topic_name': topic.name if topic else None, 'suggested_resources': suggested_resources, 'mode': req.mode or 'socratic'})}\n\n"
+
+        # Persist assistant response to DB
+        assistant_record = TutorMessage(
+            user_id=current_user.id,
+            role="assistant",
+            message=full_answer,
+            topic_id=req.topic_id
+        )
+        db.add(assistant_record)
+        db.commit()
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
     )
 
 

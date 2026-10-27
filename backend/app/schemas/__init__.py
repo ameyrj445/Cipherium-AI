@@ -218,11 +218,13 @@ class UpdatePlanProgressRequest(BaseModel):
 class TutorChatRequest(BaseModel):
     message: str
     topic_id: Optional[int] = None
+    mode: Optional[str] = "socratic" # "socratic" | "direct" | "exam_prep"
 
 class TutorChatResponse(BaseModel):
     response: str
     topic_name: Optional[str] = None
     suggested_resources: List[ResourceResponse] = []
+    mode: Optional[str] = "socratic"
 
 # Streak & Telemetry schemas
 class StreakResponse(BaseModel):
