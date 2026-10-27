@@ -1,6 +1,18 @@
+/**
+ * Cipherium AI - Centralized HTTP Client & Session Management
+ *
+ * Architecture:
+ * - Uses Axios with baseURL dynamically populated from Vite environment variables.
+ * - Manages student authentication sessions with a 12-hour structured token TTL.
+ * - Automatically injects JWT Bearer authorization headers via Axios request interceptors.
+ * - Organizes backend endpoint calls into semantic resource namespaces:
+ *     authAPI, quizAPI, analyticsAPI, tutorAPI, and geminiAPI.
+ */
+
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+// Vite environment variable with local fallback
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,16 +22,19 @@ const api = axios.create({
 });
 
 const SESSION_STORAGE_KEY = 'cipherium_session';
-const SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
+const SESSION_DURATION_MS = 12 * 60 * 60 * 1000; // 12-hour session lifetime
 
-// Keep the active token in memory, and retain it in browser storage only until
-// its two-hour expiry so a refresh can restore a still-valid sign-in.
+// Fast in-memory token cache to avoid redundant localStorage reads on every request
 let sessionToken = '';
 
 export const setSessionToken = (token) => {
   sessionToken = token || '';
 };
 
+/**
+ * Restores the active user session from browser storage if still within the 12-hour TTL.
+ * Automatically purges expired sessions to ensure stale credentials are not reused.
+ */
 export const getStoredSession = () => {
   try {
     const session = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || 'null');
@@ -35,6 +50,10 @@ export const getStoredSession = () => {
   }
 };
 
+/**
+ * Initiates a new authenticated session, calculates the expiration timestamp,
+ * and caches the token for immediate API requests.
+ */
 export const startSession = (token, user) => {
   const session = { token, user, expiresAt: Date.now() + SESSION_DURATION_MS };
   localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
@@ -42,12 +61,18 @@ export const startSession = (token, user) => {
   return session;
 };
 
+/**
+ * Clears the active session from both memory and local storage.
+ */
 export const endSession = () => {
   localStorage.removeItem(SESSION_STORAGE_KEY);
   setSessionToken('');
 };
 
-// Interceptor to automatically attach the active-session JWT Bearer token.
+/**
+ * Axios Request Interceptor:
+ * Attaches the Authorization header with the Bearer JWT token if a valid session exists.
+ */
 api.interceptors.request.use(
   (config) => {
     if (sessionToken) {
@@ -58,18 +83,22 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// ── Auth Service ──────────────────────────────────────────────────────────────
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   getProfile: () => api.get('/auth/me'),
 };
 
+// ── Diagnostic Quizzes & Assessments ──────────────────────────────────────────
 export const quizAPI = {
   getTopics: () => api.get('/topics'),
   getNextQuestion: (topicId) => api.get(`/quizzes/next${topicId ? `?topic_id=${topicId}` : ''}`),
   submitAttempt: (data) => api.post('/quizzes/attempts', data),
+  generateExam: (params = {}) => api.post('/quizzes/exam', null, { params }),
 };
 
+// ── Analytics, Machine Learning & Study Plans ─────────────────────────────────
 export const analyticsAPI = {
   getMastery: () => api.get('/analytics/mastery'),
   getRecommendations: () => api.get('/recommendations'),
@@ -81,15 +110,32 @@ export const analyticsAPI = {
   saveCustomPlan: (plan) => api.post('/roadmaps/custom/save', { plan }),
   getCurrentPlan: () => api.get('/roadmaps/current'),
   updatePlanProgress: (data) => api.put('/roadmaps/progress', data),
+  getFlashcards: () => api.get('/analytics/flashcards'),
+  getStreak: () => api.get('/analytics/streak'),
 };
 
+// ── Daily Study Tasks ─────────────────────────────────────────────────────────
+export const tasksAPI = {
+  getTodayTasks: () => api.get('/tasks/today'),
+  toggleTask: (taskId) => api.put(`/tasks/${taskId}/toggle`),
+};
+
+// ── Persistent User Settings & Preferences ───────────────────────────────────
+export const settingsAPI = {
+  getProfileSettings: () => api.get('/settings/profile'),
+  updateProfileSettings: (data) => api.put('/settings/profile', data),
+};
+
+// ── Gemini AI Tutor Configuration ─────────────────────────────────────────────
 export const geminiAPI = {
   getStatus: () => api.get('/settings/gemini-status'),
   setKey: (apiKey) => api.post('/settings/gemini-key', { api_key: apiKey }),
 };
 
+// ── AI Pedagogical Tutor Dialogue ─────────────────────────────────────────────
 export const tutorAPI = {
   sendMessage: (data) => api.post('/tutor/chat', data),
+  getHistory: (limit = 30) => api.get(`/tutor/history?limit=${limit}`),
 };
 
 export default api;

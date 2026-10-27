@@ -1,17 +1,28 @@
 import React from 'react';
-import { BarChart2, BookOpen, Brain, Flame, Clock } from 'lucide-react';
+import { BarChart2, BookOpen, Clock, Flame } from 'lucide-react';
+import StatCard from './common/StatCard';
 
+/**
+ * Compact 4-item stats strip for Row 2 of the dashboard:
+ * 1. Overall Progress
+ * 2. Topics Completed
+ * 3. Study Time
+ * 4. Day Streak
+ *
+ * If the user has no plan and zero recorded progress/streak, this strip
+ * is suppressed to avoid confronting the user with a row of empty zeros.
+ */
 export default function StatCards({
   customPlan = null,
   overallProgress = 0,
   topicsCompleted = 0,
-  weakTopics = 0,
+  studyHours = 0,
   dayStreak = 0,
 }) {
   let displayProgress = overallProgress;
   let displayCompleted = topicsCompleted;
   let displayLabel = 'Topics Completed';
-  let hoursCompleted = 0;
+  let hoursCompleted = studyHours;
   let totalHours = 0;
 
   if (customPlan && customPlan.milestones) {
@@ -26,113 +37,70 @@ export default function StatCards({
     displayCompleted = doneSubs;
     displayLabel = `Subtopics (${doneSubs}/${totalSubs})`;
     hoursCompleted = customPlan.completed_hours || 0;
-    totalHours = customPlan.total_estimated_hours || (customPlan.duration_weeks * customPlan.target_hours_per_week);
+    totalHours = customPlan.total_estimated_hours || (customPlan.duration_weeks * customPlan.target_hours_per_week) || 20;
   }
 
+  // If user has no plan and zero activity across all metrics, hide widgets that would show zeros
+  const hasAnyActivity = Boolean(
+    customPlan ||
+    displayProgress > 0 ||
+    displayCompleted > 0 ||
+    hoursCompleted > 0 ||
+    dayStreak > 0
+  );
+
+  if (!hasAnyActivity) {
+    return null;
+  }
+
+  const studyTimeValue = customPlan && totalHours > 0
+    ? `${hoursCompleted}/${totalHours}h`
+    : `${hoursCompleted}h`;
+
+  const studyTimeSublabel = customPlan && totalHours > 0
+    ? `${Math.max(totalHours - hoursCompleted, 0)}h remaining`
+    : 'Logged study time';
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '22px' }}>
-      <div className="ui-card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <div
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: '#ecfdf5',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <BarChart2 size={22} color="#10b981" />
-        </div>
-        <div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>{displayProgress}%</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            {customPlan ? 'Plan Progress' : 'Add a plan to begin'}
-          </div>
-        </div>
-      </div>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '16px',
+        marginBottom: '28px',
+      }}
+    >
+      <StatCard
+        icon={BarChart2}
+        value={`${displayProgress}%`}
+        label="Overall Progress"
+        sublabel={customPlan ? 'Plan Progress' : 'Add a plan to begin'}
+        accentColor="#10B981"
+      />
 
-      <div className="ui-card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <div
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: '#f5f3ff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <BookOpen size={22} color="#8b5cf6" />
-        </div>
-        <div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>{displayCompleted}</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{displayLabel}</div>
-        </div>
-      </div>
+      <StatCard
+        icon={BookOpen}
+        value={displayCompleted}
+        label={displayLabel}
+        sublabel="Curriculum topics"
+        accentColor="#7C3AED"
+      />
 
-      <div className="ui-card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <div
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: customPlan ? '#eff6ff' : '#fff1f2',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {customPlan ? (
-            <Clock size={22} color="#2563eb" />
-          ) : (
-            <div style={{ position: 'relative' }}>
-              <Brain size={22} color="#f43f5e" />
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  right: '-4px',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: '#f43f5e',
-                }}
-              ></span>
-            </div>
-          )}
-        </div>
-        <div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>
-            {customPlan ? `${hoursCompleted}/${totalHours}h` : weakTopics}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            {customPlan ? `${Math.max(totalHours - hoursCompleted, 0)}h remaining` : 'Plans in Learn'}
-          </div>
-        </div>
-      </div>
+      <StatCard
+        icon={Clock}
+        value={studyTimeValue}
+        label="Study Time"
+        sublabel={studyTimeSublabel}
+        accentColor="#6366F1"
+      />
 
-      <div className="ui-card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <div
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: '#fffbeb',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Flame size={22} color="#f59e0b" />
-        </div>
-        <div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>{dayStreak}</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Day Streak</div>
-        </div>
-      </div>
+      <StatCard
+        icon={Flame}
+        value={dayStreak}
+        label="Day Streak"
+        sublabel="Consecutive days"
+        accentColor="#F59E0B"
+      />
     </div>
   );
 }

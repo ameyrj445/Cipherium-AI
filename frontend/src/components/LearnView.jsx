@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import {
   BookOpen, CheckCircle2, Circle, ExternalLink, Play, FileText,
   Code2, ChevronDown, ChevronUp, ChevronRight, Search,
-  Zap, Clock, RotateCcw, Sparkles, Layers
+  Clock, RotateCcw, Compass, Layers, Sparkles
 } from 'lucide-react';
 import { analyticsAPI } from '../services/api';
+import BlueprintWizard from './common/BlueprintWizard';
+import MilestoneProgressTree from './common/MilestoneProgressTree';
+import PageContainer from './layout/PageContainer';
+import PageHeader from './layout/PageHeader';
+import StickyRail from './layout/StickyRail';
+
 
 const getChecklistResource = (subtopic, stageResources, subject) => {
   const terms = new Set(String(subtopic || '').toLowerCase().match(/[a-z0-9+#.]{3,}/g) || []);
@@ -22,47 +28,47 @@ const getChecklistResource = (subtopic, stageResources, subject) => {
     };
 };
 
-function InlinePlanDetails({ plan, onUpdateProgress }) {
-  return <div style={{ marginTop: '-4px', marginBottom: '10px', padding: '18px 22px', border: '1px solid #bfdbfe', borderTop: 'none', borderRadius: '0 0 16px 16px', background: '#fff' }}>
-    {(plan.milestones || []).map((milestone, index) => {
-      const completed = milestone.completed_subtopics || [];
-      return <details key={milestone.id || index} open={index === 0} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
-        <summary style={{ cursor: 'pointer', padding: '13px 16px', fontWeight: 800, color: '#0f172a', background: '#f8fafc' }}>Stage {index + 1}: {milestone.title} <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 500 }}>— {completed.length}/{(milestone.subtopics || []).length} topics done</span></summary>
-        <div style={{ padding: '14px 16px' }}>
-          {(milestone.subtopics || []).map((subtopic) => { const done = completed.includes(subtopic); const resource = getChecklistResource(subtopic, milestone.resources, plan.subject); return <div key={subtopic} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}><input type="checkbox" checked={done} onChange={() => onUpdateProgress?.({ plan_id: plan.id, milestone_id: milestone.id, subtopic_name: subtopic, subtopic_completed: !done })} /><span style={{ flex: 1, color: done ? '#15803d' : '#1e293b', textDecoration: done ? 'line-through' : 'none', fontSize: '0.84rem' }}>{subtopic}</span><a href={resource.url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: '0.74rem', fontWeight: 700, textDecoration: 'none' }}>{resource.label} <ExternalLink size={11} style={{ verticalAlign: 'middle' }} /></a></div>; })}
-          {(milestone.resources || []).length > 0 && <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>{milestone.resources.map((resource) => <a key={resource.id} href={resource.url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: '0.75rem', padding: '6px 9px', background: '#eff6ff', borderRadius: '7px', textDecoration: 'none' }}>{resource.title} <ExternalLink size={11} style={{ verticalAlign: 'middle' }} /></a>)}</div>}
-        </div>
-      </details>;
-    })}
-  </div>;
+function InlinePlanDetails({ plan, onUpdateProgress, onStartPractice, onAskTutor }) {
+  return (
+    <div style={{ marginTop: '8px', marginBottom: '16px' }}>
+      <MilestoneProgressTree
+        milestones={plan.milestones || []}
+        planId={plan.id}
+        subject={plan.subject}
+        onUpdateProgress={onUpdateProgress}
+        onStartPractice={onStartPractice}
+        onAskTutor={onAskTutor}
+      />
+    </div>
+  );
 }
 
 // ── Site badge colors ─────────────────────────────────────────────────────────
 const SITE_STYLES = {
-  gfg:      { label: 'GFG',      bg: '#e8f5e9', color: '#2e7d32', border: '#a5d6a7' },
-  leetcode: { label: 'LeetCode', bg: '#fff8e1', color: '#f57f17', border: '#ffe082' },
-  neetcode: { label: 'NeetCode', bg: '#e3f2fd', color: '#1565c0', border: '#90caf9' },
-  striver:  { label: 'Striver',  bg: '#f3e5f5', color: '#6a1b9a', border: '#ce93d8' },
-  fcc:      { label: 'FCC',      bg: '#e8f5e9', color: '#1b5e20', border: '#a5d6a7' },
-  mdn:      { label: 'MDN',      bg: '#e8eaf6', color: '#283593', border: '#9fa8da' },
-  w3s:      { label: 'W3Schools', bg: '#e0f7fa', color: '#006064', border: '#80deea' },
-  visualgo: { label: 'Visualgo', bg: '#fff3e0', color: '#e65100', border: '#ffcc80' },
-  cpalgo:   { label: 'CP-Algo',  bg: '#fce4ec', color: '#880e4f', border: '#f48fb1' },
-  programiz:{ label: 'Programiz',bg: '#e1f5fe', color: '#01579b', border: '#81d4fa' },
-  ostep:    { label: 'OSTEP',    bg: '#f1f8e9', color: '#33691e', border: '#c5e1a5' },
-  other:    { label: 'Resource', bg: '#f5f5f5', color: '#424242', border: '#e0e0e0' },
+  gfg:      { label: 'GFG',      bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  leetcode: { label: 'LeetCode', bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  neetcode: { label: 'NeetCode', bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  striver:  { label: 'Striver',  bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  fcc:      { label: 'FCC',      bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  mdn:      { label: 'MDN',      bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  w3s:      { label: 'W3Schools', bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  visualgo: { label: 'Visualgo', bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  cpalgo:   { label: 'CP-Algo',  bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  programiz:{ label: 'Programiz',bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  ostep:    { label: 'OSTEP',    bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
+  other:    { label: 'Resource', bg: 'rgba(99, 102, 241, 0.12)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.25)' },
 };
 
 const TYPE_ICONS = {
-  video:      { Icon: Play,     color: '#dc2626', label: 'Video' },
-  article:    { Icon: BookOpen, color: '#2563eb', label: 'Article' },
-  practice:   { Icon: Code2,    color: '#16a34a', label: 'Practice' },
-  cheatsheet: { Icon: FileText, color: '#d97706', label: 'Sheet' },
+  video:      { Icon: Play,     color: '#818CF8', label: 'Video' },
+  article:    { Icon: BookOpen, color: '#818CF8', label: 'Article' },
+  practice:   { Icon: Code2,    color: '#818CF8', label: 'Practice' },
+  cheatsheet: { Icon: FileText, color: '#818CF8', label: 'Sheet' },
 };
 
 export default function LearnView({
-  topics = [],
-  onSelectTopic,
+  topics: _topics = [],
+  onSelectTopic: _onSelectTopic = null,
   customPlan = null,
   customPlans = [],
   onSelectPlan,
@@ -78,6 +84,9 @@ export default function LearnView({
   const [expandedPlanId, setExpandedPlanId] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [subjectsLoading, setSubjectsLoading] = useState(true);
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [durationFilter, setDurationFilter] = useState('All');
+  const [hoursFilter, setHoursFilter] = useState('All');
 
   // Auto-switch to active plan tab if customPlan becomes available
   useEffect(() => {
@@ -175,12 +184,12 @@ export default function LearnView({
     const pct = totalTopicCount > 0 ? Math.round((doneCount / totalTopicCount) * 100) : 0;
 
     return (
-      <div style={{ maxWidth: '920px', margin: '0 auto' }}>
+      <PageContainer noGrid>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '22px' }}>
           <button
             onClick={() => setSelectedSubjectId(null)}
             className="btn btn-white"
-            style={{ fontSize: '0.78rem', padding: '7px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ fontSize: '0.78rem', padding: '7px 14px', border: '1px solid var(--border-stroke, #2D2D35)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             ← Back to Subjects
           </button>
@@ -188,18 +197,31 @@ export default function LearnView({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '1.5rem' }}>{subj.icon}</span>
               <div>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>{subj.title}</h2>
-                <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0 }}>{subj.tagline}</p>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    color: subj.color,
+                    letterSpacing: '.06em',
+                    textTransform: 'uppercase',
+                    display: 'inline-block',
+                    marginBottom: '2px',
+                  }}
+                >
+                  Subject Syllabus & Roadmap
+                </span>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary, #F3F4F6)', margin: 0 }}>{subj.title}</h2>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #9CA3AF)', margin: '2px 0 0 0' }}>{subj.tagline}</p>
               </div>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: subj.color }}>{pct}%</div>
-            <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{doneCount}/{totalTopicCount} topics done</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary, #9CA3AF)' }}>{doneCount}/{totalTopicCount} topics done</div>
           </div>
         </div>
 
-        <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '6px', overflow: 'hidden', marginBottom: '22px' }}>
+        <div style={{ height: '8px', background: 'var(--bg-shell, #161618)', borderRadius: '6px', overflow: 'hidden', marginBottom: '22px' }}>
           <div style={{ width: `${pct}%`, height: '100%', background: subj.color, borderRadius: '6px', transition: 'width 0.4s ease' }} />
         </div>
 
@@ -215,18 +237,18 @@ export default function LearnView({
               <div
                 key={stage.id}
                 style={{
-                  border: `1.5px solid ${stageComplete ? '#86efac' : stageStarted ? subj.borderColor : '#e2e8f0'}`,
+                  border: `1.5px solid ${stageComplete ? '#10B981' : stageStarted ? subj.borderColor : 'var(--border-stroke, #2D2D35)'}`,
                   borderRadius: '16px',
                   overflow: 'hidden',
-                  background: '#fff',
-                  boxShadow: stageComplete ? '0 2px 8px rgba(16,185,129,0.08)' : 'none',
+                  background: 'var(--bg-surface, #1E1E22)',
+                  boxShadow: stageComplete ? '0 2px 8px rgba(16,185,129,0.12)' : 'none',
                 }}
               >
                 <div
                   onClick={() => toggleStage(sIdx)}
                   style={{
                     padding: '16px 22px',
-                    background: stageComplete ? '#f0fdf4' : stageStarted ? subj.bgColor : '#fafafa',
+                    background: stageComplete ? 'rgba(16, 185, 129, 0.1)' : stageStarted ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-surface, #1E1E22)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '14px',
@@ -236,21 +258,21 @@ export default function LearnView({
                 >
                   <div style={{
                     width: '36px', height: '36px', borderRadius: '10px',
-                    background: stageComplete ? '#10b981' : stageStarted ? subj.color : '#e2e8f0',
+                    background: stageComplete ? '#10B981' : stageStarted ? subj.color : 'var(--bg-shell, #161618)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '1.1rem', flexShrink: 0
                   }}>
                     {stageComplete ? '✓' : stage.icon}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.98rem', color: '#0f172a' }}>{stage.title}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--text-primary, #F3F4F6)' }}>{stage.title}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #9CA3AF)', marginTop: '2px' }}>
                       {stageDone}/{stageTotal} topics completed
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {stageComplete && <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '3px 8px', borderRadius: '8px' }}>✓ Complete</span>}
-                    {isExpanded ? <ChevronUp size={18} color="#94a3b8" /> : <ChevronDown size={18} color="#94a3b8" />}
+                    {stageComplete && <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#10B981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: '8px' }}>✓ Complete</span>}
+                    {isExpanded ? <ChevronUp size={18} color="var(--text-secondary, #9CA3AF)" /> : <ChevronDown size={18} color="var(--text-secondary, #9CA3AF)" />}
                   </div>
                 </div>
 
@@ -262,10 +284,10 @@ export default function LearnView({
                         <div
                           key={topic.id}
                           style={{
-                            border: `1px solid ${isDone ? '#86efac' : '#e2e8f0'}`,
+                            border: `1px solid ${isDone ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-stroke, #2D2D35)'}`,
                             borderRadius: '12px',
                             overflow: 'hidden',
-                            background: isDone ? '#f0fdf4' : '#fff',
+                            background: isDone ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-shell, #161618)',
                           }}
                         >
                           <div style={{
@@ -273,12 +295,12 @@ export default function LearnView({
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
-                            background: isDone ? '#f0fdf4' : '#fff',
+                            background: isDone ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-shell, #161618)',
                           }}>
                             <div style={{
                               width: '28px', height: '28px', borderRadius: '50%',
-                              background: isDone ? '#10b981' : subj.color,
-                              color: '#fff', display: 'flex', alignItems: 'center',
+                              background: isDone ? '#10B981' : subj.color,
+                              color: '#ffffff', display: 'flex', alignItems: 'center',
                               justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0
                             }}>
                               {isDone ? '✓' : tIdx + 1}
@@ -287,12 +309,12 @@ export default function LearnView({
                             <div style={{ flex: 1 }}>
                               <div style={{
                                 fontSize: '0.9rem', fontWeight: 700,
-                                color: isDone ? '#15803d' : '#0f172a',
+                                color: isDone ? '#10B981' : 'var(--text-primary, #F3F4F6)',
                                 textDecoration: isDone ? 'line-through' : 'none',
                               }}>
                                 {topic.title}
                               </div>
-                              <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary, #9CA3AF)', marginTop: '2px' }}>
                                 {topic.resources.length} resources · {topic.resources.filter(r => r.type === 'practice').length} practice problems
                               </div>
                             </div>
@@ -300,9 +322,9 @@ export default function LearnView({
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleTopicDone(topic.id); }}
                               style={{
-                                border: isDone ? '1.5px solid #10b981' : `1.5px solid ${subj.color}`,
-                                background: isDone ? '#dcfce7' : '#fff',
-                                color: isDone ? '#15803d' : subj.color,
+                                border: isDone ? '1.5px solid #10B981' : `1.5px solid ${subj.color || '#6366F1'}`,
+                                background: isDone ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-surface, #1E1E22)',
+                                color: isDone ? '#10B981' : (subj.color || '#818CF8'),
                                 padding: '5px 12px',
                                 borderRadius: '8px',
                                 fontSize: '0.74rem',
@@ -323,8 +345,8 @@ export default function LearnView({
                             display: 'flex',
                             flexWrap: 'wrap',
                             gap: '8px',
-                            borderTop: '1px solid #f1f5f9',
-                            background: isDone ? '#f0fdf4' : '#fafafa',
+                            borderTop: '1px solid var(--border-stroke, #2D2D35)',
+                            background: isDone ? 'rgba(16, 185, 129, 0.04)' : 'var(--bg-shell, #161618)',
                           }}>
                             {topic.resources.map((res, rIdx) => {
                               const siteStyle = SITE_STYLES[res.site] || SITE_STYLES.other;
@@ -370,74 +392,182 @@ export default function LearnView({
             );
           })}
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   // ── Main Learn View with Active Plan & Explore Roadmaps ───────────────────────
-  return (
-    <div style={{ maxWidth: '980px', margin: '0 auto' }}>
-      {/* Header with Navigation Switcher */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '22px' }}>
-        <div>
-          <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-            📚 Roadmap & Curated Learning Tracker
-          </h2>
-          <p style={{ color: '#64748b', fontSize: '0.86rem', marginTop: '4px' }}>
-            Master your topics step-by-step with verified internet resources from GeeksForGeeks, LeetCode, NeetCode, YouTube, and Striver.
-          </p>
-        </div>
+  const hasPlans = customPlans.length > 0;
+  const lastVisitedPlan = customPlan || customPlans[0] || null;
 
-        {/* Tab switcher */}
-        <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '12px', gap: '4px' }}>
-          <button
-            onClick={() => setActiveTab('activePlan')}
-            style={{
-              padding: '7px 14px',
-              borderRadius: '9px',
-              border: 'none',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              background: activeTab === 'activePlan' ? '#ffffff' : 'transparent',
-              color: activeTab === 'activePlan' ? '#2563eb' : '#64748b',
-              boxShadow: activeTab === 'activePlan' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <Sparkles size={14} color={activeTab === 'activePlan' ? '#2563eb' : '#64748b'} />
-            My Study Plans {customPlans.length ? `(${customPlans.length})` : ''}
-          </button>
-          <button
-            onClick={() => setActiveTab('explore')}
-            style={{
-              padding: '7px 14px',
-              borderRadius: '9px',
-              border: 'none',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              background: activeTab === 'explore' ? '#ffffff' : 'transparent',
-              color: activeTab === 'explore' ? '#2563eb' : '#64748b',
-              boxShadow: activeTab === 'explore' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <Layers size={14} color={activeTab === 'explore' ? '#2563eb' : '#64748b'} />
-            Explore All Subjects
-          </button>
-        </div>
+  return (
+    <PageContainer>
+      {/* 1. Header row with segmented control right-aligned */}
+      <div style={{ gridColumn: '1 / -1' }}>
+        <PageHeader
+          eyebrow="CURRICULUM ROADMAPS & LEARNING TRACKER"
+          title="Curated Learning Roadmaps & Progress Tracker"
+          description="Master core computer science topics step-by-step with verified internet resources from GeeksForGeeks, LeetCode, NeetCode, YouTube, and Striver."
+          actions={
+            <div
+              style={{
+                display: 'flex',
+                background: 'var(--bg-surface, #1E1E22)',
+                border: '1px solid var(--border-stroke, #2D2D35)',
+                padding: '4px',
+                borderRadius: '12px',
+                gap: '4px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveTab('activePlan')}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '9px',
+                  border: activeTab === 'activePlan' ? '1px solid var(--border-stroke, #2D2D35)' : '1px solid transparent',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: activeTab === 'activePlan' ? 'var(--bg-canvas, #121214)' : 'transparent',
+                  color: activeTab === 'activePlan' ? 'var(--text-primary, #F3F4F6)' : 'var(--text-secondary, #9CA3AF)',
+                  boxShadow: activeTab === 'activePlan' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Compass size={14} color={activeTab === 'activePlan' ? '#6366F1' : 'var(--text-secondary, #9CA3AF)'} />
+                My Study Plans {customPlans.length ? `(${customPlans.length})` : ''}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('explore')}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '9px',
+                  border: activeTab === 'explore' ? '1px solid var(--border-stroke, #2D2D35)' : '1px solid transparent',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: activeTab === 'explore' ? 'var(--bg-canvas, #121214)' : 'transparent',
+                  color: activeTab === 'explore' ? 'var(--text-primary, #F3F4F6)' : 'var(--text-secondary, #9CA3AF)',
+                  boxShadow: activeTab === 'explore' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Layers size={14} color={activeTab === 'explore' ? '#6366F1' : 'var(--text-secondary, #9CA3AF)'} />
+                Explore All Subjects
+              </button>
+            </div>
+          }
+        />
       </div>
 
-      {/* ── TAB 1: ACTIVE STUDY PLAN ROADMAP ─────────────────────────────────── */}
-      {activeTab === 'activePlan' && (
-        <div>
-          {customPlans.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '18px' }}>
+      {/* 2. Main Column (9 cols if hasPlans, else 12 cols) */}
+      <div
+        style={{
+          gridColumn: hasPlans ? '1 / span 9' : '1 / -1',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px',
+          width: '100%',
+        }}
+      >
+        {/* Filter and Sort Bar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            padding: '12px 16px',
+            background: 'var(--bg-surface, #1E1E22)',
+            border: '1px solid var(--border-stroke, #2D2D35)',
+            borderRadius: '12px',
+          }}
+        >
+          {/* Category chips */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary, #9CA3AF)', marginRight: '2px' }}>
+              Category:
+            </span>
+            {['All', 'DSA', 'ML', 'Full-Stack', 'Systems'].map((cat) => {
+              const isSel = categoryFilter === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategoryFilter(cat)}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '0.74rem',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: '1px solid',
+                    borderColor: isSel ? '#6366F1' : 'var(--border-stroke, #2D2D35)',
+                    background: isSel ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-shell, #161618)',
+                    color: isSel ? '#818CF8' : 'var(--text-secondary, #9CA3AF)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Duration & Weekly Hours Dropdowns */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <select
+              value={durationFilter}
+              onChange={(e) => setDurationFilter(e.target.value)}
+              aria-label="Filter by duration"
+              style={{
+                padding: '5px 8px',
+                borderRadius: '6px',
+                border: '1px solid var(--border-stroke, #2D2D35)',
+                background: 'var(--bg-shell, #161618)',
+                color: 'var(--text-primary, #F3F4F6)',
+                fontSize: '0.76rem',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="All">All Durations</option>
+              <option value="<8">&lt; 8 weeks</option>
+              <option value=">=8">8+ weeks</option>
+            </select>
+
+            <select
+              value={hoursFilter}
+              onChange={(e) => setHoursFilter(e.target.value)}
+              aria-label="Filter by weekly hours"
+              style={{
+                padding: '5px 8px',
+                borderRadius: '6px',
+                border: '1px solid var(--border-stroke, #2D2D35)',
+                background: 'var(--bg-shell, #161618)',
+                color: 'var(--text-primary, #F3F4F6)',
+                fontSize: '0.76rem',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="All">All Weekly Hours</option>
+              <option value="<6">&lt; 6 hrs/wk</option>
+              <option value=">=6">6+ hrs/wk</option>
+            </select>
+          </div>
+        </div>
+
+        {/* ── TAB 1: ACTIVE STUDY PLAN ROADMAP ─────────────────────────────────── */}
+        {activeTab === 'activePlan' && (
+          <div>
+            {customPlans.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '18px' }}>
               {customPlans.map((plan) => {
                 const totalTopics = (plan.milestones || []).reduce((total, milestone) => total + (milestone.subtopics || []).length, 0);
                 const completedTopics = (plan.milestones || []).reduce((total, milestone) => total + (milestone.completed_subtopics || []).length, 0);
@@ -446,24 +576,24 @@ export default function LearnView({
                 const loggedHours = plan.completed_hours || 0;
                 const selected = plan.id === customPlan?.id;
                 const expanded = expandedPlanId === plan.id;
-                return <React.Fragment key={plan.id}><div className="ui-card" style={{ padding: '20px 24px', textAlign: 'left', border: selected ? '1.5px solid #93c5fd' : '1px solid #e2e8f0', background: selected ? 'linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)' : '#fff' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center' }}><div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563eb', background: '#dbeafe', padding: '3px 9px', borderRadius: '10px' }}>⚡ Active Roadmap</span><div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', marginTop: '9px' }}>{plan.subject}</div><div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '4px' }}>Level: {plan.skill_level || 'Beginner'} · Target: {plan.target_hours_per_week} hrs/week · Duration: {plan.duration_weeks} weeks</div></div><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ textAlign: 'right' }}><div style={{ color: '#2563eb', fontWeight: 800, fontSize: '1.55rem' }}>{progress}%</div><div style={{ color: '#64748b', fontSize: '0.72rem' }}>{completedTopics} of {totalTopics} subtopics completed</div></div><button type="button" onClick={() => { onSelectPlan?.(plan); onOpenStudyPlan?.(); }} style={{ padding: '8px 11px', borderRadius: '9px', border: '1px solid #bfdbfe', background: '#fff', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Edit Plan</button><button type="button" onClick={() => { if (window.confirm(`Delete the ${plan.subject} study plan? This cannot be undone.`)) onDeletePlan?.(plan.id); }} style={{ padding: '8px 11px', borderRadius: '9px', border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Delete Plan</button><button type="button" onClick={() => { onSelectPlan?.(plan); setExpandedPlanId(expanded ? null : plan.id); setExpandedStages({ 0: true }); }} style={{ width: '38px', height: '38px', borderRadius: '10px', border: '1px solid #bfdbfe', background: '#fff', color: '#2563eb', cursor: 'pointer' }}>{expanded ? <ChevronUp size={19} /> : <ChevronDown size={19} />}</button></div></div>
-                  <div style={{ height: '8px', background: '#dbeafe', borderRadius: '8px', overflow: 'hidden', marginTop: '16px' }}><div style={{ height: '100%', width: `${progress}%`, background: '#2563eb', borderRadius: '8px' }} /></div>
-                  <div style={{ display: 'flex', gap: '26px', marginTop: '12px', fontSize: '0.76rem', color: '#64748b' }}><span>Total hours: <strong style={{ color: '#0f172a' }}>{totalHours}h</strong></span><span>Hours logged: <strong style={{ color: '#0f172a' }}>{loggedHours}h</strong></span><span>Hours remaining: <strong style={{ color: '#0f172a' }}>{Math.max(totalHours - loggedHours, 0)}h</strong></span></div>
-                </div>{expanded && <InlinePlanDetails plan={plan} onUpdateProgress={onUpdateProgress} />}</React.Fragment>;
+                return <React.Fragment key={plan.id}><div className="ui-card" style={{ padding: '20px 24px', textAlign: 'left', border: selected ? '1.5px solid #6366F1' : '1px solid var(--border-stroke, #2D2D35)', background: selected ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-surface, #1E1E22)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center' }}><div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#818CF8', background: 'rgba(99, 102, 241, 0.15)', padding: '3px 9px', borderRadius: '10px' }}>⚡ Active Roadmap</span><div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary, #F3F4F6)', marginTop: '9px' }}>{plan.subject}</div><div style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.78rem', marginTop: '4px' }}>Level: {plan.skill_level || 'Beginner'} · Target: {plan.target_hours_per_week} hrs/week · Duration: {plan.duration_weeks} weeks</div></div><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ textAlign: 'right' }}><div style={{ color: '#6366F1', fontWeight: 800, fontSize: '1.55rem' }}>{progress}%</div><div style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.72rem' }}>{completedTopics} of {totalTopics} subtopics completed</div></div><button type="button" onClick={() => { onSelectPlan?.(plan); onOpenStudyPlan?.(); }} style={{ padding: '8px 11px', borderRadius: '9px', border: '1px solid var(--border-stroke, #2D2D35)', background: 'var(--bg-shell, #161618)', color: 'var(--text-primary, #F3F4F6)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Edit Plan</button><button type="button" onClick={() => { if (window.confirm(`Delete the ${plan.subject} study plan? This cannot be undone.`)) onDeletePlan?.(plan.id); }} style={{ padding: '8px 11px', borderRadius: '9px', border: '1px solid rgba(244, 63, 94, 0.3)', background: 'rgba(244, 63, 94, 0.1)', color: '#F43F5E', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Delete Plan</button><button type="button" onClick={() => { onSelectPlan?.(plan); setExpandedPlanId(expanded ? null : plan.id); setExpandedStages({ 0: true }); }} style={{ width: '38px', height: '38px', borderRadius: '10px', border: '1px solid var(--border-stroke, #2D2D35)', background: 'var(--bg-shell, #161618)', color: '#6366F1', cursor: 'pointer' }}>{expanded ? <ChevronUp size={19} /> : <ChevronDown size={19} />}</button></div></div>
+                  <div style={{ height: '8px', background: 'var(--border-stroke, #2D2D35)', borderRadius: '8px', overflow: 'hidden', marginTop: '16px' }}><div style={{ height: '100%', width: `${progress}%`, background: '#6366F1', borderRadius: '8px' }} /></div>
+                  <div style={{ display: 'flex', gap: '26px', marginTop: '12px', fontSize: '0.76rem', color: 'var(--text-secondary, #9CA3AF)' }}><span>Total hours: <strong style={{ color: 'var(--text-primary, #F3F4F6)' }}>{totalHours}h</strong></span><span>Hours logged: <strong style={{ color: 'var(--text-primary, #F3F4F6)' }}>{loggedHours}h</strong></span><span>Hours remaining: <strong style={{ color: 'var(--text-primary, #F3F4F6)' }}>{Math.max(totalHours - loggedHours, 0)}h</strong></span></div>
+                </div>{expanded && <InlinePlanDetails plan={plan} onUpdateProgress={onUpdateProgress} onStartPractice={onSelectTopic} onAskTutor={onSelectTopic} />}</React.Fragment>;
               })}
             </div>
           )}
-          {false && customPlan?.is_added_to_learn && expandedPlanId === customPlan.id ? (
+          {customPlan?.is_added_to_learn && expandedPlanId === customPlan.id ? (
             <div>
               {/* Plan Overview Card */}
               <div
                 className="ui-card"
                 style={{
                   padding: '24px',
-                  borderRadius: '20px',
-                  background: 'linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)',
-                  border: '1.5px solid #bfdbfe',
+                  borderRadius: '10px',
+                  background: 'var(--bg-surface, #1E1E22)',
+                  border: '1px solid var(--border-stroke, #2D2D35)',
                   marginBottom: '22px',
                 }}
               >
@@ -473,32 +603,32 @@ export default function LearnView({
                       style={{
                         fontSize: '0.74rem',
                         fontWeight: 700,
-                        color: '#2563eb',
-                        background: '#dbeafe',
+                        color: '#818CF8',
+                        background: 'rgba(99, 102, 241, 0.15)',
                         padding: '3px 10px',
-                        borderRadius: '12px',
+                        borderRadius: '6px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '4px',
                         marginBottom: '8px',
                       }}
                     >
-                      <Sparkles size={12} /> Active Roadmap
+                      <BookOpen size={12} /> Active Roadmap
                     </span>
-                    <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary, #F3F4F6)', margin: 0 }}>
                       {customPlan.subject}
                     </h3>
-                    <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '4px' }}>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary, #9CA3AF)', marginTop: '4px' }}>
                       Level: <strong>{customPlan.skill_level || 'Beginner'}</strong> • Target: <strong>{customPlan.target_hours_per_week} hrs/week</strong> • Duration: <strong>{customPlan.duration_weeks} weeks</strong>
                     </p>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#2563eb', lineHeight: 1 }}>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#6366F1', lineHeight: 1 }}>
                         {planStats.pct}%
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #9CA3AF)', marginTop: '4px' }}>
                         {planStats.doneSubs} of {planStats.totalSubs} subtopics completed
                       </div>
                     </div>
@@ -506,7 +636,7 @@ export default function LearnView({
                       type="button"
                       onClick={() => setExpandedPlanId(expandedPlanId === customPlan.id ? null : customPlan.id)}
                       title={expandedPlanId === customPlan.id ? 'Collapse plan details' : 'Expand plan details'}
-                      style={{ width: '34px', height: '34px', borderRadius: '9px', border: '1px solid #bfdbfe', background: '#fff', color: '#2563eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ width: '34px', height: '34px', borderRadius: '9px', border: '1px solid var(--border-stroke, #2D2D35)', background: 'var(--bg-shell, #161618)', color: '#6366F1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       {expandedPlanId === customPlan.id ? <ChevronUp size={19} /> : <ChevronDown size={19} />}
                     </button>
@@ -515,7 +645,7 @@ export default function LearnView({
                         <button
                           onClick={onOpenStudyPlan}
                           className="btn btn-white"
-                          style={{ padding: '8px 14px', fontSize: '0.78rem', border: '1px solid #bfdbfe', borderRadius: '10px' }}
+                          style={{ padding: '8px 14px', fontSize: '0.78rem', border: '1px solid var(--border-stroke, #2D2D35)', borderRadius: '10px' }}
                         >
                           Edit Plan
                         </button>
@@ -525,7 +655,7 @@ export default function LearnView({
                           onClick={() => {
                             if (window.confirm(`Delete the ${customPlan.subject} study plan? This cannot be undone.`)) onDeletePlan(customPlan.id);
                           }}
-                          style={{ padding: '8px 14px', fontSize: '0.78rem', border: '1px solid #fecaca', borderRadius: '10px', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
+                          style={{ padding: '8px 14px', fontSize: '0.78rem', border: '1px solid rgba(244, 63, 94, 0.3)', borderRadius: '10px', background: 'rgba(244, 63, 94, 0.1)', color: '#F43F5E', cursor: 'pointer' }}
                         >
                           Delete Plan
                         </button>
@@ -535,12 +665,12 @@ export default function LearnView({
                 </div>
 
                 {/* Progress bar */}
-                <div style={{ height: '10px', background: '#dbeafe', borderRadius: '6px', overflow: 'hidden' }}>
+                <div style={{ height: '10px', background: 'var(--border-stroke, #2D2D35)', borderRadius: '6px', overflow: 'hidden' }}>
                   <div
                     style={{
                       width: `${planStats.pct}%`,
                       height: '100%',
-                      background: 'linear-gradient(90deg, #2563eb, #3b82f6)',
+                      background: '#6366F1',
                       borderRadius: '6px',
                       transition: 'width 0.4s ease',
                     }}
@@ -552,9 +682,9 @@ export default function LearnView({
                     ['Hours logged', `${planStats.doneHours}h`],
                     ['Hours remaining', `${planStats.remainingHours}h`],
                   ].map(([label, value]) => (
-                    <div key={label} style={{ background: '#ffffff', border: '1px solid #dbeafe', borderRadius: '10px', padding: '9px 11px' }}>
-                      <div style={{ fontSize: '0.68rem', color: '#64748b' }}>{label}</div>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>{value}</div>
+                    <div key={label} style={{ background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)', borderRadius: '10px', padding: '9px 11px' }}>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #9CA3AF)' }}>{label}</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary, #F3F4F6)', marginTop: '2px' }}>{value}</div>
                     </div>
                   ))}
                 </div>
@@ -573,11 +703,11 @@ export default function LearnView({
                     <div
                       key={m.id || mIdx}
                       style={{
-                        border: `1.5px solid ${isMilestoneComplete ? '#86efac' : isMilestoneStarted ? '#93c5fd' : '#e2e8f0'}`,
+                        border: `1.5px solid ${isMilestoneComplete ? '#10B981' : isMilestoneStarted ? '#6366F1' : 'var(--border-stroke, #2D2D35)'}`,
                         borderRadius: '16px',
                         overflow: 'hidden',
-                        background: '#ffffff',
-                        boxShadow: '0 2px 8px rgba(15,23,42,0.03)',
+                        background: 'var(--bg-surface, #1E1E22)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                       }}
                     >
                       {/* Milestone Header */}
@@ -585,7 +715,7 @@ export default function LearnView({
                         onClick={() => toggleStage(mIdx)}
                         style={{
                           padding: '16px 22px',
-                          background: isMilestoneComplete ? '#f0fdf4' : isMilestoneStarted ? '#eff6ff' : '#fafafa',
+                          background: isMilestoneComplete ? 'rgba(16, 185, 129, 0.1)' : isMilestoneStarted ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-surface, #1E1E22)',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '14px',
@@ -598,7 +728,7 @@ export default function LearnView({
                             width: '36px',
                             height: '36px',
                             borderRadius: '10px',
-                            background: isMilestoneComplete ? '#10b981' : isMilestoneStarted ? '#2563eb' : '#94a3b8',
+                            background: isMilestoneComplete ? '#10B981' : isMilestoneStarted ? '#6366F1' : 'var(--bg-shell, #161618)',
                             color: '#ffffff',
                             display: 'flex',
                             alignItems: 'center',
@@ -613,21 +743,21 @@ export default function LearnView({
 
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>
+                            <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary, #F3F4F6)' }}>
                               {m.title}
                             </div>
                             {isMilestoneComplete && (
-                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '2px 8px', borderRadius: '8px' }}>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#10B981', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '8px' }}>
                                 Completed
                               </span>
                             )}
                           </div>
-                          <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary, #9CA3AF)', marginTop: '2px' }}>
                             {completedSubs.length}/{subCount} subtopics done • ~{m.estimated_hours || 8} hrs estimated
                           </div>
                         </div>
 
-                        {isExpanded ? <ChevronUp size={18} color="#94a3b8" /> : <ChevronDown size={18} color="#94a3b8" />}
+                        {isExpanded ? <ChevronUp size={18} color="var(--text-secondary, #9CA3AF)" /> : <ChevronDown size={18} color="var(--text-secondary, #9CA3AF)" />}
                       </div>
 
                       {/* Milestone Body */}
@@ -635,7 +765,7 @@ export default function LearnView({
                         <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
                           {/* Subtopics Checklist */}
                           <div>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary, #9CA3AF)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
                               Checklist: Mark Topics Done as you Learn
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -660,8 +790,8 @@ export default function LearnView({
                                       gap: '12px',
                                       padding: '10px 14px',
                                       borderRadius: '10px',
-                                      border: `1px solid ${isDone ? '#86efac' : '#e2e8f0'}`,
-                                      background: isDone ? '#f0fdf4' : '#ffffff',
+                                      border: `1px solid ${isDone ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-stroke, #2D2D35)'}`,
+                                      background: isDone ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-shell, #161618)',
                                       cursor: 'pointer',
                                       transition: 'all 0.15s ease',
                                     }}
@@ -671,8 +801,8 @@ export default function LearnView({
                                         width: '20px',
                                         height: '20px',
                                         borderRadius: '6px',
-                                        border: isDone ? 'none' : '1.5px solid #cbd5e1',
-                                        background: isDone ? '#10b981' : '#ffffff',
+                                        border: isDone ? 'none' : '1.5px solid var(--border-stroke, #2D2D35)',
+                                        background: isDone ? '#10B981' : 'var(--bg-shell, #161618)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -685,7 +815,7 @@ export default function LearnView({
                                     <span
                                       style={{
                                         fontSize: '0.86rem',
-                                        color: isDone ? '#15803d' : '#0f172a',
+                                        color: isDone ? '#10B981' : '#F8FAFC',
                                         textDecoration: isDone ? 'line-through' : 'none',
                                         fontWeight: isDone ? 500 : 600,
                                         flex: 1,
@@ -702,7 +832,7 @@ export default function LearnView({
                                       style={{
                                         flexShrink: 0,
                                         fontSize: '0.72rem',
-                                        color: '#2563eb',
+                                        color: '#818CF8',
                                         fontWeight: 700,
                                         display: 'inline-flex',
                                         alignItems: 'center',
@@ -713,7 +843,7 @@ export default function LearnView({
                                       {checklistResource.label} <ExternalLink size={11} />
                                     </a>
 
-                                    <span style={{ fontSize: '0.72rem', color: isDone ? '#15803d' : '#94a3b8' }}>
+                                    <span style={{ fontSize: '0.72rem', color: isDone ? '#10B981' : '#94A3B8' }}>
                                       {isDone ? 'Done' : 'Click to mark done'}
                                     </span>
                                   </div>
@@ -725,13 +855,11 @@ export default function LearnView({
                           {/* Curated Resources for this milestone */}
                           {(m.resources || []).length > 0 && (
                             <div>
-                              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
                                 Curated Learning Material & Practice Links
                               </div>
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
                                 {m.resources.map((res, rIdx) => {
-                                  const typeInfo = TYPE_ICONS[res.resource_type] || TYPE_ICONS.article;
-                                  const TypeIcon = typeInfo.Icon;
                                   const isResDone = !!res.completed;
 
                                   // Determine site badge
@@ -752,10 +880,10 @@ export default function LearnView({
                                     <div
                                       key={res.id || rIdx}
                                       style={{
-                                        border: `1px solid ${isResDone ? '#86efac' : '#e2e8f0'}`,
+                                        border: `1px solid ${isResDone ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-stroke, #2D2D35)'}`,
                                         borderRadius: '12px',
                                         padding: '12px',
-                                        background: isResDone ? '#f0fdf4' : '#fafafa',
+                                        background: isResDone ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-shell, #161618)',
                                         display: 'flex',
                                         flexDirection: 'column',
                                         justifyContent: 'space-between',
@@ -767,23 +895,23 @@ export default function LearnView({
                                           <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: siteStyle.bg, color: siteStyle.color, border: `1px solid ${siteStyle.border}` }}>
                                             {siteStyle.label}
                                           </span>
-                                          <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                          <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #9CA3AF)', display: 'flex', alignItems: 'center', gap: '3px' }}>
                                             <Clock size={11} /> {res.estimated_minutes || 20}m
                                           </span>
                                         </div>
 
-                                        <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3, marginBottom: '4px' }}>
+                                        <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary, #F3F4F6)', lineHeight: 1.3, marginBottom: '4px' }}>
                                           {res.title}
                                         </div>
 
                                         {res.summary && (
-                                          <div style={{ fontSize: '0.72rem', color: '#64748b', lineHeight: 1.4 }}>
+                                          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #9CA3AF)', lineHeight: 1.4 }}>
                                             {res.summary}
                                           </div>
                                         )}
                                       </div>
 
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '4px' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-stroke, #2D2D35)', paddingTop: '8px', marginTop: '4px' }}>
                                         <button
                                           onClick={() => {
                                             if (onUpdateProgress) {
@@ -797,7 +925,7 @@ export default function LearnView({
                                           style={{
                                             border: 'none',
                                             background: 'transparent',
-                                            color: isResDone ? '#16a34a' : '#64748b',
+                                            color: isResDone ? '#10B981' : '#94A3B8',
                                             fontSize: '0.72rem',
                                             fontWeight: 600,
                                             cursor: 'pointer',
@@ -806,7 +934,7 @@ export default function LearnView({
                                             gap: '4px',
                                           }}
                                         >
-                                          {isResDone ? <CheckCircle2 size={13} color="#16a34a" /> : <Circle size={13} color="#94a3b8" />}
+                                          {isResDone ? <CheckCircle2 size={13} color="#10B981" /> : <Circle size={13} color="#94A3B8" />}
                                           {isResDone ? 'Completed' : 'Mark done'}
                                         </button>
 
@@ -817,7 +945,7 @@ export default function LearnView({
                                           style={{
                                             fontSize: '0.74rem',
                                             fontWeight: 700,
-                                            color: '#2563eb',
+                                            color: '#818CF8',
                                             textDecoration: 'none',
                                             display: 'inline-flex',
                                             alignItems: 'center',
@@ -841,47 +969,17 @@ export default function LearnView({
               </div>)}
             </div>
           ) : (
-            <div
-              className="ui-card"
-              style={{
-                display: customPlans.length ? 'none' : undefined,
-                textAlign: 'center',
-                padding: '48px 24px',
-                borderRadius: '20px',
-                border: '1.5px dashed #cbd5e1',
-                background: '#ffffff',
-              }}
-            >
-              <div
-                style={{
-                  width: '64px',
-                  height: '64px',
-                  borderRadius: '20px',
-                  background: '#eff6ff',
-                  color: '#2563eb',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 16px',
+            <div style={{ display: customPlans.length ? 'none' : undefined, width: '100%' }}>
+              <BlueprintWizard
+                bare
+                categoryFilter={categoryFilter}
+                durationFilter={durationFilter}
+                hoursFilter={hoursFilter}
+                onSelectBlueprint={(blueprintId) => {
+                  setSelectedSubjectId(blueprintId);
                 }}
-              >
-                <Sparkles size={32} />
-              </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                No Plan Added to Learn Yet
-              </h3>
-              <p style={{ color: '#64748b', fontSize: '0.86rem', maxWidth: '440px', margin: '8px auto 20px' }}>
-                Generate a study plan, then select “Add to Learn” to track its roadmap, resources, and progress here.
-              </p>
-              {onOpenStudyPlan && (
-                <button
-                  onClick={onOpenStudyPlan}
-                  className="btn btn-primary"
-                  style={{ padding: '10px 22px', fontSize: '0.88rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <Sparkles size={16} /> Open Study Plan
-                </button>
-              )}
+                onOpenCustomGenerator={onOpenStudyPlan}
+              />
             </div>
           )}
         </div>
@@ -892,25 +990,35 @@ export default function LearnView({
         <div>
           {/* Search */}
           <div style={{ position: 'relative', marginBottom: '22px', maxWidth: '420px' }}>
-            <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+            <Search size={16} color="var(--text-secondary, #9CA3AF)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
             <input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search subjects (DSA, OS, Networks...)"
               style={{
                 width: '100%', padding: '10px 14px 10px 40px',
-                borderRadius: '12px', border: '1.5px solid #e2e8f0',
-                background: '#fff', fontSize: '0.86rem', outline: 'none',
+                borderRadius: '12px', border: '1.5px solid var(--border-stroke, #2D2D35)',
+                background: 'var(--bg-shell, #161618)', color: 'var(--text-primary, #F3F4F6)', fontSize: '0.86rem', outline: 'none',
               }}
             />
           </div>
 
-          {/* Subject Cards Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '18px' }}>
-            {subjectsLoading && <p style={{ color: '#64748b', margin: 0 }}>Loading subject roadmaps…</p>}
+          {/* Subject Cards Grid: repeat(auto-fill, minmax(340px, 1fr)) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+            {subjectsLoading && <p style={{ color: '#64748b', margin: 0 }}>Loading subject roadmaps...</p>}
             {!subjectsLoading && subjects.length === 0 && <p style={{ color: '#64748b', margin: 0 }}>No subject roadmaps are available yet.</p>}
             {subjects
-              .filter(s => !searchQuery || s.title.toLowerCase().includes(searchQuery.toLowerCase()))
+              .filter(s => {
+                if (!searchQuery.trim()) return true;
+                const q = searchQuery.toLowerCase().trim();
+                const matchTitle = s.title.toLowerCase().includes(q);
+                const matchDesc = s.desc?.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q);
+                const matchStages = s.stages?.some(st =>
+                  st.title.toLowerCase().includes(q) ||
+                  st.topics?.some(t => t.title.toLowerCase().includes(q))
+                );
+                return matchTitle || matchDesc || matchStages;
+              })
               .map((subj) => {
                 let total = 0, done = 0;
                 subj.stages.forEach(st => st.topics.forEach(t => { total++; if (doneTopics[t.id]) done++; }));
@@ -921,34 +1029,41 @@ export default function LearnView({
                     key={subj.id}
                     onClick={() => { setSelectedSubjectId(subj.id); setExpandedStages({ 0: true }); }}
                     style={{
-                      border: `1.5px solid ${done > 0 ? subj.borderColor : '#e2e8f0'}`,
+                      border: `1.5px solid ${done > 0 ? subj.borderColor : 'var(--border-stroke, #2D2D35)'}`,
                       borderRadius: '18px',
                       padding: '22px',
-                      background: '#fff',
+                      background: 'var(--bg-surface, #1E1E22)',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
-                      boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      height: '100%',
+                      boxSizing: 'border-box',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = subj.color; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = done > 0 ? subj.borderColor : '#e2e8f0'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = done > 0 ? subj.borderColor : 'var(--border-stroke, #2D2D35)'; }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-                      <div style={{ fontSize: '2rem' }}>{subj.icon}</div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 800, color: subj.color }}>{pct}%</div>
-                        <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{done}/{total} done</div>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                        <div style={{ fontSize: '2rem' }}>{subj.icon}</div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: subj.color }}>{pct}%</div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #9CA3AF)' }}>{done}/{total} done</div>
+                        </div>
                       </div>
+
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary, #F3F4F6)', marginBottom: '6px' }}>
+                        {subj.title}
+                      </h3>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #9CA3AF)', lineHeight: 1.5, marginBottom: '14px' }}>
+                        {subj.tagline}
+                      </p>
                     </div>
 
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
-                      {subj.title}
-                    </h3>
-                    <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.5, marginBottom: '14px' }}>
-                      {subj.tagline}
-                    </p>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '10px' }}>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary, #9CA3AF)' }}>
                         {subj.stages.length} stages • {total} topics
                       </div>
                       <span style={{ color: subj.color, fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -961,8 +1076,8 @@ export default function LearnView({
           </div>
 
           {/* Trusted Sources Footer */}
-          <div style={{ marginTop: '32px', padding: '16px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '0.76rem', color: '#64748b', marginBottom: '8px', fontWeight: 700 }}>📌 CURATED SOURCES</div>
+          <div style={{ marginTop: '32px', padding: '16px 20px', background: 'var(--bg-surface, #1E1E22)', borderRadius: '12px', border: '1px solid var(--border-stroke, #2D2D35)' }}>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary, #9CA3AF)', marginBottom: '8px', fontWeight: 700 }}>📌 CURATED SOURCES</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {Object.values(SITE_STYLES).map(s => (
                 <span key={s.label} style={{ padding: '3px 10px', borderRadius: '8px', background: s.bg, color: s.color, border: `1px solid ${s.border}`, fontSize: '0.72rem', fontWeight: 600 }}>
@@ -973,7 +1088,135 @@ export default function LearnView({
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* 3. Right Rail (3 cols) when hasPlans is true */}
+      {hasPlans && (
+        <StickyRail columns={3} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Resume Where You Left Off */}
+          {lastVisitedPlan && (
+            <div
+              className="ui-card"
+              style={{
+                padding: '18px',
+                background: 'var(--bg-surface, #1E1E22)',
+                border: '1px solid var(--border-stroke, #2D2D35)',
+                borderRadius: '12px',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  color: '#818CF8',
+                  textTransform: 'uppercase',
+                  marginBottom: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <RotateCcw size={12} />
+                <span>Resume Where You Left Off</span>
+              </div>
+              <h4 style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-primary, #F3F4F6)', margin: '0 0 6px' }}>
+                {lastVisitedPlan.subject}
+              </h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #9CA3AF)', margin: '0 0 14px', lineHeight: 1.4 }}>
+                {lastVisitedPlan.milestones?.[0]?.title || 'Continue your targeted syllabus'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectPlan?.(lastVisitedPlan);
+                  onOpenStudyPlan?.();
+                }}
+                className="btn btn-primary"
+                style={{ width: '100%', fontSize: '0.78rem', padding: '8px 12px', borderRadius: '8px' }}
+              >
+                Resume Roadmap →
+              </button>
+            </div>
+          )}
+
+          {/* Active Plans Compact List */}
+          <div
+            className="ui-card"
+            style={{
+              padding: '18px',
+              background: 'var(--bg-surface, #1E1E22)',
+              border: '1px solid var(--border-stroke, #2D2D35)',
+              borderRadius: '12px',
+            }}
+          >
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary, #F3F4F6)', marginBottom: '12px' }}>
+              Your Active Plans ({customPlans.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {customPlans.map((p) => {
+                const totalTopics = (p.milestones || []).reduce((acc, m) => acc + (m.subtopics || []).length, 0);
+                const doneTopicsCount = (p.milestones || []).reduce((acc, m) => acc + (m.completed_subtopics || []).length, 0);
+                const pct = totalTopics ? Math.round((doneTopicsCount / totalTopics) * 100) : 0;
+                const isSelected = p.id === customPlan?.id;
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => onSelectPlan?.(p)}
+                    style={{
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-shell, #161618)',
+                      border: '1px solid',
+                      borderColor: isSelected ? 'rgba(99, 102, 241, 0.35)' : 'var(--border-stroke, #2D2D35)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary, #F3F4F6)', marginBottom: '5px' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                        {p.subject}
+                      </span>
+                      <span style={{ color: '#818CF8' }}>{pct}%</span>
+                    </div>
+                    <div style={{ height: '4px', background: 'var(--border-stroke, #2D2D35)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: '#6366F1' }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Generate Custom AI Plan CTA */}
+          <div
+            className="ui-card"
+            style={{
+              padding: '18px',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(124, 58, 237, 0.06))',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              borderRadius: '12px',
+              textAlign: 'center',
+            }}
+          >
+            <Sparkles size={20} color="#818CF8" style={{ margin: '0 auto 8px' }} />
+            <h5 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary, #F3F4F6)', margin: '0 0 6px' }}>
+              Custom AI Study Plan
+            </h5>
+            <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary, #9CA3AF)', margin: '0 0 14px', lineHeight: 1.45 }}>
+              Generate an adaptive roadmap matching your schedule and skill level.
+            </p>
+            <button
+              type="button"
+              onClick={onOpenStudyPlan}
+              className="btn btn-primary"
+              style={{ width: '100%', fontSize: '0.78rem', padding: '8px 12px', borderRadius: '8px' }}
+            >
+              Generate Custom AI Plan
+            </button>
+          </div>
+        </StickyRail>
+      )}
+    </PageContainer>
   );
 }
 

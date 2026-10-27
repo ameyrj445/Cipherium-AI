@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Brain, Lock, Mail, User, ArrowRight, Sparkles, CheckCircle2, X } from 'lucide-react';
+import React from 'react';
+import { Brain, Lock, Mail, User, ArrowRight, X } from 'lucide-react';
 
 export default function AuthModal({
   isOpen = true,
@@ -33,8 +33,8 @@ export default function AuthModal({
         position: 'fixed',
         inset: 0,
         zIndex: 1000,
-        background: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(18, 18, 20, 0.85)',
+        backdropFilter: 'blur(4px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -45,13 +45,14 @@ export default function AuthModal({
         className="ui-card"
         style={{
           width: '100%',
-          maxWidth: '460px',
-          background: '#ffffff',
-          borderRadius: '24px',
-          padding: '36px',
-          boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+          maxWidth: '440px',
+          background: 'var(--bg-surface, #1E1E22)',
+          borderRadius: '12px',
+          padding: '32px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
           position: 'relative',
-          border: '1px solid #e2e8f0',
+          border: '1px solid var(--border-stroke, #2D2D35)',
+          color: 'var(--text-primary, #F3F4F6)',
         }}
       >
         {onClose && (
@@ -59,18 +60,18 @@ export default function AuthModal({
             onClick={onClose}
             style={{
               position: 'absolute',
-              top: '20px',
-              right: '20px',
-              border: 'none',
-              background: '#f1f5f9',
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
+              top: '16px',
+              right: '16px',
+              border: '1px solid var(--border-stroke, #2D2D35)',
+              background: 'var(--bg-shell, #161618)',
+              width: '30px',
+              height: '30px',
+              borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              color: '#64748b',
+              color: 'var(--text-secondary, #9CA3AF)',
             }}
           >
             <X size={16} />
@@ -78,27 +79,27 @@ export default function AuthModal({
         )}
 
         {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: '26px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '56px',
-              height: '56px',
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+              width: '44px',
+              height: '44px',
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
               color: '#ffffff',
-              boxShadow: '0 8px 16px rgba(37, 99, 235, 0.25)',
-              marginBottom: '14px',
+              boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)',
+              marginBottom: '12px',
             }}
           >
-            <Brain size={30} />
+            <Brain size={24} />
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary, #F3F4F6)', margin: 0 }}>
             {authMode === 'login' ? 'Welcome to Cipherium AI' : 'Join Cipherium AI'}
           </h2>
-          <p style={{ color: '#64748b', fontSize: '0.84rem', marginTop: '6px' }}>
+          <p style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.82rem', marginTop: '6px' }}>
             {authMode === 'login'
               ? 'Sign in to access your personalized study plans and progress'
               : 'Create an account to track roadmaps, mastery, and resources'}
@@ -109,10 +110,11 @@ export default function AuthModal({
         <div
           style={{
             display: 'flex',
-            background: '#f1f5f9',
+            background: 'var(--bg-shell, #161618)',
             padding: '4px',
-            borderRadius: '12px',
+            borderRadius: '10px',
             marginBottom: '20px',
+            border: '1px solid var(--border-stroke, #2D2D35)',
           }}
         >
           <button
@@ -121,14 +123,14 @@ export default function AuthModal({
             style={{
               flex: 1,
               padding: '9px',
-              borderRadius: '9px',
-              border: 'none',
+              borderRadius: '8px',
+              border: authMode === 'login' ? '1px solid var(--border-stroke, #2D2D35)' : '1px solid transparent',
               fontSize: '0.84rem',
               fontWeight: 700,
               cursor: 'pointer',
-              background: authMode === 'login' ? '#ffffff' : 'transparent',
-              color: authMode === 'login' ? '#0f172a' : '#64748b',
-              boxShadow: authMode === 'login' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              background: authMode === 'login' ? 'var(--bg-surface, #1E1E22)' : 'transparent',
+              color: authMode === 'login' ? 'var(--text-primary, #F3F4F6)' : 'var(--text-secondary, #9CA3AF)',
+              boxShadow: authMode === 'login' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
               transition: 'all 0.15s ease',
             }}
           >
@@ -140,14 +142,14 @@ export default function AuthModal({
             style={{
               flex: 1,
               padding: '9px',
-              borderRadius: '9px',
-              border: 'none',
+              borderRadius: '8px',
+              border: authMode === 'register' ? '1px solid var(--border-stroke, #2D2D35)' : '1px solid transparent',
               fontSize: '0.84rem',
               fontWeight: 700,
               cursor: 'pointer',
-              background: authMode === 'register' ? '#ffffff' : 'transparent',
-              color: authMode === 'register' ? '#0f172a' : '#64748b',
-              boxShadow: authMode === 'register' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              background: authMode === 'register' ? 'var(--bg-surface, #1E1E22)' : 'transparent',
+              color: authMode === 'register' ? 'var(--text-primary, #F3F4F6)' : 'var(--text-secondary, #9CA3AF)',
+              boxShadow: authMode === 'register' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
               transition: 'all 0.15s ease',
             }}
           >
@@ -159,11 +161,11 @@ export default function AuthModal({
         {authError && (
           <div
             style={{
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
+              background: 'rgba(244, 63, 94, 0.12)',
+              border: '1px solid rgba(244, 63, 94, 0.3)',
               padding: '10px 14px',
               borderRadius: '10px',
-              color: '#dc2626',
+              color: '#fb7185',
               fontSize: '0.82rem',
               marginBottom: '16px',
             }}
@@ -176,11 +178,11 @@ export default function AuthModal({
         <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {authMode === 'register' && (
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary, #F3F4F6)', marginBottom: '5px' }}>
                 Full Name
               </label>
               <div style={{ position: 'relative' }}>
-                <User size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <User size={16} color="var(--text-secondary, #9CA3AF)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
                   required
@@ -190,11 +192,12 @@ export default function AuthModal({
                   style={{
                     width: '100%',
                     padding: '10px 14px 10px 38px',
-                    borderRadius: '10px',
-                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-stroke, #2D2D35)',
+                    background: 'var(--bg-shell, #161618)',
                     fontSize: '0.88rem',
                     outline: 'none',
-                    color: '#0f172a',
+                    color: 'var(--text-primary, #F3F4F6)',
                   }}
                 />
               </div>
@@ -202,11 +205,11 @@ export default function AuthModal({
           )}
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary, #F3F4F6)', marginBottom: '5px' }}>
               Email Address
             </label>
             <div style={{ position: 'relative' }}>
-              <Mail size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              <Mail size={16} color="var(--text-secondary, #9CA3AF)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="email"
                 required
@@ -216,22 +219,23 @@ export default function AuthModal({
                 style={{
                   width: '100%',
                   padding: '10px 14px 10px 38px',
-                  borderRadius: '10px',
-                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-stroke, #2D2D35)',
+                  background: 'var(--bg-shell, #161618)',
                   fontSize: '0.88rem',
                   outline: 'none',
-                  color: '#0f172a',
+                  color: 'var(--text-primary, #F3F4F6)',
                 }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary, #F3F4F6)', marginBottom: '5px' }}>
               Password
             </label>
             <div style={{ position: 'relative' }}>
-              <Lock size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              <Lock size={16} color="var(--text-secondary, #9CA3AF)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="password"
                 required
@@ -241,11 +245,12 @@ export default function AuthModal({
                 style={{
                   width: '100%',
                   padding: '10px 14px 10px 38px',
-                  borderRadius: '10px',
-                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-stroke, #2D2D35)',
+                  background: 'var(--bg-shell, #161618)',
                   fontSize: '0.88rem',
                   outline: 'none',
-                  color: '#0f172a',
+                  color: 'var(--text-primary, #F3F4F6)',
                 }}
               />
             </div>
@@ -258,7 +263,7 @@ export default function AuthModal({
             style={{
               marginTop: '8px',
               padding: '12px',
-              borderRadius: '12px',
+              borderRadius: '8px',
               fontSize: '0.9rem',
               fontWeight: 700,
               display: 'flex',
@@ -267,6 +272,8 @@ export default function AuthModal({
               gap: '8px',
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1,
+              background: '#6366f1',
+              border: '1px solid #6366f1',
             }}
           >
             {loading ? 'Authenticating...' : authMode === 'login' ? 'Sign In to Workspace' : 'Create Account'}
@@ -275,24 +282,24 @@ export default function AuthModal({
         </form>
 
         {/* Demo Fast-Login Pill */}
-        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
+        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-stroke, #2D2D35)', textAlign: 'center' }}>
           <button
             type="button"
             onClick={handleQuickDemo}
             style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              background: 'var(--bg-shell, #161618)',
+              border: '1px solid var(--border-stroke, #2D2D35)',
               padding: '7px 14px',
-              borderRadius: '20px',
+              borderRadius: '6px',
               fontSize: '0.75rem',
-              color: '#475569',
+              color: '#818cf8',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
             }}
           >
-            <Sparkles size={13} color="#2563eb" /> Quick Fill Demo Account
+            <User size={13} color="#818cf8" /> Quick Fill Demo Account
           </button>
         </div>
       </div>

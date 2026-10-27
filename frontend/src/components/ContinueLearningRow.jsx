@@ -1,37 +1,34 @@
 import React from 'react';
-import { BookOpen, Zap, CheckCircle2, Circle, Sparkles, ArrowRight, Clock } from 'lucide-react';
+import { BookOpen, Zap, CheckCircle2, Circle, ArrowRight } from 'lucide-react';
+import SectionHeader from './common/SectionHeader';
+import EmptyState from './common/EmptyState';
 
-export default function ContinueLearningRow({
+/**
+ * ContinueLearningCards
+ * Renders the active roadmap and diagnostic practice cards.
+ */
+export function ContinueLearningCards({
   customPlan = null,
-  todayTasks = [],
-  onToggleTask,
   onOpenStudyPlan,
   onOpenLearn,
-  onUpdatePlanProgress,
+  onOpenPractice,
 }) {
-  // If we have an active custom plan, derive current active milestone and tasks
   let activeMilestone = null;
-  let activeMilestonePct = 0;
   let planProgressPct = 0;
-  let dynamicTasks = [];
 
   if (customPlan && customPlan.milestones) {
-    // Find first milestone that isn't completely done
     for (const m of customPlan.milestones) {
       const subs = m.subtopics || [];
       const doneSubs = m.completed_subtopics || [];
       if (subs.length === 0 || doneSubs.length < subs.length) {
         activeMilestone = m;
-        activeMilestonePct = subs.length > 0 ? Math.round((doneSubs.length / subs.length) * 100) : 0;
         break;
       }
     }
     if (!activeMilestone && customPlan.milestones.length > 0) {
       activeMilestone = customPlan.milestones[customPlan.milestones.length - 1];
-      activeMilestonePct = 100;
     }
 
-    // Overall plan progress
     let totalSubs = 0;
     let doneSubs = 0;
     customPlan.milestones.forEach((m) => {
@@ -39,8 +36,298 @@ export default function ContinueLearningRow({
       doneSubs += (m.completed_subtopics || []).length;
     });
     planProgressPct = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
+  }
 
-    // Generate dynamic tasks from current milestone
+  return (
+    <div>
+      <SectionHeader
+        title="Continue Learning"
+        actionLabel="View all roadmaps →"
+        onAction={onOpenLearn || onOpenStudyPlan}
+      />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+        {/* Card 1: Active Roadmap Card */}
+        <div
+          className="ui-card"
+          style={{
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            background: 'var(--bg-surface, #1E1E22)',
+            border: customPlan
+              ? '1px solid rgba(99, 102, 241, 0.4)'
+              : '1px solid var(--border-stroke, #2D2D35)',
+            borderRadius: '12px',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  background: 'rgba(99, 102, 241, 0.12)',
+                  border: '1px solid rgba(99, 102, 241, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <BookOpen size={18} color="#6366F1" />
+              </div>
+              {customPlan ? (
+                <span
+                  style={{
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    color: '#818CF8',
+                    background: 'rgba(99, 102, 241, 0.12)',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                  }}
+                >
+                  {planProgressPct}% Complete
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: '0.74rem',
+                    fontWeight: 600,
+                    color: 'var(--text-secondary, #9CA3AF)',
+                    background: 'var(--bg-shell, #161618)',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-stroke, #2D2D35)',
+                  }}
+                >
+                  Curated
+                </span>
+              )}
+            </div>
+
+            <h4
+              onClick={onOpenLearn || onOpenStudyPlan}
+              style={{
+                fontSize: '1rem',
+                fontWeight: 700,
+                color: 'var(--text-primary, #F3F4F6)',
+                margin: '0 0 6px',
+                cursor: 'pointer',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                lineHeight: 1.35,
+              }}
+              title={customPlan?.subject || 'Engineering Blueprints & Roadmaps'}
+            >
+              {customPlan?.subject || 'Engineering Blueprints & Roadmaps'}
+            </h4>
+
+            <p
+              style={{
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary, #9CA3AF)',
+                margin: '0 0 16px',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                lineHeight: 1.45,
+              }}
+            >
+              {activeMilestone
+                ? `Current: ${activeMilestone.title}`
+                : 'Structured engineering syllabi in Algorithms, Systems, and AI.'}
+            </p>
+          </div>
+
+          {customPlan ? (
+            <div>
+              <div
+                style={{
+                  height: '6px',
+                  background: 'var(--bg-shell, #161618)',
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                  marginBottom: '10px',
+                  border: '1px solid var(--border-stroke, #2D2D35)',
+                }}
+              >
+                <div style={{ width: `${planProgressPct}%`, height: '100%', background: '#6366F1', borderRadius: '4px' }} />
+              </div>
+              <button
+                type="button"
+                onClick={onOpenLearn || onOpenStudyPlan}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#818CF8',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                Resume study stage <ArrowRight size={13} />
+              </button>
+            </div>
+          ) : (
+            <div>
+              <button
+                type="button"
+                onClick={onOpenLearn}
+                className="btn btn-primary"
+                style={{
+                  fontSize: '0.8rem',
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                Explore roadmaps <ArrowRight size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Card 2: Adaptive Practice Card */}
+        <div
+          className="ui-card"
+          style={{
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            background: 'var(--bg-surface, #1E1E22)',
+            border: '1px solid var(--border-stroke, #2D2D35)',
+            borderRadius: '12px',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  background: 'rgba(124, 58, 237, 0.15)',
+                  border: '1px solid rgba(124, 58, 237, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Zap size={18} color="#7C3AED" />
+              </div>
+              <span
+                style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  color: '#C4B5FD',
+                  background: 'rgba(124, 58, 237, 0.15)',
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(124, 58, 237, 0.3)',
+                }}
+              >
+                Adaptive Drills
+              </span>
+            </div>
+
+            <h4
+              onClick={onOpenPractice || onOpenLearn}
+              style={{
+                fontSize: '1rem',
+                fontWeight: 700,
+                color: 'var(--text-primary, #F3F4F6)',
+                margin: '0 0 6px',
+                cursor: 'pointer',
+                lineHeight: 1.35,
+              }}
+            >
+              Diagnostic Practice & Challenges
+            </h4>
+
+            <p
+              style={{
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary, #9CA3AF)',
+                margin: '0 0 16px',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                lineHeight: 1.45,
+              }}
+            >
+              Topic-targeted multiple choice drills and algorithm challenges to reinforce retention.
+            </p>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              onClick={onOpenPractice || onOpenLearn}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#818CF8',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              Start diagnostic practice <ArrowRight size={13} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * TodaysTasksCard
+ * Renders the daily tasks card with checkboxes and completion status.
+ */
+export function TodaysTasksCard({
+  customPlan = null,
+  todayTasks = [],
+  onToggleTask,
+  onOpenStudyPlan,
+  onOpenLearn,
+  onUpdatePlanProgress,
+}) {
+  let dynamicTasks = [];
+
+  if (customPlan && customPlan.milestones) {
+    let activeMilestone = null;
+    for (const m of customPlan.milestones) {
+      const subs = m.subtopics || [];
+      const doneSubs = m.completed_subtopics || [];
+      if (subs.length === 0 || doneSubs.length < subs.length) {
+        activeMilestone = m;
+        break;
+      }
+    }
+    if (!activeMilestone && customPlan.milestones.length > 0) {
+      activeMilestone = customPlan.milestones[customPlan.milestones.length - 1];
+    }
+
     if (activeMilestone) {
       const subs = activeMilestone.subtopics || [];
       const completed = activeMilestone.completed_subtopics || [];
@@ -58,8 +345,7 @@ export default function ContinueLearningRow({
     }
   }
 
-  // Dashboard tasks exist only when they come from the active study plan.
-  const tasksToRender = customPlan ? dynamicTasks : [];
+  const tasksToRender = customPlan ? dynamicTasks : (todayTasks.length > 0 ? todayTasks.slice(0, 4) : []);
 
   const handleTaskClick = (task) => {
     if (task.subtopicName && task.milestoneId && onUpdatePlanProgress) {
@@ -74,205 +360,119 @@ export default function ContinueLearningRow({
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px', marginBottom: '24px' }}>
-      {/* Continue Learning Cards */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-            Continue Learning
-          </h3>
-          <button
-            onClick={onOpenLearn || onOpenStudyPlan}
-            style={{ border: 'none', background: 'transparent', color: '#2563eb', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
-          >
-            View All Roadmaps →
-          </button>
-        </div>
+    <div>
+      <SectionHeader
+        title="Today's Tasks"
+        actionLabel={customPlan ? 'Full plan →' : ''}
+        onAction={onOpenStudyPlan}
+      />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-          {/* Card 1: Active Custom Plan or Featured */}
-          <div
-            className="ui-card"
-            style={{
-              padding: '18px',
-              border: customPlan ? '1.5px solid #bfdbfe' : '1px solid #e2e8f0',
-              background: customPlan ? '#ffffff' : '#ffffff',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+      <div
+        className="ui-card"
+        style={{
+          padding: '20px',
+          background: 'var(--bg-surface, #1E1E22)',
+          border: '1px solid var(--border-stroke, #2D2D35)',
+          borderRadius: '12px',
+          minHeight: '190px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: tasksToRender.length > 0 ? 'flex-start' : 'center',
+        }}
+      >
+        {tasksToRender.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {tasksToRender.map((t) => (
               <div
+                key={t.id}
+                onClick={() => handleTaskClick(t)}
                 style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '8px',
-                  background: '#eff6ff',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Sparkles size={18} color="#2563eb" />
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '3px 8px', borderRadius: '12px' }}>
-                {planProgressPct}%
-              </span>
-            </div>
-            <div
-              onClick={onOpenLearn}
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: '#0f172a',
-                marginBottom: '4px',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-              title={customPlan?.subject || 'No active study plan'}
-            >
-              {customPlan?.subject || 'No active study plan'}
-            </div>
-            <div
-              style={{
-                fontSize: '0.75rem',
-                color: '#64748b',
-                marginBottom: '14px',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {activeMilestone ? activeMilestone.title : 'Create and add a study plan to begin'}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '4px', flex: 1, marginRight: '10px', overflow: 'hidden' }}>
-                <div style={{ width: `${planProgressPct}%`, height: '100%', background: '#2563eb', borderRadius: '4px' }}></div>
-              </div>
-              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                {`${activeMilestone?.completed_subtopics?.length || 0}/${activeMilestone?.subtopics?.length || 0} topics`}
-              </span>
-            </div>
-          </div>
-
-          {/* Card 2: Plan-linked practice */}
-          <div className="ui-card" style={{ padding: '18px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div
-                style={{
-                  width: '34px',
-                  height: '34px',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  padding: '10px 12px',
                   borderRadius: '8px',
-                  background: '#f5f3ff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  background: t.done ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-shell, #161618)',
+                  border: '1px solid var(--border-stroke, #2D2D35)',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (!t.done) e.currentTarget.style.background = 'var(--bg-hover, #2A2A30)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!t.done) e.currentTarget.style.background = 'var(--bg-shell, #161618)';
                 }}
               >
-                <BookOpen size={18} color="#7c3aed" />
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', padding: '3px 8px', borderRadius: '12px' }}>
-                Practice
-              </span>
-            </div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
-              Topic-based practice links
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '14px' }}>
-              LeetCode, NeetCode, projects and curated exercises
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '4px', flex: 1, marginRight: '10px', overflow: 'hidden' }}>
-                <div style={{ width: '0%', height: '100%', background: '#7c3aed', borderRadius: '4px' }}></div>
-              </div>
-              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{customPlan ? 'Open plan' : '0 completed'}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Today's Plan Checklist */}
-      <div className="ui-card" style={{ padding: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-              Today's Tasks
-            </h3>
-            {activeMilestone && (
-              <div style={{ fontSize: '0.7rem', color: '#2563eb', fontWeight: 600 }}>
-                From: {activeMilestone.title}
-              </div>
-            )}
-          </div>
-          {onOpenStudyPlan && (
-            <button
-              onClick={onOpenStudyPlan}
-              style={{ border: 'none', background: 'transparent', color: '#2563eb', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
-            >
-              Full Plan →
-            </button>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {!customPlan && (
-            <div style={{ fontSize: '0.82rem', color: '#64748b', padding: '10px 8px' }}>
-              Add a study plan to see your tasks here.
-            </div>
-          )}
-          {tasksToRender.map((t) => (
-            <div
-              key={t.id}
-              onClick={() => handleTaskClick(t)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                padding: '6px 8px',
-                borderRadius: '8px',
-                background: t.done ? '#f0fdf4' : 'transparent',
-                transition: 'background 0.15s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-                {t.done ? (
-                  <div
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                  {t.done ? (
+                    <div
+                      style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        background: '#10B981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <CheckCircle2 size={13} color="#fff" />
+                    </div>
+                  ) : (
+                    <Circle size={18} color="var(--text-tertiary, #6B7280)" style={{ flexShrink: 0 }} />
+                  )}
+                  <span
                     style={{
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      background: '#10b981',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
+                      fontSize: '0.84rem',
+                      color: t.done ? '#34D399' : 'var(--text-primary, #F3F4F6)',
+                      textDecoration: t.done ? 'line-through' : 'none',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                     }}
+                    title={t.title}
                   >
-                    <CheckCircle2 size={13} color="#fff" />
-                  </div>
-                ) : (
-                  <Circle size={18} color="#cbd5e1" style={{ flexShrink: 0 }} />
-                )}
-                <span
-                  style={{
-                    fontSize: '0.84rem',
-                    color: t.done ? '#15803d' : '#0f172a',
-                    textDecoration: t.done ? 'line-through' : 'none',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                  title={t.title}
-                >
-                  {t.title}
+                    {t.title}
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary, #9CA3AF)', flexShrink: 0 }}>
+                  {t.duration}
                 </span>
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8', flexShrink: 0 }}>{t.duration}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            compact
+            icon={CheckCircle2}
+            title="No tasks scheduled"
+            description={customPlan ? "You're all caught up on today's target milestones." : "Select a roadmap or blueprint to generate daily checkpoints."}
+            actionLabel={customPlan ? "Review curriculum" : "Browse roadmaps"}
+            onAction={customPlan ? onOpenStudyPlan : onOpenLearn}
+          />
+        )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Default Export: Keep backward compatibility with existing usages
+ */
+export default function ContinueLearningRow(props) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)',
+        gap: '24px',
+        marginBottom: '32px',
+      }}
+    >
+      <ContinueLearningCards {...props} />
+      <TodaysTasksCard {...props} />
     </div>
   );
 }
