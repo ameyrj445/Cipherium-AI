@@ -7,7 +7,7 @@ from datetime import datetime, timezone, date, timedelta
 from app.database import get_db
 from app.models import (
     Topic, TopicMastery, QuizAttempt, Resource, StudyPlan,
-    SubjectRoadmap, User, Question, DailyTask, UserSettings
+    SubjectRoadmap, User, Question, DailyTask, UserSettings, TutorMessage
 )
 from app.schemas import (
     MasteryAnalyticsResponse,
@@ -942,3 +942,133 @@ def update_user_settings_profile(
         has_custom_api_key=bool(user_settings.custom_gemini_api_key),
         custom_gemini_api_key=user_settings.custom_gemini_api_key or ""
     )
+
+
+@router.get("/analytics/activity-heatmap")
+def get_activity_heatmap(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Computes 365-day practice activity distribution and multi-dimensional competency radar.
+    Aggregates quiz submissions and AI tutor interactions with day-by-day intensity levels (0-4),
+    calculates active day streaks, and groups topic mastery into curriculum competency domains.
+    """
+    now = datetime.now(timezone.utc)
+    one_year_ago = now - timedelta(days=364)
+
+    # 1. Fetch user quiz attempts and tutor interactions
+    attempts = (
+        db.query(QuizAttempt)
+        .filter(QuizAttempt.user_id == current_user.id)
+        .filter(QuizAttempt.attempted_at >= one_year_ago)
+        .all()
+    )
+    tutor_msgs = (
+        db.query(TutorMessage)
+        .filter(TutorMessage.user_id == current_user.id)
+        .filter(TutorMessage.role == "user")
+        .filter(TutorMessage.created_at >= one_year_ago)
+        .all()
+    )
+
+    # 2. Daily aggregation
+    daily_counts = {}
+    for a in attempts:
+        d_str = a.attempted_at.strftime("%Y-%m-%d") if a.attempted_at else None
+        if d_str:
+            daily_counts[d_str] = daily_counts.get(d_str, 0) + 1
+
+    for m in tutor_msgs:
+        d_str = m.created_at.strftime("%Y-%m-%d") if m.created_at else None
+        if d_str:
+            daily_counts[d_str] = daily_counts.get(d_str, 0) + 1
+
+    # 3. Construct 365-day array
+    heatmap_data = []
+    total_activities = 0
+    start_date = (now - timedelta(days=364)).date()
+
+    for i in range(365):
+        day_date = start_date + timedelta(days=i)
+        day_str = day_date.strftime("%Y-%m-%d")
+        count = daily_counts.get(day_str, 0)
+        total_activities += count
+
+        # Activity level 0 - 4
+        if count == 0:
+            level = 0
+        elif count <= 2:
+            level = 1
+        elif count <= 5:
+            level = 2
+        elif count <= 9:
+            level = 3
+        else:
+            level = 4
+
+        heatmap_data.append({
+            "date": day_str,
+            "count": count,
+            "level": level
+        })
+
+    # 4. Streak calculation
+    active_dates = sorted([datetime.strptime(d, "%Y-%m-%d").date() for d in daily_counts.keys()])
+    longest_streak = 0
+    current_streak = 0
+
+    if active_dates:
+        temp_streak = 1
+        longest_streak = 1
+        for i in range(1, len(active_dates)):
+            if (active_dates[i] - active_dates[i - 1]).days == 1:
+                temp_streak += 1
+                if temp_streak > longest_streak:
+                    longest_streak = temp_streak
+            elif (active_dates[i] - active_dates[i - 1]).days > 1:
+                temp_streak = 1
+
+        today_date = now.date()
+        yesterday_date = today_date - timedelta(days=1)
+        if active_dates[-1] == today_date or active_dates[-1] == yesterday_date:
+            curr = 1
+            idx = len(active_dates) - 1
+            while idx > 0 and (active_dates[idx] - active_dates[idx - 1]).days == 1:
+                curr += 1
+                idx -= 1
+            current_streak = curr
+
+    # 5. Competency Radar by Category
+    topics = db.query(Topic).all()
+    user_masteries = {
+        m.topic_id: m for m in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
+    }
+
+    category_scores = {}
+    for t in topics:
+        cat = t.category or "Computer Science"
+        if cat not in category_scores:
+            category_scores[cat] = []
+        m = user_masteries.get(t.id)
+        if m:
+            category_scores[cat].append(m.mastery_score * 100)
+        else:
+            category_scores[cat].append(35.0)
+
+    competency_radar = []
+    for cat, scores in sorted(category_scores.items()):
+        avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+        competency_radar.append({
+            "category": cat,
+            "score": avg_score,
+            "fullMark": 100
+        })
+
+    return {
+        "total_activities_past_year": total_activities,
+        "current_streak_days": current_streak,
+        "longest_streak_days": longest_streak,
+        "heatmap_data": heatmap_data,
+        "competency_radar": competency_radar
+    }
