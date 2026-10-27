@@ -28,9 +28,16 @@ Pedagogical Background & Mathematical Formulations:
    - Recent accuracy < 50%:  Step down difficulty (max(current - 1, 1))
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 from app.models import QuizAttempt
+from app.services.bkt_service import evaluate_bkt_and_retention
 
+def calculate_topic_cognitive_state(attempts: List[QuizAttempt]) -> Dict[str, Any]:
+    """
+    Evaluates attempts using Bayesian Knowledge Tracing and Ebbinghaus Spaced Repetition.
+    Returns bkt_probability, retention_rate, next_review_due, and retention_status.
+    """
+    return evaluate_bkt_and_retention(attempts)
 
 def classify_mastery(accuracy: float, attempts: int) -> str:
     """

@@ -63,6 +63,10 @@ class QuizAttemptResult(BaseModel):
     topic_name: str
     new_mastery_score: float
     new_status: str
+    bkt_probability: Optional[float] = 0.20
+    retention_rate: Optional[float] = 1.0
+    next_review_due: Optional[datetime] = None
+    retention_status: Optional[str] = "optimal"
 
 # Analytics & Mastery schemas
 class TopicMasteryDetail(BaseModel):
@@ -77,6 +81,54 @@ class TopicMasteryDetail(BaseModel):
     accuracy_percentage: float
     ml_weak_probability: Optional[float] = 0.0
     ml_prediction: Optional[str] = "Normal"
+    bkt_probability: Optional[float] = 0.20
+    retention_rate: Optional[float] = 1.0
+    next_review_due: Optional[datetime] = None
+    retention_status: Optional[str] = "optimal"
+
+class RetentionScheduleItem(BaseModel):
+    topic_id: int
+    topic_name: str
+    topic_code: str
+    bkt_probability: float
+    retention_rate: float
+    next_review_due: Optional[datetime] = None
+    retention_status: str  # critical_review, review_recommended, optimal
+    attempt_count: int
+
+class RetentionScheduleResponse(BaseModel):
+    due_today_count: int
+    critical_count: int
+    recommended_count: int
+    optimal_count: int
+    schedule: List[RetentionScheduleItem]
+
+class KnowledgeGraphNode(BaseModel):
+    id: int
+    code: str
+    name: str
+    category: str
+    description: Optional[str] = None
+    depth: int
+    status: str  # mastered, unlocked, locked
+    mastery_score: float
+    bkt_probability: float
+    blocked_by: List[str]
+    prerequisites: List[str]
+
+class KnowledgeGraphEdge(BaseModel):
+    source: int
+    target: int
+    source_code: str
+    target_code: str
+
+class KnowledgeGraphResponse(BaseModel):
+    nodes: List[KnowledgeGraphNode]
+    edges: List[KnowledgeGraphEdge]
+    total_nodes: int
+    mastered_count: int
+    unlocked_count: int
+    locked_count: int
 
 class MasteryAnalyticsResponse(BaseModel):
     total_quizzes_taken: int

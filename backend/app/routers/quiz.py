@@ -18,7 +18,7 @@ from app.database import get_db
 from app.models import Topic, Question, QuizAttempt, TopicMastery, User
 from app.schemas import TopicResponse, QuestionResponse, QuizAttemptSubmit, QuizAttemptResult
 from app.routers.auth import get_current_user
-from app.services.analytics import calculate_topic_mastery, calculate_adaptive_difficulty
+from app.services.analytics import calculate_topic_mastery, calculate_adaptive_difficulty, calculate_topic_cognitive_state
 
 router = APIRouter(tags=["Topics & Quizzes"])
 
@@ -128,6 +128,7 @@ def submit_quiz_attempt(
     )
 
     mastery_score, status, total_att, correct_att = calculate_topic_mastery(topic_attempts)
+    cog_state = calculate_topic_cognitive_state(topic_attempts)
 
     # Upsert TopicMastery record
     tm = (
@@ -161,7 +162,11 @@ def submit_quiz_attempt(
         topic_id=question.topic_id,
         topic_name=question.topic.name if question.topic else "",
         new_mastery_score=mastery_score,
-        new_status=status
+        new_status=status,
+        bkt_probability=cog_state["bkt_probability"],
+        retention_rate=cog_state["retention_rate"],
+        next_review_due=cog_state["next_review_due"],
+        retention_status=cog_state["retention_status"]
     )
 
 

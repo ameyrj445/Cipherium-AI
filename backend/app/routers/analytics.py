@@ -24,10 +24,14 @@ from app.schemas import (
     UserSettingsUpdate,
     DailyTaskResponse,
     DailyTaskCreate,
-    DailyTaskToggleRequest
+    DailyTaskToggleRequest,
+    RetentionScheduleItem,
+    RetentionScheduleResponse,
+    KnowledgeGraphResponse
 )
 from app.routers.auth import get_current_user
-from app.services.analytics import compute_recommendation_score
+from app.services.analytics import compute_recommendation_score, calculate_topic_cognitive_state
+from app.services.knowledge_graph import build_curriculum_dag
 from app.ml.predictor import predict_weak_topic
 from app.services.study_plan_generator import generate_study_plan
 
@@ -125,11 +129,22 @@ def get_mastery_analytics(
     user_masteries = {
         m.topic_id: m for m in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
     }
-    all_attempts = db.query(QuizAttempt).filter(QuizAttempt.user_id == current_user.id).all()
+    all_attempts = (
+        db.query(QuizAttempt)
+        .join(Question)
+        .filter(QuizAttempt.user_id == current_user.id)
+        .order_by(QuizAttempt.attempted_at.asc())
+        .all()
+    )
 
     total_quizzes = len(all_attempts)
     total_correct = sum(1 for a in all_attempts if a.is_correct)
     overall_accuracy = round((total_correct / total_quizzes * 100), 1) if total_quizzes > 0 else 0.0
+
+    attempts_by_topic = {}
+    for a in all_attempts:
+        if a.question and a.question.topic_id:
+            attempts_by_topic.setdefault(a.question.topic_id, []).append(a)
 
     topic_details: List[TopicMasteryDetail] = []
     strong_cnt = 0
@@ -150,6 +165,10 @@ def get_mastery_analytics(
             corr_cnt = 0
 
         acc_pct = round((corr_cnt / att_cnt * 100), 1) if att_cnt > 0 else 0.0
+
+        # Calculate cognitive state via Bayesian Knowledge Tracing and Ebbinghaus Spaced Repetition
+        t_attempts = attempts_by_topic.get(t.id, [])
+        cog_state = calculate_topic_cognitive_state(t_attempts)
 
         # Run Scikit-learn Random Forest model trained on OULAD dataset:
         # Features: study_hours, vle_clicks, prior_attempts, assessment_score
@@ -188,7 +207,11 @@ def get_mastery_analytics(
                 correct_count=corr_cnt,
                 accuracy_percentage=acc_pct,
                 ml_weak_probability=ml_weak_prob,
-                ml_prediction=ml_pred_label
+                ml_prediction=ml_pred_label,
+                bkt_probability=cog_state["bkt_probability"],
+                retention_rate=cog_state["retention_rate"],
+                next_review_due=cog_state["next_review_due"],
+                retention_status=cog_state["retention_status"]
             )
         )
 
@@ -207,6 +230,117 @@ def get_mastery_analytics(
         topics=topic_details,
         day_streak=streak_data["day_streak"]
     )
+
+@router.get("/analytics/retention-schedule", response_model=RetentionScheduleResponse)
+def get_retention_schedule(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns topics grouped by Spaced Repetition urgency and Ebbinghaus memory decay.
+    Prioritizes concepts that are slipping from student retention.
+    """
+    topics = db.query(Topic).all()
+    all_attempts = (
+        db.query(QuizAttempt)
+        .join(Question)
+        .filter(QuizAttempt.user_id == current_user.id)
+        .order_by(QuizAttempt.attempted_at.asc())
+        .all()
+    )
+    attempts_by_topic = {}
+    for a in all_attempts:
+        if a.question and a.question.topic_id:
+            attempts_by_topic.setdefault(a.question.topic_id, []).append(a)
+
+    schedule_items = []
+    due_today_cnt = 0
+    crit_cnt = 0
+    rec_cnt = 0
+    opt_cnt = 0
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    for t in topics:
+        t_attempts = attempts_by_topic.get(t.id, [])
+        cog_state = calculate_topic_cognitive_state(t_attempts)
+        status = cog_state["retention_status"]
+
+        if status == "critical_review":
+            crit_cnt += 1
+            due_today_cnt += 1
+        elif status == "review_recommended":
+            rec_cnt += 1
+            if cog_state["next_review_due"] and cog_state["next_review_due"] <= now:
+                due_today_cnt += 1
+        else:
+            opt_cnt += 1
+
+        schedule_items.append(
+            RetentionScheduleItem(
+                topic_id=t.id,
+                topic_name=t.name,
+                topic_code=t.code,
+                bkt_probability=cog_state["bkt_probability"],
+                retention_rate=cog_state["retention_rate"],
+                next_review_due=cog_state["next_review_due"],
+                retention_status=status,
+                attempt_count=len(t_attempts)
+            )
+        )
+
+    # Sort schedule by urgency: critical first, then recommended, then optimal
+    urgency_order = {"critical_review": 1, "review_recommended": 2, "optimal": 3}
+    schedule_items.sort(key=lambda item: (urgency_order.get(item.retention_status, 4), item.retention_rate))
+
+    return RetentionScheduleResponse(
+        due_today_count=due_today_cnt,
+        critical_count=crit_cnt,
+        recommended_count=rec_cnt,
+        optimal_count=opt_cnt,
+        schedule=schedule_items
+    )
+
+@router.get("/analytics/knowledge-graph", response_model=KnowledgeGraphResponse)
+def get_knowledge_graph(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns the curriculum prerequisite Knowledge Graph (DAG).
+    Dynamically maps each topic to 'mastered', 'unlocked', or 'locked' based on student BKT & mastery states.
+    """
+    topics = db.query(Topic).all()
+    user_masteries = {
+        m.topic.code: m.mastery_score
+        for m in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
+        if m.topic
+    }
+
+    # Calculate BKT probabilities from attempts
+    all_attempts = (
+        db.query(QuizAttempt)
+        .join(Question)
+        .filter(QuizAttempt.user_id == current_user.id)
+        .order_by(QuizAttempt.attempted_at.asc())
+        .all()
+    )
+    attempts_by_code = {}
+    for a in all_attempts:
+        if a.question and a.question.topic and a.question.topic.code:
+            attempts_by_code.setdefault(a.question.topic.code, []).append(a)
+
+    bkt_states = {}
+    for t in topics:
+        t_attempts = attempts_by_code.get(t.code, [])
+        cog_state = calculate_topic_cognitive_state(t_attempts)
+        bkt_states[t.code] = cog_state["bkt_probability"]
+
+    graph_data = build_curriculum_dag(
+        topics=topics,
+        user_masteries=user_masteries,
+        bkt_states=bkt_states
+    )
+    return graph_data
 
 @router.get("/recommendations", response_model=List[ResourceResponse])
 def get_recommendations(
