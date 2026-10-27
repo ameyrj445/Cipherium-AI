@@ -33,6 +33,8 @@ import AnalyticsFullView from './components/AnalyticsFullView';
 import ResourcesFullView from './components/ResourcesFullView';
 import StudyPlanView from './components/StudyPlanView';
 import SettingsView from './components/SettingsView';
+import KnowledgeGraphView from './components/KnowledgeGraphView';
+import RetentionScheduleCard from './components/RetentionScheduleCard';
 
 import { useDocumentMetadata } from './hooks/useDocumentMetadata';
 
@@ -554,6 +556,14 @@ export default function App() {
                   setPracticeTopic('');
                 }}
               />
+
+              <RetentionScheduleCard
+                onStartQuiz={(topicId) => {
+                  setSelectedTopicId(topicId);
+                  loadNextQuestion(topicId);
+                  setActiveNav('Practice');
+                }}
+              />
             </div>
 
             {/* Sticky Right Rail (4 of 12 cols): Today's Tasks + Recommended for You */}
@@ -624,6 +634,20 @@ export default function App() {
             onPracticeTopic={(topicName) => {
               setActiveNav('Practice');
               setPracticeTopic(topicName);
+            }}
+          />
+        )}
+
+        {activeNav === 'Knowledge Graph' && (
+          <KnowledgeGraphView
+            onStartQuiz={(topicId) => {
+              setSelectedTopicId(topicId);
+              loadNextQuestion(topicId);
+              setActiveNav('Practice');
+            }}
+            onAskTutor={(prompt) => {
+              setActiveNav('AI Tutor');
+              setChatInput(prompt);
             }}
           />
         )}

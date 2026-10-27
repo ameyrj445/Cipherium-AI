@@ -112,6 +112,8 @@ export const analyticsAPI = {
   updatePlanProgress: (data) => api.put('/roadmaps/progress', data),
   getFlashcards: () => api.get('/analytics/flashcards'),
   getStreak: () => api.get('/analytics/streak'),
+  getRetentionSchedule: () => api.get('/analytics/retention-schedule'),
+  getKnowledgeGraph: () => api.get('/analytics/knowledge-graph'),
 };
 
 // ── Daily Study Tasks ─────────────────────────────────────────────────────────
