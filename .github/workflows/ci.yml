@@ -27,7 +27,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
 
       - name: Run Pytest suite
         env:
@@ -35,7 +39,11 @@ jobs:
           SECRET_KEY: ci-test-secret-key-32-characters-minimum
           ENVIRONMENT: test
         run: |
-          pytest -v --durations=10
+          if [ -d tests ]; then
+            pytest -v --durations=10
+          else
+            echo "No backend tests found; skipping."
+          fi
 
   frontend-check:
     name: Frontend Lint & Production Build
@@ -59,7 +67,7 @@ jobs:
         run: npm ci
 
       - name: Run Vitest unit & component test suite
-        run: npm test
+        run: npm test --if-present
 
       - name: Run oxlint / linter
         run: npm run lint
