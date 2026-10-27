@@ -104,8 +104,10 @@ def submit_quiz_attempt(
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")
 
-    # Case-insensitive whitespace-trimmed evaluation
-    is_correct = (attempt_data.selected_answer.strip().lower() == question.correct_answer.strip().lower())
+    # Case-insensitive whitespace-trimmed evaluation with NoneType safety
+    selected_clean = (attempt_data.selected_answer or "").strip().lower()
+    correct_clean = (question.correct_answer or "").strip().lower()
+    is_correct = (selected_clean == correct_clean) and bool(selected_clean)
 
     attempt = QuizAttempt(
         user_id=current_user.id,

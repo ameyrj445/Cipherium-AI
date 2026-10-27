@@ -8,7 +8,7 @@ Endpoints:
 
 import json
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -38,6 +38,10 @@ def chat_with_tutor(
     4. Persists the tutor's response to the database.
     5. Attaches up to two curated learning resources to encourage immediate follow-up practice.
     """
+    clean_msg = (req.message or "").strip()
+    if not clean_msg:
+        raise HTTPException(status_code=422, detail="Question message cannot be empty.")
+
     topic = None
     if req.topic_id:
         topic = db.query(Topic).filter(Topic.id == req.topic_id).first()
@@ -46,7 +50,7 @@ def chat_with_tutor(
     user_msg_record = TutorMessage(
         user_id=current_user.id,
         role="user",
-        message=req.message,
+        message=clean_msg,
         topic_id=req.topic_id
     )
     db.add(user_msg_record)
@@ -107,6 +111,10 @@ def stream_chat_with_tutor(
     Yields data: {"chunk": "...", "done": false} as tokens generate, followed by
     data: {"chunk": "", "done": true, "topic_name": "...", "suggested_resources": [...]} on completion.
     """
+    clean_msg = (req.message or "").strip()
+    if not clean_msg:
+        raise HTTPException(status_code=422, detail="Question message cannot be empty.")
+
     topic = None
     if req.topic_id:
         topic = db.query(Topic).filter(Topic.id == req.topic_id).first()
@@ -115,7 +123,7 @@ def stream_chat_with_tutor(
     user_msg_record = TutorMessage(
         user_id=current_user.id,
         role="user",
-        message=req.message,
+        message=clean_msg,
         topic_id=req.topic_id
     )
     db.add(user_msg_record)

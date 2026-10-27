@@ -47,7 +47,7 @@ def calculate_topological_depths(topics: List[Any]) -> Dict[str, int]:
         prereqs = parse_prerequisites(prereqs_val)
 
         for src in prereqs:
-            if src in graph:
+            if src in graph and src != target_code:
                 graph[src].append(target_code)
                 in_degree[target_code] = in_degree.get(target_code, 0) + 1
 
@@ -151,7 +151,10 @@ def evaluate_node_states(
             p_bkt = float(bkt_map.get(p_code, 0.20))
             p_satisfied = (p_bkt >= passing_bkt) or (p_m >= passing_mastery)
             if not p_satisfied:
-                p_name = topic_by_code.get(p_code, {}).get("name") if isinstance(topic_by_code.get(p_code), dict) else getattr(topic_by_code.get(p_code), "name", p_code)
+                t_parent = topic_by_code.get(p_code)
+                p_name = None
+                if t_parent is not None:
+                    p_name = t_parent.get("name") if isinstance(t_parent, dict) else getattr(t_parent, "name", None)
                 blocked_by.append(p_name or p_code)
 
         if blocked_by:
