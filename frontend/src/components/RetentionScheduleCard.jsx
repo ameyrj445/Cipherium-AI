@@ -75,10 +75,10 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
           gap: '8px',
           padding: '6px 14px',
           borderRadius: '20px',
-          background: data.due_today_count > 0 ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-          border: data.due_today_count > 0 ? '1px solid rgba(244, 63, 94, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)'
+          background: (data.due_today_count ?? 0) > 0 ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+          border: (data.due_today_count ?? 0) > 0 ? '1px solid rgba(244, 63, 94, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)'
         }}>
-          {data.due_today_count > 0 ? (
+          {(data.due_today_count ?? 0) > 0 ? (
             <>
               <AlertTriangle size={15} color="#fb7185" />
               <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fb7185' }}>
@@ -98,9 +98,13 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
 
       {/* Grid of Scheduled Topics */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '14px' }}>
-        {(dueItems.length > 0 ? dueItems : data.schedule.slice(0, 3)).map((item) => {
-          const retentionPct = Math.round(item.retention_rate * 100);
-          const bktPct = Math.round(item.bkt_probability * 100);
+        {!(data.schedule && data.schedule.length > 0) ? (
+          <div style={{ gridColumn: '1 / -1', padding: '16px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
+            No learning topics scheduled yet. Take your first diagnostic quiz to calibrate your spaced repetition curve!
+          </div>
+        ) : (dueItems.length > 0 ? dueItems : (data.schedule || []).slice(0, 3)).map((item) => {
+          const retentionPct = Math.round((item.retention_rate ?? 1.0) * 100);
+          const bktPct = Math.round((item.bkt_probability ?? 0.5) * 100);
           const isCritical = item.retention_status === 'critical_review';
           const isRec = item.retention_status === 'review_recommended';
 
@@ -165,7 +169,7 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-dim)' }}>
                   <span>BKT Latent Mastery: <strong style={{ color: '#818cf8' }}>P(L) = {bktPct}%</strong></span>
-                  <span>{item.attempt_count} attempts</span>
+                  <span>{item.attempt_count ?? 0} attempts</span>
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Flame, Trophy, Calendar, Zap, Activity } from 'lucide-react';
 
 export default function ActivityHeatmap({ heatmapData = [], totalActivities = 0, currentStreak = 0, longestStreak = 0 }) {
@@ -8,9 +8,10 @@ export default function ActivityHeatmap({ heatmapData = [], totalActivities = 0,
   const weeks = [];
   let currentWeek = [];
 
-  heatmapData.forEach((day, index) => {
-    currentWeek.push(day);
-    if (currentWeek.length === 7 || index === heatmapData.length - 1) {
+  const safeData = Array.isArray(heatmapData) ? heatmapData : [];
+  safeData.forEach((day, index) => {
+    currentWeek.push(day || { level: 0, count: 0, date: '' });
+    if (currentWeek.length === 7 || index === safeData.length - 1) {
       weeks.push(currentWeek);
       currentWeek = [];
     }
@@ -101,10 +102,10 @@ export default function ActivityHeatmap({ heatmapData = [], totalActivities = 0,
                       width: '11px',
                       height: '11px',
                       borderRadius: '2px',
-                      backgroundColor: getCellColor(day.level),
+                      backgroundColor: getCellColor(day?.level ?? 0),
                       cursor: 'pointer',
                       transition: 'transform 0.1s ease',
-                      border: day.count > 0 ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid transparent',
+                      border: (day?.count ?? 0) > 0 ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid transparent',
                     }}
                   />
                 ))}
@@ -119,7 +120,7 @@ export default function ActivityHeatmap({ heatmapData = [], totalActivities = 0,
         <div>
           {hoveredCell ? (
             <span style={{ color: '#fff', fontWeight: 600 }}>
-              {hoveredCell.count} practice activit{hoveredCell.count === 1 ? 'y' : 'ies'} on {hoveredCell.date}
+              {(hoveredCell.count ?? 0)} practice activit{(hoveredCell.count ?? 0) === 1 ? 'y' : 'ies'} on {hoveredCell.date || 'selected date'}
             </span>
           ) : (
             <span>Hover over any day square to inspect daily practice velocity</span>

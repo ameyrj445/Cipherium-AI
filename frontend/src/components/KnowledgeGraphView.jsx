@@ -102,19 +102,19 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
           <div className="glass-panel" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <CheckCircle2 size={16} color="#34d399" />
             <span style={{ fontSize: '0.8rem', color: '#fff' }}>
-              <strong>{graphData.mastered_count}</strong> Mastered
+              <strong>{graphData.mastered_count ?? 0}</strong> Mastered
             </span>
           </div>
           <div className="glass-panel" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Unlock size={16} color="#fbbf24" />
             <span style={{ fontSize: '0.8rem', color: '#fff' }}>
-              <strong>{graphData.unlocked_count}</strong> Unlocked
+              <strong>{graphData.unlocked_count ?? 0}</strong> Unlocked
             </span>
           </div>
           <div className="glass-panel" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Lock size={16} color="#fb7185" />
             <span style={{ fontSize: '0.8rem', color: '#fff' }}>
-              <strong>{graphData.locked_count}</strong> Locked
+              <strong>{graphData.locked_count ?? 0}</strong> Locked
             </span>
           </div>
         </div>
@@ -135,6 +135,11 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
       </div>
 
       {/* Main Topological Tiers Canvas */}
+      {filteredNodes.length === 0 ? (
+        <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-dim)' }}>
+          No curriculum concepts found for category "{selectedCategory}".
+        </div>
+      ) : (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
         {Object.keys(depthTiers).sort((a, b) => Number(a) - Number(b)).map((depthStr) => {
           const depth = Number(depthStr);
@@ -294,6 +299,7 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
           );
         })}
       </div>
+      )}
 
       {/* Node Detail Modal / Overlay */}
       {selectedNode && (
@@ -381,7 +387,7 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
             <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(255, 255, 255, 0.03)', marginBottom: '22px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#fff', marginBottom: '6px' }}>
                 <span>Bayesian Latent Knowledge Probability:</span>
-                <strong>{Math.round(selectedNode.bkt_probability * 100)}%</strong>
+                <strong>{Math.round((selectedNode.bkt_probability ?? 0.2) * 100)}%</strong>
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
                 Evaluated from chronological response slips and guess propensities.

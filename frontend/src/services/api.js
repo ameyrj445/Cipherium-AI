@@ -139,7 +139,7 @@ export const geminiAPI = {
 export const tutorAPI = {
   sendMessage: (data) => api.post('/tutor/chat', data),
   getHistory: (limit = 30) => api.get(`/tutor/history?limit=${limit}`),
-  streamMessage: async (data, onChunk, onDone, onError) => {
+  streamMessage: async (data, onChunk, onDone, onError, signal) => {
     try {
       const token = sessionToken || getStoredSession()?.token;
       const response = await fetch(`${API_BASE_URL}/tutor/chat/stream`, {
@@ -149,10 +149,20 @@ export const tutorAPI = {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(data),
+        signal,
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
+        let errorDetail = `HTTP error ${response.status}`;
+        try {
+          const errJson = await response.json();
+          if (errJson?.detail) errorDetail = errJson.detail;
+        } catch (_) {}
+        throw new Error(errorDetail);
+      }
+
+      if (!response.body) {
+        throw new Error('ReadableStream not supported by environment');
       }
 
       const reader = response.body.getReader();
@@ -184,6 +194,10 @@ export const tutorAPI = {
         }
       }
     } catch (err) {
+      if (err.name === 'AbortError') {
+        // Stream aborted gracefully
+        return;
+      }
       if (onError) onError(err);
     }
   },

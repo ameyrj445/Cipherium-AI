@@ -1,9 +1,21 @@
-﻿import React from 'react';
+import React from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Compass } from 'lucide-react';
 
 export default function CompetencyRadarChart({ radarData = [] }) {
-  if (!radarData || radarData.length === 0) return null;
+  if (!Array.isArray(radarData) || radarData.length === 0) return null;
+
+  const sanitizedData = radarData
+    .filter(Boolean)
+    .map((item) => ({
+      category: item.category || 'General',
+      score: typeof item.score === 'number' && !isNaN(item.score)
+        ? Math.max(0, Math.min(100, Math.round(item.score)))
+        : 0,
+      ...item,
+    }));
+
+  if (sanitizedData.length === 0) return null;
 
   return (
     <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
@@ -19,7 +31,7 @@ export default function CompetencyRadarChart({ radarData = [] }) {
 
       <div style={{ width: '100%', height: 320 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+          <RadarChart cx="50%" cy="50%" outerRadius="75%" data={sanitizedData}>
             <PolarGrid stroke="rgba(255, 255, 255, 0.12)" />
             <PolarAngleAxis
               dataKey="category"
