@@ -138,6 +138,54 @@ export const geminiAPI = {
 export const tutorAPI = {
   sendMessage: (data) => api.post('/tutor/chat', data),
   getHistory: (limit = 30) => api.get(`/tutor/history?limit=${limit}`),
+  streamMessage: async (data, onChunk, onDone, onError) => {
+    try {
+      const token = sessionToken || getStoredSession()?.token;
+      const response = await fetch(`${API_BASE_URL}/tutor/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        buffer = events.pop();
+
+        for (const evt of events) {
+          const trimmed = evt.trim();
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const parsed = JSON.parse(trimmed.slice(6));
+              if (parsed.done) {
+                if (onDone) onDone(parsed);
+              } else {
+                if (onChunk) onChunk(parsed.chunk);
+              }
+            } catch (err) {
+              console.error('Failed to parse SSE chunk:', err);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if (onError) onError(err);
+    }
+  },
 };
 
 export default api;

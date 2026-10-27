@@ -106,6 +106,7 @@ export default function App() {
 
   // AI Tutor State
   const [aiModel, setAiModel] = useState('gemini-2.5-flash');
+  const [tutorMode, setTutorMode] = useState('socratic'); // 'socratic' | 'direct' | 'exam_prep'
   const [tutorTopicId, setTutorTopicId] = useState(null);
   const [chatInput, setChatInput] = useState('');
   const [tutorThinking, setTutorThinking] = useState(false);
@@ -326,32 +327,103 @@ export default function App() {
 
   // AI Tutor Chat
   const handleSendChat = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (!chatInput.trim() || tutorThinking) return;
 
     const userMsg = chatInput.trim();
+    const currentMode = tutorMode || 'socratic';
     const updated = [...chatMessages, { role: 'user', text: userMsg }];
     setChatMessages(updated);
     setChatInput('');
     setTutorThinking(true);
 
-    try {
-      const res = await tutorAPI.sendMessage({
+    const streamingIndex = updated.length;
+    // Add placeholder assistant message in streaming state
+    setChatMessages([
+      ...updated,
+      {
+        role: 'assistant',
+        text: '',
+        mode: currentMode,
+        streaming: true,
+      },
+    ]);
+
+    let accumulatedText = '';
+
+    await tutorAPI.streamMessage(
+      {
         message: userMsg,
         topic_id: tutorTopicId || undefined,
-      });
-      const assistantMsg = {
-        role: 'assistant',
-        text: res.data.response,
-        suggested_resources: res.data.suggested_resources || [],
-      };
-      setChatMessages([...updated, assistantMsg]);
-    } catch (err) {
-      console.error('Tutor chat error:', err);
-      setChatMessages([...updated, { role: 'assistant', text: "I'm synthesizing an answer using syllabus and RAG notes..." }]);
-    } finally {
-      setTutorThinking(false);
-    }
+        mode: currentMode,
+      },
+      (chunk) => {
+        accumulatedText += chunk;
+        setChatMessages((prev) => {
+          const next = [...prev];
+          if (next[streamingIndex]) {
+            next[streamingIndex] = {
+              ...next[streamingIndex],
+              text: accumulatedText,
+              mode: currentMode,
+              streaming: true,
+            };
+          }
+          return next;
+        });
+      },
+      (donePayload) => {
+        setChatMessages((prev) => {
+          const next = [...prev];
+          if (next[streamingIndex]) {
+            next[streamingIndex] = {
+              ...next[streamingIndex],
+              text: accumulatedText,
+              mode: donePayload?.mode || currentMode,
+              streaming: false,
+              suggested_resources: donePayload?.suggested_resources || [],
+            };
+          }
+          return next;
+        });
+        setTutorThinking(false);
+      },
+      async (err) => {
+        console.warn('Streaming error, falling back to standard API:', err);
+        try {
+          const res = await tutorAPI.sendMessage({
+            message: userMsg,
+            topic_id: tutorTopicId || undefined,
+            mode: currentMode,
+          });
+          setChatMessages((prev) => {
+            const next = [...prev];
+            next[streamingIndex] = {
+              role: 'assistant',
+              text: res.data.response,
+              mode: res.data.mode || currentMode,
+              streaming: false,
+              suggested_resources: res.data.suggested_resources || [],
+            };
+            return next;
+          });
+        } catch (fallbackErr) {
+          console.error('Tutor chat fallback error:', fallbackErr);
+          setChatMessages((prev) => {
+            const next = [...prev];
+            next[streamingIndex] = {
+              role: 'assistant',
+              text: "I'm synthesizing an answer using syllabus and RAG notes...",
+              mode: currentMode,
+              streaming: false,
+            };
+            return next;
+          });
+        } finally {
+          setTutorThinking(false);
+        }
+      }
+    );
   };
 
   // Practice & Quiz Handler
@@ -674,6 +746,8 @@ export default function App() {
           <TutorPanel
             aiModel={aiModel}
             setAiModel={setAiModel}
+            tutorMode={tutorMode}
+            setTutorMode={setTutorMode}
             chatMessages={chatMessages}
             chatInput={chatInput}
             setChatInput={setChatInput}
@@ -684,7 +758,6 @@ export default function App() {
             setTutorTopicId={setTutorTopicId}
             onClearHistory={() => setChatMessages([])}
             embedded
-
           />
         )}
 
