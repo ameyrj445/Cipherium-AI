@@ -55,6 +55,11 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
     if not user or not verify_password(login_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    # Transparently upgrade legacy SHA-256 hash to bcrypt if needed
+    if not (user.password_hash.startswith("$2b$") or user.password_hash.startswith("$2a$")):
+        user.password_hash = hash_password(login_data.password)
+        db.commit()
+    
     token = create_access_token({"user_id": user.id, "email": user.email})
     return TokenResponse(
         access_token=token,

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
@@ -26,8 +26,7 @@ class UserProfile(BaseModel):
     role: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Topic schemas
 class TopicResponse(BaseModel):
@@ -38,8 +37,7 @@ class TopicResponse(BaseModel):
     description: Optional[str] = None
     prerequisites: Optional[str] = "[]"
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Question schemas
 class QuestionResponse(BaseModel):
@@ -87,6 +85,7 @@ class MasteryAnalyticsResponse(BaseModel):
     developing_topics_count: int
     weak_topics_count: int
     topics: List[TopicMasteryDetail]
+    day_streak: Optional[int] = 0
 
 # Resource & Recommendation schemas
 class ResourceResponse(BaseModel):
@@ -172,4 +171,49 @@ class TutorChatResponse(BaseModel):
     response: str
     topic_name: Optional[str] = None
     suggested_resources: List[ResourceResponse] = []
+
+# Streak & Telemetry schemas
+class StreakResponse(BaseModel):
+    day_streak: int
+    last_active_date: Optional[str] = None
+    is_active_today: bool = False
+    total_quizzes_taken: int = 0
+
+# User Settings schemas
+class UserSettingsResponse(BaseModel):
+    target_role: str = "Full-Stack Software Engineer"
+    weekly_hours: int = 6
+    difficulty_mode: str = "standard"
+    daily_streak_reminder: bool = True
+    diagnostic_quiz_alert: bool = True
+    weak_topic_ping: bool = True
+    has_custom_api_key: bool = False
+    custom_gemini_api_key: Optional[str] = None
+
+class UserSettingsUpdate(BaseModel):
+    target_role: Optional[str] = None
+    weekly_hours: Optional[int] = None
+    difficulty_mode: Optional[str] = None
+    daily_streak_reminder: Optional[bool] = None
+    diagnostic_quiz_alert: Optional[bool] = None
+    weak_topic_ping: Optional[bool] = None
+    custom_gemini_api_key: Optional[str] = None
+
+# Daily Tasks schemas
+class DailyTaskResponse(BaseModel):
+    id: int
+    title: str
+    duration: str = "15 min"
+    is_done: bool = False
+    date_str: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DailyTaskCreate(BaseModel):
+    title: str
+    duration: Optional[str] = "15 min"
+    date_str: Optional[str] = None
+
+class DailyTaskToggleRequest(BaseModel):
+    is_done: Optional[bool] = None
 

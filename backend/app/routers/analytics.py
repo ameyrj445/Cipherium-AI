@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import json
-from datetime import datetime
+from datetime import datetime, timezone, date, timedelta
 
 from app.database import get_db
-from app.models import Topic, TopicMastery, QuizAttempt, Resource, StudyPlan, SubjectRoadmap, User
+from app.models import (
+    Topic, TopicMastery, QuizAttempt, Resource, StudyPlan,
+    SubjectRoadmap, User, Question, DailyTask, UserSettings
+)
 from app.schemas import (
     MasteryAnalyticsResponse,
     TopicMasteryDetail,
@@ -15,7 +18,13 @@ from app.schemas import (
     RoadmapTask,
     CreateCustomPlanRequest,
     SaveCustomPlanRequest,
-    UpdatePlanProgressRequest
+    UpdatePlanProgressRequest,
+    StreakResponse,
+    UserSettingsResponse,
+    UserSettingsUpdate,
+    DailyTaskResponse,
+    DailyTaskCreate,
+    DailyTaskToggleRequest
 )
 from app.routers.auth import get_current_user
 from app.services.analytics import compute_recommendation_score
@@ -47,11 +56,71 @@ def list_subject_roadmaps(
             continue
     return roadmaps
 
+
+def calculate_user_streak(user_id: int, db: Session) -> dict:
+    """
+    Calculates the student's consecutive active daily study streak based on
+    timestamps of recorded quiz attempts in the database.
+    """
+    attempts = (
+        db.query(QuizAttempt.attempted_at)
+        .filter(QuizAttempt.user_id == user_id)
+        .order_by(QuizAttempt.attempted_at.desc())
+        .all()
+    )
+    if not attempts:
+        return {"day_streak": 0, "last_active_date": None, "is_active_today": False}
+
+    unique_dates = sorted(
+        list(set(a[0].date() for a in attempts if a[0] is not None)),
+        reverse=True
+    )
+    if not unique_dates:
+        return {"day_streak": 0, "last_active_date": None, "is_active_today": False}
+
+    utc_today = datetime.now(timezone.utc).date()
+    local_today = date.today()
+    last_active = unique_dates[0]
+    is_active_today = (last_active in (utc_today, local_today))
+
+    # Streak is active if last activity was today or yesterday in either UTC or local time
+    earliest_valid_yesterday = min(utc_today, local_today) - timedelta(days=1)
+    if last_active < earliest_valid_yesterday:
+        return {"day_streak": 0, "last_active_date": last_active.isoformat(), "is_active_today": False}
+
+    streak = 0
+    expected_date = last_active
+    for d in unique_dates:
+        if d == expected_date:
+            streak += 1
+            expected_date = d - timedelta(days=1)
+        else:
+            break
+
+    return {
+        "day_streak": streak,
+        "last_active_date": last_active.isoformat(),
+        "is_active_today": is_active_today
+    }
+
+
 @router.get("/analytics/mastery", response_model=MasteryAnalyticsResponse)
 def get_mastery_analytics(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """
+    Computes holistic curriculum mastery analytics for the authenticated student.
+    
+    Processing Steps:
+    1. Loads all curriculum topics and joins historical student quiz attempts.
+    2. Calculates overall historical precision (percentage accuracy).
+    3. Feeds interaction telemetry into the pre-trained Random Forest ML classifier
+       to calculate weak-topic probabilities based on the OULAD academic benchmark.
+    4. Ranks curriculum topics into prioritised order:
+       Weak -> Developing -> Insufficient Data -> Strong.
+    5. Calculates consecutive daily active study streak.
+    """
     topics = db.query(Topic).all()
     user_masteries = {
         m.topic_id: m for m in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
@@ -127,13 +196,16 @@ def get_mastery_analytics(
     priority_order = {"weak": 1, "developing": 2, "insufficient_data": 3, "strong": 4}
     topic_details.sort(key=lambda item: priority_order.get(item.status, 5))
 
+    streak_data = calculate_user_streak(current_user.id, db)
+
     return MasteryAnalyticsResponse(
         total_quizzes_taken=total_quizzes,
         overall_accuracy=overall_accuracy,
         strong_topics_count=strong_cnt,
         developing_topics_count=dev_cnt,
         weak_topics_count=weak_cnt,
-        topics=topic_details
+        topics=topic_details,
+        day_streak=streak_data["day_streak"]
     )
 
 @router.get("/recommendations", response_model=List[ResourceResponse])
@@ -141,6 +213,13 @@ def get_recommendations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """
+    Ranks all learning resources in the repository for the active student using
+    a multi-factor pedagogical fit scoring equation:
+      S = 0.5 * topic_relevance + 0.3 * difficulty_fit + 0.2 * prerequisite_fit
+      
+    Returns sorted array with highest-scoring remediation resources first.
+    """
     user_masteries = {
         m.topic_id: m for m in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
     }
@@ -275,7 +354,7 @@ def generate_study_roadmap(
     else:
         plan_record.target_hours_per_week = req.target_hours_per_week
         plan_record.plan_json = json.dumps(plan_data)
-        plan_record.updated_at = datetime.utcnow()
+        plan_record.updated_at = datetime.now(timezone.utc)
     
     db.commit()
 
@@ -283,7 +362,7 @@ def generate_study_roadmap(
         target_hours_per_week=req.target_hours_per_week,
         total_estimated_hours=round(total_hours, 1),
         tasks=tasks,
-        generated_at=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     )
 
 @router.post("/roadmaps/custom")
@@ -479,22 +558,62 @@ def update_study_plan_progress(
         current_hrs = plan_data.get("completed_hours", 0.0)
         plan_data["completed_hours"] = round(current_hrs + req.logged_hours_delta, 1)
 
-    plan_data["updated_at"] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    plan_data["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     plan_record.plan_json = json.dumps(plan_data)
-    plan_record.updated_at = datetime.utcnow()
+    plan_record.updated_at = datetime.now(timezone.utc)
     db.commit()
 
     return plan_data
 
 
+@router.get("/analytics/flashcards")
+def get_topic_flashcards(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generates tailored spaced repetition revision flashcards prioritizing
+    topics diagnosed as weak or developing by Cipherium's mastery model.
+    """
+    weak_masteries = (
+        db.query(TopicMastery)
+        .filter(TopicMastery.user_id == current_user.id, TopicMastery.status.in_(["weak", "developing"]))
+        .all()
+    )
+    target_topic_ids = [m.topic_id for m in weak_masteries]
+    
+    query = db.query(Question)
+    if target_topic_ids:
+        query = query.filter(Question.topic_id.in_(target_topic_ids))
+    
+    questions = query.limit(10).all()
+    if not questions:
+        questions = db.query(Question).limit(8).all()
+
+    flashcards = []
+    for q in questions:
+        flashcards.append({
+            "id": f"fc-{q.id}",
+            "topic_id": q.topic_id,
+            "topic_name": q.topic.name if q.topic else "Core Curriculum",
+            "concept_question": q.question_text,
+            "key_takeaway": q.correct_answer,
+            "explanation": q.explanation or "Foundational core concept.",
+            "difficulty": q.difficulty
+        })
+
+    return flashcards
+
+
 # ── Gemini API Key Management ──────────────────────────────────────────────────
 import os as _os
+from app.config import settings as _app_settings
 import app.services.study_plan_generator as _gen_module
 
 @router.get("/settings/gemini-status")
 def get_gemini_status(current_user: User = Depends(get_current_user)):
     """Returns whether a valid Gemini API key is configured."""
-    key = (_gen_module.GEMINI_API_KEY or "").strip()
+    key = (_gen_module.GEMINI_API_KEY or _app_settings.GEMINI_API_KEY or _os.environ.get("GEMINI_API_KEY", "")).strip()
     is_set = bool(key) and key not in ("", "replace_with_your_key", "your_api_key_here")
     masked = (key[:8] + "..." + key[-4:]) if is_set and len(key) > 12 else ""
     return {"gemini_key_set": is_set, "masked_key": masked, "model": _gen_module.GEMINI_MODEL}
@@ -505,37 +624,187 @@ def set_gemini_key(
     payload: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Updates the Gemini API key in memory (session only) and optionally in the .env file."""
+    """
+    Safely updates the Gemini API key in process memory for the active session.
+    Production-safe: avoids dangerous runtime filesystem file mutations.
+    """
     new_key = (payload.get("api_key") or "").strip()
     if not new_key:
         return {"success": False, "message": "No API key provided."}
 
-    # Set in module memory immediately
+    # Set in module memory immediately for active requests
     _gen_module.GEMINI_API_KEY = new_key
     _os.environ["GEMINI_API_KEY"] = new_key
+    _app_settings.GEMINI_API_KEY = new_key
 
-    # Optionally persist to .env file
-    env_path = _os.path.join(_os.path.dirname(__file__), "..", "..", ".env")
-    try:
-        lines = []
-        found = False
-        if _os.path.exists(env_path):
-            with open(env_path, "r") as f:
-                lines = f.readlines()
-            new_lines = []
-            for line in lines:
-                if line.startswith("GEMINI_API_KEY="):
-                    new_lines.append(f"GEMINI_API_KEY={new_key}\n")
-                    found = True
-                else:
-                    new_lines.append(line)
-            if not found:
-                new_lines.append(f"\nGEMINI_API_KEY={new_key}\n")
-        else:
-            new_lines = [f"GEMINI_API_KEY={new_key}\n"]
-        with open(env_path, "w") as f:
-            f.writelines(new_lines)
-    except Exception as e:
-        pass  # Not fatal — it's already in memory
+    return {"success": True, "message": "Gemini API key updated in active session memory."}
 
-    return {"success": True, "message": "Gemini API key updated successfully."}
+
+# ── Study Streak Endpoint ──────────────────────────────────────────────────────
+@router.get("/analytics/streak", response_model=StreakResponse)
+def get_user_streak(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns the student's continuous daily study streak and last active timestamp.
+    """
+    streak_data = calculate_user_streak(current_user.id, db)
+    total_quizzes = db.query(QuizAttempt).filter(QuizAttempt.user_id == current_user.id).count()
+    return StreakResponse(
+        day_streak=streak_data["day_streak"],
+        last_active_date=streak_data["last_active_date"],
+        is_active_today=streak_data["is_active_today"],
+        total_quizzes_taken=total_quizzes
+    )
+
+
+# ── Daily Tasks Endpoints ──────────────────────────────────────────────────────
+@router.get("/tasks/today", response_model=List[DailyTaskResponse])
+def get_today_tasks(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retrieves or synthesizes the student's daily study tasks for today.
+    If no tasks exist for today, automatically seeds standard tasks based on active goals.
+    """
+    today_str = date.today().isoformat()
+    tasks = (
+        db.query(DailyTask)
+        .filter(DailyTask.user_id == current_user.id, DailyTask.date_str == today_str)
+        .order_by(DailyTask.id.asc())
+        .all()
+    )
+    if tasks:
+        return tasks
+
+    # Auto-seed standard daily study tasks for today
+    default_task_specs = [
+        {"title": "Complete Diagnostic Assessment Quiz", "duration": "15 min"},
+        {"title": "Review Recommended Video Guide", "duration": "30 min"},
+        {"title": "Solve 3 Diagnostic Practice Problems", "duration": "20 min"},
+        {"title": "Consult AI Tutor on Knowledge Gaps", "duration": "Any time"},
+    ]
+    created = []
+    for spec in default_task_specs:
+        t = DailyTask(
+            user_id=current_user.id,
+            title=spec["title"],
+            duration=spec["duration"],
+            is_done=False,
+            date_str=today_str
+        )
+        db.add(t)
+        created.append(t)
+    db.commit()
+    for t in created:
+        db.refresh(t)
+    return created
+
+
+@router.put("/tasks/{task_id}/toggle", response_model=DailyTaskResponse)
+def toggle_daily_task(
+    task_id: int,
+    req: Optional[DailyTaskToggleRequest] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Toggles completion status for a daily task.
+    Supports either explicit is_done payload or toggles current state if not specified.
+    """
+    task = (
+        db.query(DailyTask)
+        .filter(DailyTask.id == task_id, DailyTask.user_id == current_user.id)
+        .first()
+    )
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if req is not None and req.is_done is not None:
+        task.is_done = req.is_done
+    else:
+        task.is_done = not task.is_done
+    db.commit()
+    db.refresh(task)
+    return task
+
+
+# ── Persistent User Settings Endpoints ─────────────────────────────────────────
+@router.get("/settings/profile", response_model=UserSettingsResponse)
+def get_user_settings_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retrieves the student's persistent workspace configuration and AI hyperparameters.
+    """
+    user_settings = (
+        db.query(UserSettings)
+        .filter(UserSettings.user_id == current_user.id)
+        .first()
+    )
+    if not user_settings:
+        return UserSettingsResponse()
+    return UserSettingsResponse(
+        target_role=user_settings.target_role or "Full-Stack Software Engineer",
+        weekly_hours=user_settings.weekly_hours or 6,
+        difficulty_mode=user_settings.difficulty_mode or "standard",
+        daily_streak_reminder=user_settings.daily_streak_reminder,
+        diagnostic_quiz_alert=user_settings.diagnostic_quiz_alert,
+        weak_topic_ping=user_settings.weak_topic_ping,
+        has_custom_api_key=bool(user_settings.custom_gemini_api_key),
+        custom_gemini_api_key=user_settings.custom_gemini_api_key or ""
+    )
+
+
+@router.put("/settings/profile", response_model=UserSettingsResponse)
+def update_user_settings_profile(
+    req: UserSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Updates the student's persistent workspace preferences and syncs custom Gemini API key.
+    """
+    user_settings = (
+        db.query(UserSettings)
+        .filter(UserSettings.user_id == current_user.id)
+        .first()
+    )
+    if not user_settings:
+        user_settings = UserSettings(user_id=current_user.id)
+        db.add(user_settings)
+
+    if req.target_role is not None:
+        user_settings.target_role = req.target_role
+    if req.weekly_hours is not None:
+        user_settings.weekly_hours = req.weekly_hours
+    if req.difficulty_mode is not None:
+        user_settings.difficulty_mode = req.difficulty_mode
+    if req.daily_streak_reminder is not None:
+        user_settings.daily_streak_reminder = req.daily_streak_reminder
+    if req.diagnostic_quiz_alert is not None:
+        user_settings.diagnostic_quiz_alert = req.diagnostic_quiz_alert
+    if req.weak_topic_ping is not None:
+        user_settings.weak_topic_ping = req.weak_topic_ping
+    if req.custom_gemini_api_key is not None:
+        clean_key = req.custom_gemini_api_key.strip()
+        user_settings.custom_gemini_api_key = clean_key
+        if clean_key:
+            _gen_module.GEMINI_API_KEY = clean_key
+            _os.environ["GEMINI_API_KEY"] = clean_key
+            _app_settings.GEMINI_API_KEY = clean_key
+
+    db.commit()
+    db.refresh(user_settings)
+    return UserSettingsResponse(
+        target_role=user_settings.target_role,
+        weekly_hours=user_settings.weekly_hours,
+        difficulty_mode=user_settings.difficulty_mode,
+        daily_streak_reminder=user_settings.daily_streak_reminder,
+        diagnostic_quiz_alert=user_settings.diagnostic_quiz_alert,
+        weak_topic_ping=user_settings.weak_topic_ping,
+        has_custom_api_key=bool(user_settings.custom_gemini_api_key),
+        custom_gemini_api_key=user_settings.custom_gemini_api_key or ""
+    )

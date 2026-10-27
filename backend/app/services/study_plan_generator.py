@@ -1,8 +1,9 @@
 import os
+import re
 import json
 import uuid
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -895,24 +896,31 @@ CURRICULUM_BLUEPRINTS: Dict[str, Dict[str, Any]] = {
 }
 
 def match_subject_blueprint(subject: str) -> Optional[Dict[str, Any]]:
-    """Finds a matching curriculum blueprint from keywords."""
+    """Finds a matching curriculum blueprint from keywords using word-boundary matching."""
     clean = subject.strip().lower()
-    
-    if any(k in clean for k in ["dsa", "data structure", "algorithm", "array", "tree", "graph", "leetcode"]):
+
+    def has_kw(patterns: List[str]) -> bool:
+        for p in patterns:
+            # Word boundary matching prevents 'os' matching 'aerospace' or 'graph' matching 'cryptography'
+            if re.search(r'\b' + re.escape(p) + r'\b', clean):
+                return True
+        return False
+
+    if has_kw(["dsa", "data structure", "data structures", "algorithm", "algorithms", "array", "arrays", "tree", "trees", "graph", "graphs", "leetcode"]):
         return CURRICULUM_BLUEPRINTS["dsa"]
-    if any(k in clean for k in ["os", "operating system", "process", "concurrency", "thread", "virtual memory"]):
+    if has_kw(["os", "operating system", "operating systems", "concurrency", "thread", "threads", "virtual memory", "deadlock"]):
         return CURRICULUM_BLUEPRINTS["os"]
-    if any(k in clean for k in ["network", "tcp", "ip", "osi", "http", "routing", "socket"]):
+    if has_kw(["network", "networks", "networking", "tcp", "ip", "osi", "http", "routing", "socket", "sockets"]):
         return CURRICULUM_BLUEPRINTS["networks"]
-    if any(k in clean for k in ["dbms", "database", "sql", "index", "relational", "postgres", "mysql"]):
+    if has_kw(["dbms", "database", "databases", "sql", "relational", "postgres", "mysql"]):
         return CURRICULUM_BLUEPRINTS["dbms"]
-    if any(k in clean for k in ["machine learning", "ml", "ai", "deep learning", "data science", "regression"]):
+    if has_kw(["machine learning", "ml", "ai", "deep learning", "data science", "regression", "neural network"]):
         return CURRICULUM_BLUEPRINTS["ml"]
-    if any(k in clean for k in ["web", "full stack", "react", "frontend", "javascript", "backend", "fastapi"]):
+    if has_kw(["web", "webdev", "full stack", "react", "frontend", "javascript", "backend", "fastapi"]):
         return CURRICULUM_BLUEPRINTS["webdev"]
-    if any(k in clean for k in ["system design", "distributed", "scalability", "microservice", "cache"]):
+    if has_kw(["system design", "distributed", "scalability", "microservice", "microservices", "cache"]):
         return CURRICULUM_BLUEPRINTS["systemdesign"]
-    
+
     return None
 
 def generate_ai_curriculum_fallback(
@@ -1035,8 +1043,8 @@ def generate_ai_curriculum_fallback(
         "total_estimated_hours": round(duration_weeks * target_hours_per_week, 1),
         "completed_hours": 0.0,
         "milestones": milestones,
-        "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-        "updated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     }
 
 GEMINI_PLAN_PROMPT = """You are an expert academic curriculum designer. Generate a detailed study plan roadmap as a valid JSON object for the subject: "{subject}".
@@ -1199,8 +1207,8 @@ def call_gemini_for_plan(subject: str, duration_weeks: int, target_hours_per_wee
             "completed_hours": 0.0,
             "milestones": milestones_out,
             "generated_by": "gemini",
-            "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-            "updated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         }
 
     except Exception as e:
@@ -1272,8 +1280,8 @@ def generate_study_plan(
             "completed_hours": 0.0,
             "milestones": milestones,
             "generated_by": "blueprint",
-            "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-            "updated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         }
 
     # 3. Fallback dynamic generator

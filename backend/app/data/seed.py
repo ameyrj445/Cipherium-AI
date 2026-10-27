@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
-from app.models import Topic, Question, Resource, SubjectRoadmap
+from app.models import Topic, Question, Resource, SubjectRoadmap, User
+from app.services.auth import hash_password
 
 TOPICS_DATA = [
     {
@@ -263,12 +264,52 @@ def seed_database(db):
     # an empty database, but it is optional and intentionally not committed.
     if db.query(SubjectRoadmap).count() == 0:
         fixture_path = Path(__file__).with_name("subject_roadmaps.json")
+        roadmaps = {}
         if fixture_path.exists():
-            with fixture_path.open(encoding="utf-8") as fixture:
-                roadmaps = json.load(fixture)
-            for slug, roadmap in roadmaps.items():
-                db.add(SubjectRoadmap(slug=slug, roadmap_json=json.dumps(roadmap)))
-            db.commit()
+            try:
+                with fixture_path.open(encoding="utf-8") as fixture:
+                    roadmaps = json.load(fixture)
+            except Exception:
+                roadmaps = {}
+        if not roadmaps:
+            roadmaps = {
+                "dsa": {
+                    "id": "dsa",
+                    "title": "Data Structures & Algorithms",
+                    "tagline": "Master arrays, pointer manipulation, graphs, and dynamic programming.",
+                    "icon": "⚡",
+                    "color": "#818CF8",
+                    "borderColor": "rgba(99, 102, 241, 0.4)",
+                    "bgGlow": "rgba(40, 30, 90, 0.25)",
+                    "category": "Core CS",
+                    "stages": [
+                        {
+                            "title": "Stage 1: Arrays, Two Pointers & Hashing",
+                            "topics": [
+                                {
+                                    "id": "dsa-arr-1",
+                                    "name": "Static & Dynamic Arrays, Amortized Complexity",
+                                    "icon": "📊",
+                                    "resources": [
+                                        {"title": "Abdul Bari - Array Data Structures", "url": "https://www.youtube.com/playlist?list=PLDN4rrl48XKpZkf03iYFl-O29szjTrs_O", "resource_type": "video"}
+                                    ]
+                                },
+                                {
+                                    "id": "dsa-arr-2",
+                                    "name": "Two-Pointer Techniques & Sliding Windows",
+                                    "icon": "🔄",
+                                    "resources": [
+                                        {"title": "NeetCode - Two Pointer Patterns", "url": "https://neetcode.io/practice", "resource_type": "article"}
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        for slug, roadmap in roadmaps.items():
+            db.add(SubjectRoadmap(slug=slug, roadmap_json=json.dumps(roadmap)))
+        db.commit()
 
     # Seed Topics if empty
     if db.query(Topic).count() == 0:
@@ -315,4 +356,16 @@ def seed_database(db):
                 )
                 db.add(resource)
 
+        db.commit()
+
+    # Seed Default Test User if not exists
+    default_user = db.query(User).filter(User.email == "student@cipherium.ai").first()
+    if not default_user:
+        new_student = User(
+            name="Alex Johnson",
+            email="student@cipherium.ai",
+            password_hash=hash_password("cipherium123"),
+            role="student"
+        )
+        db.add(new_student)
         db.commit()

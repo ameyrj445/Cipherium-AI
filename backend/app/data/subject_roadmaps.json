@@ -1,0 +1,212 @@
+{
+  "dsa": {
+    "id": "dsa",
+    "title": "Data Structures & Algorithms",
+    "tagline": "Master arrays, pointer manipulation, graphs, and dynamic programming.",
+    "icon": "⚡",
+    "color": "#818CF8",
+    "borderColor": "rgba(99, 102, 241, 0.4)",
+    "bgGlow": "rgba(40, 30, 90, 0.25)",
+    "category": "Core CS",
+    "stages": [
+      {
+        "title": "Stage 1: Arrays, Two Pointers & Hashing",
+        "topics": [
+          {
+            "id": "dsa-arr-1",
+            "name": "Static & Dynamic Arrays, Amortized Complexity",
+            "icon": "📊",
+            "resources": [
+              {
+                "title": "Abdul Bari - Array Data Structures",
+                "url": "https://www.youtube.com/playlist?list=PLDN4rrl48XKpZkf03iYFl-O29szjTrs_O",
+                "resource_type": "video"
+              }
+            ]
+          },
+          {
+            "id": "dsa-arr-2",
+            "name": "Two-Pointer Techniques & Sliding Windows",
+            "icon": "🔄",
+            "resources": [
+              {
+                "title": "NeetCode - Two Pointer Patterns",
+                "url": "https://neetcode.io/practice",
+                "resource_type": "article"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Stage 2: Trees & Graph Traversals",
+        "topics": [
+          {
+            "id": "dsa-tree-1",
+            "name": "Binary Search Trees & Recursive Traversals",
+            "icon": "🌳",
+            "resources": [
+              {
+                "title": "Visualgo BST Operations",
+                "url": "https://visualgo.net/en/bst",
+                "resource_type": "practice"
+              }
+            ]
+          },
+          {
+            "id": "dsa-graph-1",
+            "name": "Breadth-First & Depth-First Graph Traversal",
+            "icon": "🌐",
+            "resources": [
+              {
+                "title": "CP-Algorithms Graph Traversal",
+                "url": "https://cp-algorithms.com/graph/breadth-first-search.html",
+                "resource_type": "article"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "ml": {
+    "id": "ml",
+    "title": "Machine Learning & AI Engineering",
+    "tagline": "Grounded linear algebra, neural representations, and predictive analytics.",
+    "icon": "🤖",
+    "color": "#6366F1",
+    "borderColor": "rgba(99, 102, 241, 0.4)",
+    "bgGlow": "rgba(40, 30, 90, 0.25)",
+    "category": "AI / ML",
+    "stages": [
+      {
+        "title": "Stage 1: Mathematical Foundations & Regression",
+        "topics": [
+          {
+            "id": "ml-reg-1",
+            "name": "Linear Algebra, Matrices & Gradient Descent",
+            "icon": "📐",
+            "resources": [
+              {
+                "title": "3Blue1Brown - Essence of Linear Algebra",
+                "url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab",
+                "resource_type": "video"
+              }
+            ]
+          },
+          {
+            "id": "ml-reg-2",
+            "name": "Ordinary Least Squares, Ridge & Lasso Penalties",
+            "icon": "📉",
+            "resources": [
+              {
+                "title": "StatQuest - Regularization Intuition",
+                "url": "https://www.youtube.com/watch?v=Q81RR3yKn30",
+                "resource_type": "video"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Stage 2: Supervised Classification & Evaluation",
+        "topics": [
+          {
+            "id": "ml-clf-1",
+            "name": "Logistic Regression, Decision Trees & Random Forests",
+            "icon": "🌲",
+            "resources": [
+              {
+                "title": "Scikit-Learn Classification Guide",
+                "url": "https://scikit-learn.org/stable/supervised_learning.html",
+                "resource_type": "article"
+              }
+            ]
+          },
+          {
+            "id": "ml-clf-2",
+            "name": "Precision-Recall Curves & ROC-AUC Diagnostics",
+            "icon": "🎯",
+            "resources": [
+              {
+                "title": "Google Developers - ML Crash Course Metrics",
+                "url": "https://developers.google.com/machine-learning/crash-course/classification/true-false-positive-negative",
+                "resource_type": "article"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "systems": {
+    "id": "systems",
+    "title": "Systems Architecture & Database Scalability",
+    "tagline": "High-throughput APIs, distributed caching, indexing, and containerization.",
+    "icon": "🏗️",
+    "color": "#10B981",
+    "borderColor": "rgba(16, 185, 129, 0.4)",
+    "bgGlow": "rgba(16, 60, 45, 0.25)",
+    "category": "Systems",
+    "stages": [
+      {
+        "title": "Stage 1: Database Internals & Index Optimization",
+        "topics": [
+          {
+            "id": "sys-db-1",
+            "name": "B-Tree Indexing & Query Execution Plans",
+            "icon": "🗄️",
+            "resources": [
+              {
+                "title": "Use The Index, Luke! - SQL Indexing Guide",
+                "url": "https://use-the-index-luke.com/",
+                "resource_type": "article"
+              }
+            ]
+          },
+          {
+            "id": "sys-db-2",
+            "name": "ACID Guarantees, Isolation Levels & MVCC",
+            "icon": "🔒",
+            "resources": [
+              {
+                "title": "PostgreSQL MVCC Documentation",
+                "url": "https://www.postgresql.org/docs/current/mvcc.html",
+                "resource_type": "article"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Stage 2: High-Availability Distributed Systems",
+        "topics": [
+          {
+            "id": "sys-arch-1",
+            "name": "Stateless REST APIs, JWT Security & Rate Limiting",
+            "icon": "⚡",
+            "resources": [
+              {
+                "title": "FastAPI Production Security Best Practices",
+                "url": "https://fastapi.tiangolo.com/tutorial/security/",
+                "resource_type": "article"
+              }
+            ]
+          },
+          {
+            "id": "sys-arch-2",
+            "name": "Redis Distributed Caching & Sharding Strategies",
+            "icon": "📦",
+            "resources": [
+              {
+                "title": "Redis Cache Invalidation Patterns",
+                "url": "https://redis.io/docs/manual/patterns/",
+                "resource_type": "article"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
