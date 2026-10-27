@@ -6,19 +6,14 @@ import pytest
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from app.ml.predictor import train_or_load_classifier, predict_weak_topic, MODEL_FILE
-from app.datasets.generate_data import generate_oulad_engagement_dataset
 
 
-def test_oulad_dataset_generation():
-    """Verify synthetic OULAD dataset generates expected schema and realistic distributions."""
-    dataset_path = generate_oulad_engagement_dataset()
-    assert os.path.exists(dataset_path), "Dataset file was not created"
-    
-    df = pd.read_csv(dataset_path)
-    expected_cols = {"study_hours", "vle_clicks", "prior_attempts", "assessment_score", "is_weak"}
-    assert expected_cols.issubset(set(df.columns)), f"Missing columns in dataset: {df.columns}"
-    assert len(df) >= 100, "Dataset contains insufficient sample size"
-    assert df["is_weak"].isin([0, 1]).all(), "Target variable must be binary [0, 1]"
+def test_model_file_and_loading():
+    """Verify serialized model weights file exists and loads as a valid RandomForestClassifier."""
+    assert os.path.exists(MODEL_FILE), f"Serialized model weights not found at: {MODEL_FILE}"
+    model = train_or_load_classifier()
+    assert isinstance(model, RandomForestClassifier), "Model must be a RandomForestClassifier"
+    assert model.n_features_in_ == 4, "Expected 4 input features"
 
 
 def test_train_or_load_classifier_specs():

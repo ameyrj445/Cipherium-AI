@@ -30,8 +30,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score
 
-from app.datasets.generate_data import generate_oulad_engagement_dataset
-
 # Resolve local path for model weights serialization
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_FILE = os.path.join(MODEL_DIR, "weak_topic_classifier.joblib")
@@ -42,8 +40,8 @@ _model = None
 
 def train_or_load_classifier():
     """
-    Loads pre-trained model weights from disk if available, or trains
-    a fresh Random Forest classifier on the generated OULAD benchmark dataset.
+    Loads pre-trained model weights from disk if available, or delegates
+    to the production training pipeline to train on raw OULAD data.
     
     Returns:
         RandomForestClassifier: Trained and fitted scikit-learn model.
@@ -55,44 +53,20 @@ def train_or_load_classifier():
         try:
             _model = joblib.load(MODEL_FILE)
             return _model
-        except Exception:
-            # If corrupted or version mismatch, fall through to re-training
-            pass
+        except Exception as e:
+            print(f"[ML Service] Error loading cached model: {e}. Falling back to pipeline training...")
 
-    # 2. Dataset Synthesis / Ingestion
-    dataset_path = generate_oulad_engagement_dataset()
-    df = pd.read_csv(dataset_path)
+    # 2. Retraining via Production OULAD Pipeline
+    from app.ml.train_pipeline import run_pipeline
+    _model = run_pipeline()
+    if _model is not None:
+        return _model
 
-    # 3. Feature Selection matching OULAD student activity indicators
-    feature_cols = ["study_hours", "vle_clicks", "prior_attempts", "assessment_score"]
-    X = df[feature_cols]
-    y = df["is_weak"]
-
-    # 4. Train-Test Split (80/20 stratified split)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+    raise RuntimeError(
+        f"Model weights not found at {MODEL_FILE} and raw OULAD dataset unavailable. "
+        "Please ensure raw OULAD data is present in backend/data/raw/oulad/ and run "
+        "python -m app.ml.train_pipeline"
     )
-
-    # 5. Model Fitting
-    # Constraining max_depth=6 limits leaf complexity and prevents overfitting
-    model = RandomForestClassifier(
-        n_estimators=100,
-        max_depth=6,
-        random_state=42,
-        class_weight="balanced"
-    )
-    model.fit(X_train, y_train)
-
-    # 6. Evaluation metrics logging
-    y_pred = model.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
-    print(f"[ML Service] Random Forest Weak-Topic Classifier trained: Accuracy={acc:.3f}, F1-Score={f1:.3f}")
-
-    # 7. Persist to disk and update module singleton
-    joblib.dump(model, MODEL_FILE)
-    _model = model
-    return _model
 
 
 def predict_weak_topic(
