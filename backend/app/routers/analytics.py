@@ -7,7 +7,7 @@ from datetime import datetime, timezone, date, timedelta
 from app.database import get_db
 from app.models import (
     Topic, TopicMastery, QuizAttempt, Resource, StudyPlan,
-    SubjectRoadmap, User, Question, DailyTask, UserSettings
+    SubjectRoadmap, User, Question, DailyTask, UserSettings, TutorMessage
 )
 from app.schemas import (
     MasteryAnalyticsResponse,
@@ -24,10 +24,14 @@ from app.schemas import (
     UserSettingsUpdate,
     DailyTaskResponse,
     DailyTaskCreate,
-    DailyTaskToggleRequest
+    DailyTaskToggleRequest,
+    RetentionScheduleItem,
+    RetentionScheduleResponse,
+    KnowledgeGraphResponse
 )
 from app.routers.auth import get_current_user
-from app.services.analytics import compute_recommendation_score
+from app.services.analytics import compute_recommendation_score, calculate_topic_cognitive_state
+from app.services.knowledge_graph import build_curriculum_dag
 from app.ml.predictor import predict_weak_topic
 from app.services.study_plan_generator import generate_study_plan
 
@@ -125,11 +129,22 @@ def get_mastery_analytics(
     user_masteries = {
         m.topic_id: m for m in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
     }
-    all_attempts = db.query(QuizAttempt).filter(QuizAttempt.user_id == current_user.id).all()
+    all_attempts = (
+        db.query(QuizAttempt)
+        .join(Question)
+        .filter(QuizAttempt.user_id == current_user.id)
+        .order_by(QuizAttempt.attempted_at.asc())
+        .all()
+    )
 
     total_quizzes = len(all_attempts)
     total_correct = sum(1 for a in all_attempts if a.is_correct)
     overall_accuracy = round((total_correct / total_quizzes * 100), 1) if total_quizzes > 0 else 0.0
+
+    attempts_by_topic = {}
+    for a in all_attempts:
+        if a.question and a.question.topic_id:
+            attempts_by_topic.setdefault(a.question.topic_id, []).append(a)
 
     topic_details: List[TopicMasteryDetail] = []
     strong_cnt = 0
@@ -150,6 +165,10 @@ def get_mastery_analytics(
             corr_cnt = 0
 
         acc_pct = round((corr_cnt / att_cnt * 100), 1) if att_cnt > 0 else 0.0
+
+        # Calculate cognitive state via Bayesian Knowledge Tracing and Ebbinghaus Spaced Repetition
+        t_attempts = attempts_by_topic.get(t.id, [])
+        cog_state = calculate_topic_cognitive_state(t_attempts)
 
         # Run Scikit-learn Random Forest model trained on OULAD dataset:
         # Features: study_hours, vle_clicks, prior_attempts, assessment_score
@@ -188,7 +207,11 @@ def get_mastery_analytics(
                 correct_count=corr_cnt,
                 accuracy_percentage=acc_pct,
                 ml_weak_probability=ml_weak_prob,
-                ml_prediction=ml_pred_label
+                ml_prediction=ml_pred_label,
+                bkt_probability=cog_state["bkt_probability"],
+                retention_rate=cog_state["retention_rate"],
+                next_review_due=cog_state["next_review_due"],
+                retention_status=cog_state["retention_status"]
             )
         )
 
@@ -207,6 +230,117 @@ def get_mastery_analytics(
         topics=topic_details,
         day_streak=streak_data["day_streak"]
     )
+
+@router.get("/analytics/retention-schedule", response_model=RetentionScheduleResponse)
+def get_retention_schedule(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns topics grouped by Spaced Repetition urgency and Ebbinghaus memory decay.
+    Prioritizes concepts that are slipping from student retention.
+    """
+    topics = db.query(Topic).all()
+    all_attempts = (
+        db.query(QuizAttempt)
+        .join(Question)
+        .filter(QuizAttempt.user_id == current_user.id)
+        .order_by(QuizAttempt.attempted_at.asc())
+        .all()
+    )
+    attempts_by_topic = {}
+    for a in all_attempts:
+        if a.question and a.question.topic_id:
+            attempts_by_topic.setdefault(a.question.topic_id, []).append(a)
+
+    schedule_items = []
+    due_today_cnt = 0
+    crit_cnt = 0
+    rec_cnt = 0
+    opt_cnt = 0
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    for t in topics:
+        t_attempts = attempts_by_topic.get(t.id, [])
+        cog_state = calculate_topic_cognitive_state(t_attempts)
+        status = cog_state["retention_status"]
+
+        if status == "critical_review":
+            crit_cnt += 1
+            due_today_cnt += 1
+        elif status == "review_recommended":
+            rec_cnt += 1
+            if cog_state["next_review_due"] and cog_state["next_review_due"] <= now:
+                due_today_cnt += 1
+        else:
+            opt_cnt += 1
+
+        schedule_items.append(
+            RetentionScheduleItem(
+                topic_id=t.id,
+                topic_name=t.name,
+                topic_code=t.code,
+                bkt_probability=cog_state["bkt_probability"],
+                retention_rate=cog_state["retention_rate"],
+                next_review_due=cog_state["next_review_due"],
+                retention_status=status,
+                attempt_count=len(t_attempts)
+            )
+        )
+
+    # Sort schedule by urgency: critical first, then recommended, then optimal
+    urgency_order = {"critical_review": 1, "review_recommended": 2, "optimal": 3}
+    schedule_items.sort(key=lambda item: (urgency_order.get(item.retention_status, 4), item.retention_rate))
+
+    return RetentionScheduleResponse(
+        due_today_count=due_today_cnt,
+        critical_count=crit_cnt,
+        recommended_count=rec_cnt,
+        optimal_count=opt_cnt,
+        schedule=schedule_items
+    )
+
+@router.get("/analytics/knowledge-graph", response_model=KnowledgeGraphResponse)
+def get_knowledge_graph(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns the curriculum prerequisite Knowledge Graph (DAG).
+    Dynamically maps each topic to 'mastered', 'unlocked', or 'locked' based on student BKT & mastery states.
+    """
+    topics = db.query(Topic).all()
+    user_masteries = {
+        m.topic.code: m.mastery_score
+        for m in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
+        if m.topic
+    }
+
+    # Calculate BKT probabilities from attempts
+    all_attempts = (
+        db.query(QuizAttempt)
+        .join(Question)
+        .filter(QuizAttempt.user_id == current_user.id)
+        .order_by(QuizAttempt.attempted_at.asc())
+        .all()
+    )
+    attempts_by_code = {}
+    for a in all_attempts:
+        if a.question and a.question.topic and a.question.topic.code:
+            attempts_by_code.setdefault(a.question.topic.code, []).append(a)
+
+    bkt_states = {}
+    for t in topics:
+        t_attempts = attempts_by_code.get(t.code, [])
+        cog_state = calculate_topic_cognitive_state(t_attempts)
+        bkt_states[t.code] = cog_state["bkt_probability"]
+
+    graph_data = build_curriculum_dag(
+        topics=topics,
+        user_masteries=user_masteries,
+        bkt_states=bkt_states
+    )
+    return graph_data
 
 @router.get("/recommendations", response_model=List[ResourceResponse])
 def get_recommendations(
@@ -808,3 +942,133 @@ def update_user_settings_profile(
         has_custom_api_key=bool(user_settings.custom_gemini_api_key),
         custom_gemini_api_key=user_settings.custom_gemini_api_key or ""
     )
+
+
+@router.get("/analytics/activity-heatmap")
+def get_activity_heatmap(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Computes 365-day practice activity distribution and multi-dimensional competency radar.
+    Aggregates quiz submissions and AI tutor interactions with day-by-day intensity levels (0-4),
+    calculates active day streaks, and groups topic mastery into curriculum competency domains.
+    """
+    now = datetime.now(timezone.utc)
+    one_year_ago = now - timedelta(days=364)
+
+    # 1. Fetch user quiz attempts and tutor interactions
+    attempts = (
+        db.query(QuizAttempt)
+        .filter(QuizAttempt.user_id == current_user.id)
+        .filter(QuizAttempt.attempted_at >= one_year_ago)
+        .all()
+    )
+    tutor_msgs = (
+        db.query(TutorMessage)
+        .filter(TutorMessage.user_id == current_user.id)
+        .filter(TutorMessage.role == "user")
+        .filter(TutorMessage.created_at >= one_year_ago)
+        .all()
+    )
+
+    # 2. Daily aggregation
+    daily_counts = {}
+    for a in attempts:
+        d_str = a.attempted_at.strftime("%Y-%m-%d") if a.attempted_at else None
+        if d_str:
+            daily_counts[d_str] = daily_counts.get(d_str, 0) + 1
+
+    for m in tutor_msgs:
+        d_str = m.created_at.strftime("%Y-%m-%d") if m.created_at else None
+        if d_str:
+            daily_counts[d_str] = daily_counts.get(d_str, 0) + 1
+
+    # 3. Construct 365-day array
+    heatmap_data = []
+    total_activities = 0
+    start_date = (now - timedelta(days=364)).date()
+
+    for i in range(365):
+        day_date = start_date + timedelta(days=i)
+        day_str = day_date.strftime("%Y-%m-%d")
+        count = daily_counts.get(day_str, 0)
+        total_activities += count
+
+        # Activity level 0 - 4
+        if count == 0:
+            level = 0
+        elif count <= 2:
+            level = 1
+        elif count <= 5:
+            level = 2
+        elif count <= 9:
+            level = 3
+        else:
+            level = 4
+
+        heatmap_data.append({
+            "date": day_str,
+            "count": count,
+            "level": level
+        })
+
+    # 4. Streak calculation
+    active_dates = sorted([datetime.strptime(d, "%Y-%m-%d").date() for d in daily_counts.keys()])
+    longest_streak = 0
+    current_streak = 0
+
+    if active_dates:
+        temp_streak = 1
+        longest_streak = 1
+        for i in range(1, len(active_dates)):
+            if (active_dates[i] - active_dates[i - 1]).days == 1:
+                temp_streak += 1
+                if temp_streak > longest_streak:
+                    longest_streak = temp_streak
+            elif (active_dates[i] - active_dates[i - 1]).days > 1:
+                temp_streak = 1
+
+        today_date = now.date()
+        yesterday_date = today_date - timedelta(days=1)
+        if active_dates[-1] == today_date or active_dates[-1] == yesterday_date:
+            curr = 1
+            idx = len(active_dates) - 1
+            while idx > 0 and (active_dates[idx] - active_dates[idx - 1]).days == 1:
+                curr += 1
+                idx -= 1
+            current_streak = curr
+
+    # 5. Competency Radar by Category
+    topics = db.query(Topic).all()
+    user_masteries = {
+        m.topic_id: m for m in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
+    }
+
+    category_scores = {}
+    for t in topics:
+        cat = t.category or "Computer Science"
+        if cat not in category_scores:
+            category_scores[cat] = []
+        m = user_masteries.get(t.id)
+        if m:
+            category_scores[cat].append(m.mastery_score * 100)
+        else:
+            category_scores[cat].append(35.0)
+
+    competency_radar = []
+    for cat, scores in sorted(category_scores.items()):
+        avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
+        competency_radar.append({
+            "category": cat,
+            "score": avg_score,
+            "fullMark": 100
+        })
+
+    return {
+        "total_activities_past_year": total_activities,
+        "current_streak_days": current_streak,
+        "longest_streak_days": longest_streak,
+        "heatmap_data": heatmap_data,
+        "competency_radar": competency_radar
+    }
