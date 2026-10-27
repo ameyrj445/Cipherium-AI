@@ -57,3 +57,11 @@ backend/cipherium.db
 /Cipherium_AI_Implementation_Guide.docx
 /Cipherium_AI_Implementation_Guide.pdf
 /PRODUCT_REQUIREMENTS_DOCUMENT.md
+
+# Large Machine Learning datasets & Raw Data (>100MB)
+dataset/
+data/raw/
+backend/data/raw/
+*.csv
+!backend/app/datasets/oulad_student_assessment.csv
+
