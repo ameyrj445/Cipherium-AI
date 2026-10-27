@@ -114,6 +114,7 @@ export const analyticsAPI = {
   getStreak: () => api.get('/analytics/streak'),
   getRetentionSchedule: () => api.get('/analytics/retention-schedule'),
   getKnowledgeGraph: () => api.get('/analytics/knowledge-graph'),
+  getActivityHeatmap: () => api.get('/analytics/activity-heatmap'),
 };
 
 // ── Daily Study Tasks ─────────────────────────────────────────────────────────
