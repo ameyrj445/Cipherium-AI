@@ -11,6 +11,8 @@ import { analyticsAPI } from '../services/api';
 import PageContainer from './layout/PageContainer';
 import PageHeader from './layout/PageHeader';
 import FlashFixCard from './common/FlashFixCard';
+import ActivityHeatmap from './ActivityHeatmap';
+import CompetencyRadarChart from './CompetencyRadarChart';
 
 const totalsFor = (plans) =>
   plans.reduce(
@@ -67,6 +69,21 @@ export default function AnalyticsFullView({
       }
     }
     loadCards();
+    return () => { isMounted = false; };
+  }, []);
+
+  const [activityData, setActivityData] = useState(null);
+
+  // Load activity heatmap and competency radar
+  useEffect(() => {
+    let isMounted = true;
+    analyticsAPI.getActivityHeatmap()
+      .then((res) => {
+        if (isMounted && res.data) setActivityData(res.data);
+      })
+      .catch((err) => {
+        console.error('Error fetching activity heatmap:', err);
+      });
     return () => { isMounted = false; };
   }, []);
 
@@ -390,6 +407,23 @@ export default function AnalyticsFullView({
               ))}
             </div>
           </div>
+
+          {/* 365-Day Practice Activity Matrix Heatmap (12 cols) */}
+          <div style={{ gridColumn: '1 / -1', width: '100%' }}>
+            <ActivityHeatmap
+              heatmapData={activityData?.heatmap_data || []}
+              totalActivities={activityData?.total_activities_past_year || 0}
+              currentStreak={activityData?.current_streak_days || 0}
+              longestStreak={activityData?.longest_streak_days || 0}
+            />
+          </div>
+
+          {/* Curriculum Domain Competency Radar Chart (12 cols) */}
+          {activityData?.competency_radar && activityData.competency_radar.length > 0 && (
+            <div style={{ gridColumn: '1 / -1', width: '100%' }}>
+              <CompetencyRadarChart radarData={activityData.competency_radar} />
+            </div>
+          )}
 
           {/* Secondary Charts (6+6 row) */}
           {/* Left 6 cols: Study Time Over Time */}

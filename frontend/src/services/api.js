@@ -112,6 +112,9 @@ export const analyticsAPI = {
   updatePlanProgress: (data) => api.put('/roadmaps/progress', data),
   getFlashcards: () => api.get('/analytics/flashcards'),
   getStreak: () => api.get('/analytics/streak'),
+  getRetentionSchedule: () => api.get('/analytics/retention-schedule'),
+  getKnowledgeGraph: () => api.get('/analytics/knowledge-graph'),
+  getActivityHeatmap: () => api.get('/analytics/activity-heatmap'),
 };
 
 // ── Daily Study Tasks ─────────────────────────────────────────────────────────
@@ -136,6 +139,68 @@ export const geminiAPI = {
 export const tutorAPI = {
   sendMessage: (data) => api.post('/tutor/chat', data),
   getHistory: (limit = 30) => api.get(`/tutor/history?limit=${limit}`),
+  streamMessage: async (data, onChunk, onDone, onError, signal) => {
+    try {
+      const token = sessionToken || getStoredSession()?.token;
+      const response = await fetch(`${API_BASE_URL}/tutor/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
+        signal,
+      });
+
+      if (!response.ok) {
+        let errorDetail = `HTTP error ${response.status}`;
+        try {
+          const errJson = await response.json();
+          if (errJson?.detail) errorDetail = errJson.detail;
+        } catch (_) {}
+        throw new Error(errorDetail);
+      }
+
+      if (!response.body) {
+        throw new Error('ReadableStream not supported by environment');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        buffer = events.pop();
+
+        for (const evt of events) {
+          const trimmed = evt.trim();
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const parsed = JSON.parse(trimmed.slice(6));
+              if (parsed.done) {
+                if (onDone) onDone(parsed);
+              } else {
+                if (onChunk) onChunk(parsed.chunk);
+              }
+            } catch (err) {
+              console.error('Failed to parse SSE chunk:', err);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        // Stream aborted gracefully
+        return;
+      }
+      if (onError) onError(err);
+    }
+  },
 };
 
 export default api;

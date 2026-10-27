@@ -82,6 +82,8 @@ const GENERAL_QUESTIONS = [
 export default function TutorPanel({
   aiModel = 'gemini-2.5-flash',
   setAiModel = () => {},
+  tutorMode = 'socratic',
+  setTutorMode = () => {},
   chatMessages = [],
   chatInput = '',
   setChatInput = () => {},
@@ -101,7 +103,7 @@ export default function TutorPanel({
 
   // Auto-scroll to latest message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [chatMessages, tutorThinking]);
 
   // Determine currently active topic & contextual reference
@@ -531,9 +533,34 @@ export default function TutorPanel({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Pedagogical Tutoring Mode Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <select
+                aria-label="Pedagogical Learning Mode"
+                value={tutorMode}
+                onChange={(e) => setTutorMode(e.target.value)}
+                style={{
+                  background: 'rgba(99, 102, 241, 0.1)',
+                  border: '1px solid rgba(99, 102, 241, 0.35)',
+                  color: '#a5b4fc',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  fontSize: '0.74rem',
+                  outline: 'none',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="socratic">🏛️ Socratic Guided Mode</option>
+                <option value="direct">💡 Direct Instructor Mode</option>
+                <option value="exam_prep">⚡ Exam & Drill Prep Mode</option>
+              </select>
+            </div>
+
             {/* AI Model Selector */}
             <select
+              aria-label="AI Model"
               value={aiModel}
               onChange={(e) => setAiModel(e.target.value)}
               style={{
@@ -834,23 +861,73 @@ export default function TutorPanel({
                     gap: '10px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '6px',
-                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Bot size={14} color="#fff" />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '6px',
+                          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Bot size={14} color="#fff" />
+                      </div>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#c7d2fe' }}>
+                        Cipherium Tutor
+                      </span>
                     </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#c7d2fe' }}>
-                      Cipherium Tutor
-                    </span>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {msg.streaming && (
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            background: 'rgba(99, 102, 241, 0.2)',
+                            color: '#818cf8',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <RefreshCw size={10} className="spin" />
+                          Streaming...
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          fontSize: '0.66rem',
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          background:
+                            msg.mode === 'exam_prep'
+                              ? 'rgba(234, 179, 8, 0.15)'
+                              : msg.mode === 'direct'
+                              ? 'rgba(59, 130, 246, 0.15)'
+                              : 'rgba(99, 102, 241, 0.15)',
+                          color:
+                            msg.mode === 'exam_prep'
+                              ? '#facc15'
+                              : msg.mode === 'direct'
+                              ? '#60a5fa'
+                              : '#a5b4fc',
+                          border: '1px solid currentColor',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {msg.mode === 'exam_prep'
+                          ? 'Exam & Drill'
+                          : msg.mode === 'direct'
+                          ? 'Direct Instructor'
+                          : 'Socratic Guided'}
+                      </span>
+                    </div>
                   </div>
 
                   <div
@@ -863,6 +940,18 @@ export default function TutorPanel({
                     }}
                   >
                     {msg.text}
+                    {msg.streaming && (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '7px',
+                          height: '14px',
+                          background: '#818cf8',
+                          marginLeft: '4px',
+                          verticalAlign: 'text-bottom',
+                        }}
+                      />
+                    )}
                   </div>
 
                   {/* Attached verified learning resources */}
