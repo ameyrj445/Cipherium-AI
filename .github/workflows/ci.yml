@@ -1,0 +1,76 @@
+name: Cipherium AI Continuous Integration
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend-test:
+    name: Backend Test Suite (Pytest & Python 3.11)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Run Pytest suite
+        env:
+          DATABASE_URL: sqlite:///./test_ci.db
+          SECRET_KEY: ci-test-secret-key-32-characters-minimum
+          ENVIRONMENT: test
+        run: |
+          if [ -d tests ]; then
+            pytest -v --durations=10
+          else
+            echo "No backend tests found; skipping."
+          fi
+
+  frontend-check:
+    name: Frontend Lint & Production Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest unit & component test suite
+        run: npm test --if-present
+
+      - name: Run oxlint / linter
+        run: npm run lint
+
+      - name: Run Vite production build
+        run: npm run build
