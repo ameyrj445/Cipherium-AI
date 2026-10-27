@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+# Ensure backend root directory is on sys.path for test discovery and conftest imports
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
