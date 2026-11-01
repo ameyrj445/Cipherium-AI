@@ -23,6 +23,7 @@ from typing import Optional, Dict
 import requests
 
 from app.config import settings
+from app.utils.sanitize import sanitize_user_input
 
 # In-memory curriculum knowledge base covering key foundational domains
 KNOWLEDGE_BASE: Dict[str, str] = {
@@ -107,6 +108,7 @@ def ask_ai_tutor(
     Returns:
         str: Markdown-formatted pedagogical response.
     """
+    user_message = sanitize_user_input(user_message)
     mode = mode.lower() if mode else "socratic"
     # 1. Prepare curriculum grounding context
     context = ""
@@ -237,6 +239,7 @@ def stream_ai_tutor(
     Generator yielding sequential pedagogical response tokens/chunks.
     Enables low-latency Server-Sent Events (SSE) streaming for real-time interactive UI.
     """
+    user_message = sanitize_user_input(user_message)
     full_text = ask_ai_tutor(user_message, topic_code, topic_name, mode)
     # Split by paragraphs or words to yield smooth realistic stream chunks
     lines = full_text.split("\n")

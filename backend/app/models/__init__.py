@@ -13,7 +13,11 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(150), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    role = Column(String(50), default="student")
+    role = Column(String(50), default="student", nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    deleted_at = Column(DateTime, nullable=True)
+    password_reset_token = Column(String(255), nullable=True, index=True)
+    reset_token_expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now)
 
     attempts = relationship("QuizAttempt", back_populates="user")

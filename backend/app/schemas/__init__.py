@@ -24,9 +24,26 @@ class UserProfile(BaseModel):
     name: str
     email: str
     role: str
+    is_active: bool = True
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+class ResetPasswordResponse(BaseModel):
+    message: str
+
+class DeleteAccountResponse(BaseModel):
+    message: str
 
 # Topic schemas
 class TopicResponse(BaseModel):
