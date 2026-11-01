@@ -8,7 +8,7 @@ Endpoints:
 
 import json
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -17,12 +17,16 @@ from app.models import Topic, TutorMessage, User
 from app.schemas import TutorChatRequest, TutorChatResponse, ResourceResponse
 from app.routers.auth import get_current_user
 from app.services.tutor import ask_ai_tutor, stream_ai_tutor
+from app.utils.sanitize import sanitize_user_input
+from app.limiter import limiter
 
 router = APIRouter(tags=["AI Tutor"])
 
 
 @router.post("/tutor/chat", response_model=TutorChatResponse)
+@limiter.limit("30/minute")
 def chat_with_tutor(
+    request: Request,
     req: TutorChatRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -41,6 +45,10 @@ def chat_with_tutor(
     clean_msg = (req.message or "").strip()
     if not clean_msg:
         raise HTTPException(status_code=422, detail="Question message cannot be empty.")
+    try:
+        clean_msg = sanitize_user_input(clean_msg)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     topic = None
     if req.topic_id:
@@ -101,7 +109,9 @@ def chat_with_tutor(
 
 
 @router.post("/tutor/chat/stream")
+@limiter.limit("30/minute")
 def stream_chat_with_tutor(
+    request: Request,
     req: TutorChatRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -114,6 +124,10 @@ def stream_chat_with_tutor(
     clean_msg = (req.message or "").strip()
     if not clean_msg:
         raise HTTPException(status_code=422, detail="Question message cannot be empty.")
+    try:
+        clean_msg = sanitize_user_input(clean_msg)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     topic = None
     if req.topic_id:

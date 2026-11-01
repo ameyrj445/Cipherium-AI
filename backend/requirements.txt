@@ -33,6 +33,9 @@ typing_extensions==4.16.0
 urllib3==2.8.0
 uvicorn==0.54.0
 
+slowapi>=0.1.10
+itsdangerous>=2.2.0
+
 numpy>=2.2.0,<3.0.0
 pandas>=2.2.0,<4.0.0
 scikit-learn>=1.4.0,<2.0.0

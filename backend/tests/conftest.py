@@ -1,6 +1,9 @@
 import sys
 from pathlib import Path
 
+import os
+os.environ["TESTING"] = "true"
+
 # Ensure backend root directory is on sys.path for test discovery and conftest imports
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(BACKEND_DIR) not in sys.path:
