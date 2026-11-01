@@ -17,7 +17,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Topic, Question, QuizAttempt, TopicMastery, User
+from app.models import Topic, Question, QuizAttempt, TopicMastery, User, SubjectRoadmap
 from app.schemas import TopicResponse, QuestionResponse, QuizAttemptSubmit, QuizAttemptResult
 from app.routers.auth import get_current_user
 from app.services.analytics import calculate_topic_mastery, calculate_adaptive_difficulty, calculate_topic_cognitive_state
@@ -27,13 +27,65 @@ from app.utils.idempotency import get_cached, store_cached
 router = APIRouter(tags=["Topics & Quizzes"])
 
 
+def _subject_topic_filters(roadmap_json: str) -> tuple[set[int], set[str]]:
+    """Extract Topic ids/codes from a flexible SubjectRoadmap JSON payload."""
+    try:
+        roadmap = json.loads(roadmap_json)
+    except (TypeError, json.JSONDecodeError):
+        return set(), set()
+
+    topic_ids: set[int] = set()
+    topic_codes: set[str] = set()
+
+    def add_reference(value) -> None:
+        if isinstance(value, int):
+            topic_ids.add(value)
+        elif isinstance(value, str):
+            topic_codes.add(value)
+
+    def visit(value, topic_entry: bool = False) -> None:
+        if isinstance(value, list):
+            for item in value:
+                visit(item, topic_entry=topic_entry)
+        elif isinstance(value, dict):
+            for key in ("topic_ids", "topic_codes"):
+                if key in value:
+                    for reference in value[key] if isinstance(value[key], list) else [value[key]]:
+                        add_reference(reference)
+            if topic_entry:
+                for key in ("topic_id", "id", "code"):
+                    if key in value:
+                        add_reference(value[key])
+            for key, child in value.items():
+                if key not in {"topic_ids", "topic_codes"}:
+                    visit(child, topic_entry=(key == "topics"))
+
+    visit(roadmap)
+    return topic_ids, topic_codes
+
+
 @router.get("/topics", response_model=List[TopicResponse])
-def get_topics(db: Session = Depends(get_db)):
+def get_topics(subject_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     """
     Returns the comprehensive list of computer science curriculum topics.
     Used by frontend dropdowns, study plan milestones, and mastery bar charts.
     """
-    return db.query(Topic).all()
+    query = db.query(Topic)
+    if subject_id is not None:
+        subject = db.query(SubjectRoadmap).filter(SubjectRoadmap.id == subject_id).first()
+        if not subject:
+            raise HTTPException(status_code=404, detail="Subject not found")
+        topic_ids, topic_codes = _subject_topic_filters(subject.roadmap_json)
+        if not topic_ids and not topic_codes:
+            return []
+        filters = []
+        if topic_ids:
+            filters.append(Topic.id.in_(topic_ids))
+        if topic_codes:
+            filters.append(Topic.code.in_(topic_codes))
+        from sqlalchemy import or_
+        query = query.filter(or_(*filters))
+    return query.order_by(Topic.id.asc()).all()
 
 
 @router.get("/quizzes/next", response_model=QuestionResponse)
