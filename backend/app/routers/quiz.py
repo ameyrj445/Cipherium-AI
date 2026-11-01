@@ -12,7 +12,8 @@ import json
 import random
 from uuid import uuid4
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -20,6 +21,7 @@ from app.models import Topic, Question, QuizAttempt, TopicMastery, User
 from app.schemas import TopicResponse, QuestionResponse, QuizAttemptSubmit, QuizAttemptResult
 from app.routers.auth import get_current_user
 from app.services.analytics import calculate_topic_mastery, calculate_adaptive_difficulty, calculate_topic_cognitive_state
+from app.utils.idempotency import get_cached, store_cached
 
 router = APIRouter(tags=["Topics & Quizzes"])
 
@@ -95,12 +97,21 @@ def get_next_question(
 def submit_quiz_attempt(
     attempt_data: QuizAttemptSubmit,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
 ):
     """
     Evaluates a student's answer submission, records telemetry, and
     recomputes the student's mastery score for that curriculum topic.
     """
+    # Prefix with the authenticated user id so one user's key cannot expose
+    # another user's quiz result.
+    cache_key = f"quiz-attempt:{current_user.id}:{idempotency_key}" if idempotency_key else None
+    if cache_key:
+        cached_response = get_cached(cache_key)
+        if cached_response is not None:
+            return cached_response
+
     question = db.query(Question).filter(Question.id == attempt_data.question_id).first()
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")
@@ -141,7 +152,7 @@ def submit_quiz_attempt(
     cog_state = calculate_topic_cognitive_state(topic_attempts)
     penalized_bkt = max(0.0, cog_state["bkt_probability"] - (0.05 * attempt.hint_count))
 
-    return QuizAttemptResult(
+    response = QuizAttemptResult(
         id=attempt.id,
         is_correct=is_correct,
         correct_answer=question.correct_answer,
@@ -156,6 +167,11 @@ def submit_quiz_attempt(
         retention_status=cog_state["retention_status"],
         quiz_id=attempt.quiz_id,
     )
+    if cache_key:
+        cached_response = jsonable_encoder(response)
+        store_cached(cache_key, cached_response)
+        return cached_response
+    return response
 
 
 @router.get("/quizzes/{quiz_id}")
