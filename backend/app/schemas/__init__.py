@@ -56,6 +56,7 @@ class QuizAttemptSubmit(BaseModel):
     hint_count: int = 0
     # Omit for the first answer; the server creates a session id and returns it.
     quiz_id: Optional[str] = None
+    session_id: Optional[int] = None
 
 class QuizAttemptResult(BaseModel):
     id: int
@@ -71,6 +72,7 @@ class QuizAttemptResult(BaseModel):
     next_review_due: Optional[datetime] = None
     retention_status: Optional[str] = "optimal"
     quiz_id: str
+    session_id: int
 
 # Analytics & Mastery schemas
 class TopicMasteryDetail(BaseModel):

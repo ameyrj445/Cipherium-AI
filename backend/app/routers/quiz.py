@@ -17,7 +17,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Topic, Question, QuizAttempt, TopicMastery, User, SubjectRoadmap
+from app.models import Topic, Question, QuizAttempt, TopicMastery, QuizSession, User, SubjectRoadmap, utc_now
 from app.schemas import TopicResponse, QuestionResponse, QuizAttemptSubmit, QuizAttemptResult
 from app.routers.auth import get_current_user
 from app.services.analytics import calculate_topic_mastery, calculate_adaptive_difficulty, calculate_topic_cognitive_state
@@ -165,6 +165,31 @@ def submit_quiz_attempt(
         if cached_response is not None:
             return cached_response
 
+    session = None
+    if attempt_data.session_id is not None:
+        session = (
+            db.query(QuizSession)
+            .filter(QuizSession.id == attempt_data.session_id, QuizSession.user_id == current_user.id)
+            .first()
+        )
+        if not session:
+            raise HTTPException(status_code=404, detail="Quiz session not found")
+        if session.status != "active":
+            raise HTTPException(status_code=409, detail="Quiz session is already completed")
+    elif attempt_data.quiz_id:
+        # Preserve clients that already group attempts via the legacy quiz_id.
+        session = (
+            db.query(QuizSession)
+            .join(QuizAttempt)
+            .filter(QuizAttempt.user_id == current_user.id, QuizAttempt.quiz_id == attempt_data.quiz_id)
+            .order_by(QuizSession.id.asc())
+            .first()
+        )
+    if session is None:
+        session = QuizSession(user_id=current_user.id, session_type="adaptive", status="active")
+        db.add(session)
+        db.flush()
+
     question = db.query(Question).filter(Question.id == attempt_data.question_id).first()
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")
@@ -179,11 +204,12 @@ def submit_quiz_attempt(
     attempt = QuizAttempt(
         user_id=current_user.id,
         question_id=question.id,
+        session_id=session.id,
         selected_answer=attempt_data.selected_answer,
         is_correct=is_correct,
         time_taken_seconds=attempt_data.time_taken_seconds,
         hint_count=attempt_data.hint_count,
-        quiz_id=attempt_data.quiz_id or str(uuid4()),
+        quiz_id=attempt_data.quiz_id or str(session.id),
         is_finalized=False,
     )
     db.add(attempt)
@@ -225,6 +251,7 @@ def submit_quiz_attempt(
         next_review_due=cog_state["next_review_due"],
         retention_status=cog_state["retention_status"],
         quiz_id=attempt.quiz_id,
+        session_id=attempt.session_id,
     )
     if cache_key:
         cached_response = jsonable_encoder(response)
@@ -309,6 +336,12 @@ def complete_quiz_session(
 
     for attempt in attempts:
         attempt.is_finalized = True
+    session_ids = {attempt.session_id for attempt in attempts if attempt.session_id is not None}
+    if session_ids:
+        db.query(QuizSession).filter(
+            QuizSession.user_id == current_user.id,
+            QuizSession.id.in_(session_ids),
+        ).update({"status": "completed", "completed_at": utc_now()}, synchronize_session=False)
     db.commit()
 
     score = sum(1 for attempt in attempts if attempt.is_correct)
