@@ -24,6 +24,9 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
+# Locally generated course notes and Chroma's persisted vector store
+backend/data/docs/
+backend/data/chroma/
 
 # Node / Vite
 node_modules/
