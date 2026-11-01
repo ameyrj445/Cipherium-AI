@@ -203,6 +203,13 @@ def reset_password(
     Validates a password reset token and updates the user's password with fresh bcrypt hash.
     Invalidates the token immediately upon consumption.
     """
+    clean_pwd = (payload.new_password or "").strip()
+    if len(clean_pwd) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters long",
+        )
+
     user_id = verify_reset_token(payload.token, max_age=3600)
     if not user_id:
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
