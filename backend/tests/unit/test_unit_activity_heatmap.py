@@ -1,16 +1,20 @@
 ﻿import pytest
 from datetime import datetime, timedelta, timezone
-from app.models import QuizAttempt, Topic, User
+from app.models import QuizAttempt, QuizSession, Topic, User
 
 def test_activity_heatmap_endpoint(client, auth_headers, db_session):
     user = db_session.query(User).filter(User.email == "student@cipherium.ai").first()
     assert user is not None
 
     now = datetime.now(timezone.utc)
+    session = QuizSession(user_id=user.id, session_type="adaptive", status="active")
+    db_session.add(session)
+    db_session.flush()
 
     attempt1 = QuizAttempt(
         user_id=user.id,
         question_id=1,
+        session_id=session.id,
         selected_answer="A",
         is_correct=True,
         time_taken_seconds=45,
@@ -19,6 +23,7 @@ def test_activity_heatmap_endpoint(client, auth_headers, db_session):
     attempt2 = QuizAttempt(
         user_id=user.id,
         question_id=2,
+        session_id=session.id,
         selected_answer="B",
         is_correct=False,
         time_taken_seconds=60,

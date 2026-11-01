@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import json
@@ -7,7 +7,7 @@ from datetime import datetime, timezone, date, timedelta
 from app.database import get_db
 from app.models import (
     Topic, TopicMastery, QuizAttempt, Resource, StudyPlan,
-    SubjectRoadmap, User, Question, DailyTask, UserSettings, TutorMessage
+    SubjectRoadmap, User, Question, DailyTask, UserSettings, TutorMessage, MasteryEvent
 )
 from app.schemas import (
     MasteryAnalyticsResponse,
@@ -37,6 +37,30 @@ from app.services.study_plan_generator import generate_study_plan
 
 
 router = APIRouter(tags=["Analytics, Recommendations & Roadmaps"])
+
+
+@router.get("/analytics/mastery/history")
+def get_mastery_history(
+    topic_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return the authenticated user's chronological BKT audit trail."""
+    query = db.query(MasteryEvent).filter(MasteryEvent.user_id == current_user.id)
+    if topic_id is not None:
+        query = query.filter(MasteryEvent.topic_id == topic_id)
+    events = query.order_by(MasteryEvent.created_at.asc(), MasteryEvent.id.asc()).all()
+    return [
+        {
+            "id": event.id,
+            "topic_id": event.topic_id,
+            "prior": event.prior,
+            "posterior": event.posterior,
+            "event_type": event.event_type,
+            "created_at": event.created_at,
+        }
+        for event in events
+    ]
 
 @router.get("/roadmaps/subjects")
 def list_subject_roadmaps(
