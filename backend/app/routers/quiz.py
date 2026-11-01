@@ -22,6 +22,7 @@ from app.schemas import TopicResponse, QuestionResponse, QuizAttemptSubmit, Quiz
 from app.routers.auth import get_current_user
 from app.services.analytics import calculate_topic_mastery, calculate_adaptive_difficulty, calculate_topic_cognitive_state
 from app.services.bkt_service import update_bkt_with_audit
+from app.services.study_plan_generator import regenerate_if_stale
 from app.utils.idempotency import get_cached, store_cached
 
 router = APIRouter(tags=["Topics & Quizzes"])
@@ -342,6 +343,7 @@ def complete_quiz_session(
             QuizSession.user_id == current_user.id,
             QuizSession.id.in_(session_ids),
         ).update({"status": "completed", "completed_at": utc_now()}, synchronize_session=False)
+    roadmap_regenerated = regenerate_if_stale(current_user.id, db)
     db.commit()
 
     score = sum(1 for attempt in attempts if attempt.is_correct)
@@ -351,6 +353,7 @@ def complete_quiz_session(
         "total": total,
         "accuracy_pct": round((score / total) * 100, 2) if total else 0.0,
         "mastery_deltas": deltas,
+        "roadmap_regenerated": roadmap_regenerated,
     }
 
 

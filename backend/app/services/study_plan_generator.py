@@ -5,6 +5,9 @@ import uuid
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 import requests
+from sqlalchemy.orm import Session
+
+from app.models import StudyPlan, TopicMastery
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
@@ -1292,4 +1295,118 @@ def generate_study_plan(
         skill_level=skill_level,
         learning_goal=learning_goal
     )
+
+
+def _task_values_for_mastery(status: str, position: int) -> dict:
+    """Return the adaptive roadmap attributes for a topic mastery state."""
+    if status == "weak":
+        return {
+            "priority": "High", "estimated_hours": 3.5,
+            "milestone": f"Milestone {position}: Urgent Mastery Intervention",
+            "status": "in_progress" if position == 1 else "pending",
+        }
+    if status == "developing":
+        return {
+            "priority": "Medium", "estimated_hours": 2.5,
+            "milestone": f"Milestone {position}: Skill Acceleration", "status": "pending",
+        }
+    if status == "strong":
+        return {
+            "priority": "Low", "estimated_hours": 1.0,
+            "milestone": f"Milestone {position}: Advanced Refresher", "status": "pending",
+        }
+    return {
+        "priority": "Medium", "estimated_hours": 2.0,
+        "milestone": f"Milestone {position}: Diagnostic Exploration", "status": "pending",
+    }
+
+
+def _is_weak_snapshot(task: dict) -> bool:
+    """Support both new explicit snapshots and roadmaps saved before this feature."""
+    return task.get("mastery_status") == "weak" or (
+        "mastery_status" not in task and task.get("priority") == "High"
+    )
+
+
+def _current_plan(user_id: int, db: Session) -> Optional[StudyPlan]:
+    plans = (
+        db.query(StudyPlan)
+        .filter(StudyPlan.user_id == user_id)
+        .order_by(StudyPlan.updated_at.desc(), StudyPlan.id.desc())
+        .all()
+    )
+    # The topic-aware roadmap is stored as a list of tasks. Custom plans are
+    # JSON objects without stable topic IDs and must not block its refresh.
+    for plan in plans:
+        try:
+            if isinstance(json.loads(plan.plan_json), list):
+                return plan
+        except (TypeError, json.JSONDecodeError):
+            continue
+    return None
+
+
+def is_plan_stale(user_id: int, db: Session) -> bool:
+    """Whether a saved standard roadmap contains a topic that became strong."""
+    plan = _current_plan(user_id, db)
+    if not plan:
+        return False
+    try:
+        tasks = json.loads(plan.plan_json)
+    except (TypeError, json.JSONDecodeError):
+        return False
+    if not isinstance(tasks, list):  # Custom plans do not have stable topic IDs.
+        return False
+
+    topic_ids = [task.get("topic_id") for task in tasks if isinstance(task, dict) and task.get("topic_id")]
+    if not topic_ids:
+        return False
+    mastery_by_topic = {
+        mastery.topic_id: mastery.status
+        for mastery in db.query(TopicMastery)
+        .filter(TopicMastery.user_id == user_id, TopicMastery.topic_id.in_(topic_ids))
+        .all()
+    }
+    return any(
+        isinstance(task, dict)
+        and _is_weak_snapshot(task)
+        and mastery_by_topic.get(task.get("topic_id")) == "strong"
+        for task in tasks
+    )
+
+
+def regenerate_if_stale(user_id: int, db: Session) -> bool:
+    """Refresh a standard roadmap after one of its weak topics becomes strong.
+
+    The caller owns the database transaction. Returns ``True`` only when a
+    persisted plan was regenerated.
+    """
+    plan = _current_plan(user_id, db)
+    if not plan or not is_plan_stale(user_id, db):
+        return False
+    try:
+        tasks = json.loads(plan.plan_json)
+    except (TypeError, json.JSONDecodeError):
+        return False
+    if not isinstance(tasks, list):
+        return False
+
+    topic_ids = [task.get("topic_id") for task in tasks if isinstance(task, dict) and task.get("topic_id")]
+    mastery_by_topic = {
+        mastery.topic_id: mastery.status
+        for mastery in db.query(TopicMastery)
+        .filter(TopicMastery.user_id == user_id, TopicMastery.topic_id.in_(topic_ids))
+        .all()
+    }
+    refreshed_tasks = []
+    for position, task in enumerate(tasks, start=1):
+        if not isinstance(task, dict):
+            continue
+        status = mastery_by_topic.get(task.get("topic_id"), "insufficient_data")
+        refreshed = {**task, **_task_values_for_mastery(status, position), "mastery_status": status}
+        refreshed_tasks.append(refreshed)
+
+    plan.plan_json = json.dumps(refreshed_tasks)
+    plan.updated_at = datetime.now(timezone.utc)
+    return True
 

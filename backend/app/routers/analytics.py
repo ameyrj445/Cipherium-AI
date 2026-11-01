@@ -34,10 +34,28 @@ from app.routers.auth import get_current_user, require_admin
 from app.services.analytics import compute_recommendation_score, calculate_topic_cognitive_state
 from app.services.knowledge_graph import build_curriculum_dag
 from app.ml.predictor import predict_weak_topic
-from app.services.study_plan_generator import generate_study_plan
+from app.services.study_plan_generator import generate_study_plan, is_plan_stale
 
 
 router = APIRouter(tags=["Analytics, Recommendations & Roadmaps"])
+
+
+@router.get("/roadmaps/status")
+def get_roadmap_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Report whether the active topic roadmap needs a mastery-driven refresh."""
+    plan = (
+        db.query(StudyPlan)
+        .filter(StudyPlan.user_id == current_user.id)
+        .order_by(StudyPlan.updated_at.desc(), StudyPlan.id.desc())
+        .first()
+    )
+    return {
+        "is_stale": is_plan_stale(current_user.id, db),
+        "last_generated_at": plan.updated_at if plan else None,
+    }
 
 
 @router.get("/analytics/tutor-stats")
@@ -531,7 +549,10 @@ def generate_study_roadmap(
         )
 
     # Persist or update study plan
-    plan_data = [task.model_dump() for task in tasks]
+    plan_data = [
+        {**task.model_dump(), "mastery_status": user_masteries.get(task.topic_id).status if user_masteries.get(task.topic_id) else "insufficient_data"}
+        for task in tasks
+    ]
     plan_record = db.query(StudyPlan).filter(StudyPlan.user_id == current_user.id).first()
     if not plan_record:
         plan_record = StudyPlan(
