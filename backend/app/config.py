@@ -47,6 +47,18 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-flash"
 
+    # SMTP Email configuration (FR-AUTH-02c / J3-2)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    FROM_EMAIL: str = "noreply@cipherium.ai"
+    MAIL_ENABLED: bool = False
+
+    # Security & HTTPS (NFR-SEC-01 / J3-4)
+    FORCE_HTTPS: bool = False
+    ALLOWED_HOSTS: str = "*"
+
     # Comma-delimited list of trusted client origins for CORS policy
     ALLOWED_ORIGINS: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"

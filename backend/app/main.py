@@ -16,7 +16,8 @@ from app.database import engine, Base, SessionLocal, get_db, ACTIVE_DATABASE_URL
 from app.data.seed import seed_database
 from app.models import User
 from app.schemas import DeleteAccountResponse
-from app.routers import auth, quiz, analytics, tutor, admin, profile, feedback
+from app.routers import auth, quiz, analytics, tutor, admin, profile, feedback, health
+from app.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
 from app.routers.auth import get_current_user, delete_account
 from app.limiter import limiter
 
@@ -68,6 +69,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Enterprise defensive security headers (NFR-SEC-01)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Distributed request tracing & latency tracking (NFR-OBS-01)
+app.add_middleware(RequestLoggingMiddleware)
+
 # Global exception handler for uncaught server errors
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -95,16 +102,9 @@ app.include_router(tutor.router)
 app.include_router(admin.router)
 app.include_router(profile.router)
 app.include_router(feedback.router)
+app.include_router(health.router)
 
-@app.get("/health")
-def health_check():
-    return {
-        "status": "healthy",
-        "service": "Cipherium AI API",
-        "version": "2.0.0",
-        "environment": settings.ENVIRONMENT,
-        "database": "postgresql" if "postgresql" in ACTIVE_DATABASE_URL else "sqlite"
-    }
+# Health endpoints delegated to app.routers.health
 
 @app.get("/")
 def root():

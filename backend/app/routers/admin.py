@@ -12,6 +12,7 @@ Endpoints:
 """
 
 import json
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -262,7 +263,48 @@ def get_admin_overview(
     """
     Provides privacy-preserving platform-wide telemetry and activity statistics (FR-ADMIN-02).
     """
+    now = datetime.now(timezone.utc)
+    seven_days_ago = now - timedelta(days=7)
+    today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
     total_users = db.query(func.count(User.id)).filter(User.is_active == True).scalar() or 0
+    active_users_last_7d = (
+        db.query(func.count(func.distinct(QuizAttempt.user_id)))
+        .filter(QuizAttempt.attempted_at >= seven_days_ago)
+        .scalar()
+        or 0
+    )
+    quiz_attempts_today = (
+        db.query(func.count(QuizAttempt.id))
+        .filter(QuizAttempt.attempted_at >= today_midnight)
+        .scalar()
+        or 0
+    )
+    avg_mastery = db.query(func.avg(TopicMastery.mastery_score)).scalar()
+    avg_mastery_score = round(float(avg_mastery), 4) if avg_mastery is not None else 0.0
+
+    struggled_rows = (
+        db.query(
+            Topic.id,
+            Topic.name,
+            func.avg(TopicMastery.mastery_score).label("avg_score"),
+            func.count(TopicMastery.id).label("student_count"),
+        )
+        .join(TopicMastery, Topic.id == TopicMastery.topic_id)
+        .group_by(Topic.id, Topic.name)
+        .order_by(func.avg(TopicMastery.mastery_score).asc())
+        .limit(5)
+        .all()
+    )
+    most_struggled_topics = [
+        {
+            "topic_id": row.id,
+            "topic_name": row.name,
+            "avg_mastery": round(float(row.avg_score), 4) if row.avg_score is not None else 0.0,
+            "learners_assessed": row.student_count,
+        }
+        for row in struggled_rows
+    ]
     total_attempts = db.query(func.count(QuizAttempt.id)).scalar() or 0
     total_questions = db.query(func.count(Question.id)).scalar() or 0
     
@@ -275,7 +317,12 @@ def get_admin_overview(
     accuracy_rate = (correct_attempts / total_attempts) if total_attempts > 0 else 0.0
 
     return {
+        "total_users": total_users,
         "total_active_students": total_users,
+        "active_users_last_7d": active_users_last_7d,
+        "quiz_attempts_today": quiz_attempts_today,
+        "avg_mastery_score": avg_mastery_score,
+        "most_struggled_topics": most_struggled_topics,
         "total_quiz_attempts": total_attempts,
         "overall_accuracy_rate": round(accuracy_rate, 4),
         "questions_overview": {
