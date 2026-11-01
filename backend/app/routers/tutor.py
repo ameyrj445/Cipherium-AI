@@ -7,6 +7,7 @@ Endpoints:
 """
 
 import json
+import time
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
@@ -16,7 +17,8 @@ from app.database import get_db
 from app.models import Topic, TutorMessage, User, TutorConversation, utc_now
 from app.schemas import TutorChatRequest, TutorChatResponse, ResourceResponse, TutorConversationCreate, TutorConversationResponse, TutorMessageDetail
 from app.routers.auth import get_current_user
-from app.services.tutor import ask_ai_tutor, stream_ai_tutor
+from app.services.tutor import ask_ai_tutor, generate_tutor_response, stream_ai_tutor
+from app.services.rag import retrieve_context_with_ids
 from app.utils.sanitize import sanitize_user_input
 from app.limiter import limiter
 
@@ -76,7 +78,7 @@ def chat_with_tutor(
     db.commit()
 
     # 2. Generate grounded pedagogical explanation
-    ai_answer = ask_ai_tutor(
+    ai_answer, latency_ms, token_count, retrieval_chunk_ids = generate_tutor_response(
         user_message=req.message,
         topic_code=topic.code if topic else None,
         topic_name=topic.name if topic else None,
@@ -89,7 +91,10 @@ def chat_with_tutor(
         role="assistant",
         message=ai_answer,
         topic_id=req.topic_id,
-        conversation_id=conversation.id if conversation else None
+        conversation_id=conversation.id if conversation else None,
+        latency_ms=latency_ms,
+        token_count=token_count,
+        retrieval_chunk_ids=json.dumps(retrieval_chunk_ids),
     )
     db.add(assistant_msg_record)
     db.commit()
@@ -184,6 +189,8 @@ def stream_chat_with_tutor(
 
     def event_stream():
         accumulated_chunks = []
+        start = time.monotonic()
+        _, retrieval_chunk_ids = retrieve_context_with_ids(clean_msg)
         for chunk in stream_ai_tutor(
             user_message=req.message,
             topic_code=topic.code if topic else None,
@@ -203,7 +210,10 @@ def stream_chat_with_tutor(
             role="assistant",
             message=full_answer,
             topic_id=req.topic_id,
-        conversation_id=conversation.id if conversation else None
+            conversation_id=conversation.id if conversation else None,
+            latency_ms=int((time.monotonic() - start) * 1000),
+            token_count=len(full_answer.split()),
+            retrieval_chunk_ids=json.dumps(retrieval_chunk_ids),
         )
         db.add(assistant_record)
         db.commit()

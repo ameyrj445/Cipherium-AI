@@ -160,6 +160,9 @@ class TutorMessage(Base):
     message = Column(Text, nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=True)
     conversation_id = Column(Integer, ForeignKey("tutor_conversations.id"), nullable=True)
+    latency_ms = Column(Integer, nullable=True)
+    token_count = Column(Integer, nullable=True)
+    retrieval_chunk_ids = Column(Text, nullable=True)  # JSON list of Chroma chunk IDs
     created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="messages")

@@ -76,12 +76,22 @@ def ingest_documents(docs_dir: Path) -> int:
 
 def retrieve_context(query: str, top_k: int = 3) -> List[str]:
     """Return the most relevant note chunks, or no chunks when RAG is unavailable."""
+    chunks, _ = retrieve_context_with_ids(query, top_k)
+    return chunks
+
+
+def retrieve_context_with_ids(query: str, top_k: int = 3) -> tuple[List[str], List[str]]:
+    """Return relevant text chunks and their persistent Chroma identifiers."""
     if not query or top_k <= 0:
-        return []
+        return [], []
     try:
         results = _collection().query(query_texts=[query], n_results=top_k)
         documents = results.get("documents", [])
-        return [text for text in (documents[0] if documents else []) if text]
+        ids = results.get("ids", [])
+        return (
+            [text for text in (documents[0] if documents else []) if text],
+            [chunk_id for chunk_id in (ids[0] if ids else []) if chunk_id],
+        )
     except Exception:
         # Vector retrieval enhances the tutor but must never make it unavailable.
-        return []
+        return [], []

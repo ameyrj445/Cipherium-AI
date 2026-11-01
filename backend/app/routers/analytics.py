@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 import json
 from datetime import datetime, timezone, date, timedelta
@@ -29,7 +30,7 @@ from app.schemas import (
     RetentionScheduleResponse,
     KnowledgeGraphResponse
 )
-from app.routers.auth import get_current_user
+from app.routers.auth import get_current_user, require_admin
 from app.services.analytics import compute_recommendation_score, calculate_topic_cognitive_state
 from app.services.knowledge_graph import build_curriculum_dag
 from app.ml.predictor import predict_weak_topic
@@ -37,6 +38,36 @@ from app.services.study_plan_generator import generate_study_plan
 
 
 router = APIRouter(tags=["Analytics, Recommendations & Roadmaps"])
+
+
+@router.get("/analytics/tutor-stats")
+def get_tutor_stats(
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_admin),
+):
+    """Return daily, privacy-preserving aggregate telemetry for tutor replies."""
+    day = func.date(TutorMessage.created_at).label("day")
+    rows = (
+        db.query(
+            day,
+            func.avg(TutorMessage.latency_ms).label("avg_latency_ms"),
+            func.coalesce(func.sum(TutorMessage.token_count), 0).label("total_tokens"),
+            func.count(TutorMessage.id).label("message_count"),
+        )
+        .filter(TutorMessage.role == "assistant")
+        .group_by(day)
+        .order_by(day.desc())
+        .all()
+    )
+    return [
+        {
+            "day": str(row.day),
+            "avg_latency_ms": round(float(row.avg_latency_ms or 0), 2),
+            "total_tokens": int(row.total_tokens or 0),
+            "message_count": int(row.message_count),
+        }
+        for row in rows
+    ]
 
 
 @router.get("/analytics/mastery/history")

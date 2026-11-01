@@ -19,11 +19,12 @@ To ensure high availability and zero setup friction for evaluators:
 """
 
 import os
+import time
 from typing import Optional, Dict
 import requests
 
 from app.config import settings
-from app.services.rag import retrieve_context
+from app.services.rag import retrieve_context, retrieve_context_with_ids
 from app.utils.sanitize import sanitize_user_input
 
 # In-memory curriculum knowledge base covering key foundational domains
@@ -102,7 +103,8 @@ def ask_ai_tutor(
     user_message: str,
     topic_code: Optional[str] = None,
     topic_name: Optional[str] = None,
-    mode: str = "socratic"
+    mode: str = "socratic",
+    retrieved_chunks: Optional[list[str]] = None,
 ) -> str:
     """
     Synthesizes an empathetic, pedagogical response to student questions.
@@ -118,7 +120,8 @@ def ask_ai_tutor(
     """
     user_message = sanitize_user_input(user_message)
     # Retrieval is optional; `retrieve_context` returns [] if Chroma is unavailable.
-    retrieved_chunks = retrieve_context(user_message)
+    if retrieved_chunks is None:
+        retrieved_chunks = retrieve_context(user_message)
     reference_material = _reference_material(retrieved_chunks)
     mode = mode.lower() if mode else "socratic"
     # 1. Prepare curriculum grounding context
@@ -242,6 +245,26 @@ def ask_ai_tutor(
                 f"- Take a quick 3-question **Practice Quiz** to reinforce your knowledge boundaries.\n"
                 f"- Ask me specific questions about runtime complexity, edge cases, or debugging!"
             )
+
+
+def generate_tutor_response(
+    user_message: str,
+    topic_code: Optional[str] = None,
+    topic_name: Optional[str] = None,
+    mode: str = "socratic",
+) -> tuple[str, int, int, list[str]]:
+    """Generate an answer plus persistence-ready telemetry for a tutor message."""
+    retrieved_chunks, retrieval_chunk_ids = retrieve_context_with_ids(user_message)
+    start = time.monotonic()
+    response = ask_ai_tutor(
+        user_message=user_message,
+        topic_code=topic_code,
+        topic_name=topic_name,
+        mode=mode,
+        retrieved_chunks=retrieved_chunks,
+    )
+    latency_ms = int((time.monotonic() - start) * 1000)
+    return response, latency_ms, len(response.split()), retrieval_chunk_ids
 
 
 def stream_ai_tutor(
