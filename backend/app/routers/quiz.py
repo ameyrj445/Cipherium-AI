@@ -45,7 +45,7 @@ def get_next_question(
     3. Queries unattempted questions to avoid immediate repetition.
     4. Strips the answer explanation from the response payload to prevent browser inspection.
     """
-    query = db.query(Question)
+    query = db.query(Question).filter(Question.status == "published")
     if topic_id:
         query = query.filter(Question.topic_id == topic_id)
         
@@ -64,7 +64,7 @@ def get_next_question(
     questions = query.all()
     if not questions:
         # Fallback to general question pool if no topic-filtered questions remain
-        questions = db.query(Question).all()
+        questions = db.query(Question).filter(Question.status == "published").all()
         if not questions:
             raise HTTPException(status_code=404, detail="No questions available in the curriculum pool.")
 
@@ -185,7 +185,7 @@ def generate_diagnostic_exam(
     Synthesizes a timed mock diagnostic exam calibrated to a maximum difficulty level.
     Aggregates questions across specified topics with shuffled options for standardized testing.
     """
-    query = db.query(Question).filter(Question.difficulty <= max_difficulty)
+    query = db.query(Question).filter(Question.status == "published").filter(Question.difficulty <= max_difficulty)
     if topic_ids:
         query = query.filter(Question.topic_id.in_(topic_ids))
     

@@ -7,14 +7,14 @@ Endpoints:
 """
 
 import json
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Topic, TutorMessage, User
-from app.schemas import TutorChatRequest, TutorChatResponse, ResourceResponse
+from app.models import Topic, TutorMessage, User, TutorConversation, utc_now
+from app.schemas import TutorChatRequest, TutorChatResponse, ResourceResponse, TutorConversationCreate, TutorConversationResponse, TutorMessageDetail
 from app.routers.auth import get_current_user
 from app.services.tutor import ask_ai_tutor, stream_ai_tutor
 from app.utils.sanitize import sanitize_user_input
@@ -54,12 +54,23 @@ def chat_with_tutor(
     if req.topic_id:
         topic = db.query(Topic).filter(Topic.id == req.topic_id).first()
 
+    conversation = None
+    if req.conversation_id:
+        conversation = db.query(TutorConversation).filter(
+            TutorConversation.id == req.conversation_id,
+            TutorConversation.user_id == current_user.id
+        ).first()
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation session not found")
+        conversation.updated_at = utc_now()
+
     # 1. Record incoming student message
     user_msg_record = TutorMessage(
         user_id=current_user.id,
         role="user",
         message=clean_msg,
-        topic_id=req.topic_id
+        topic_id=req.topic_id,
+        conversation_id=conversation.id if conversation else None
     )
     db.add(user_msg_record)
     db.commit()
@@ -77,7 +88,8 @@ def chat_with_tutor(
         user_id=current_user.id,
         role="assistant",
         message=ai_answer,
-        topic_id=req.topic_id
+        topic_id=req.topic_id,
+        conversation_id=conversation.id if conversation else None
     )
     db.add(assistant_msg_record)
     db.commit()
@@ -133,12 +145,23 @@ def stream_chat_with_tutor(
     if req.topic_id:
         topic = db.query(Topic).filter(Topic.id == req.topic_id).first()
 
+    conversation = None
+    if req.conversation_id:
+        conversation = db.query(TutorConversation).filter(
+            TutorConversation.id == req.conversation_id,
+            TutorConversation.user_id == current_user.id
+        ).first()
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation session not found")
+        conversation.updated_at = utc_now()
+
     # 1. Record incoming student message
     user_msg_record = TutorMessage(
         user_id=current_user.id,
         role="user",
         message=clean_msg,
-        topic_id=req.topic_id
+        topic_id=req.topic_id,
+        conversation_id=conversation.id if conversation else None
     )
     db.add(user_msg_record)
     db.commit()
@@ -179,7 +202,8 @@ def stream_chat_with_tutor(
             user_id=current_user.id,
             role="assistant",
             message=full_answer,
-            topic_id=req.topic_id
+            topic_id=req.topic_id,
+        conversation_id=conversation.id if conversation else None
         )
         db.add(assistant_record)
         db.commit()
@@ -222,3 +246,110 @@ def get_tutor_history(
             "created_at": m.created_at.strftime("%Y-%m-%d %H:%M:%S") if m.created_at else None
         })
     return history
+
+
+@router.post("/tutor/conversations", response_model=TutorConversationResponse, status_code=status.HTTP_201_CREATED)
+def create_conversation(
+    payload: TutorConversationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Initializes a new persistent tutoring conversation thread (FR-TUTOR).
+    """
+    title = payload.title.strip() if payload.title and payload.title.strip() else None
+    if not title:
+        if payload.topic_id:
+            topic = db.query(Topic).filter(Topic.id == payload.topic_id).first()
+            title = f"{topic.name} Discussion" if topic else "New Conversation"
+        else:
+            title = "New Conversation"
+
+    new_conv = TutorConversation(
+        user_id=current_user.id,
+        topic_id=payload.topic_id,
+        title=title,
+    )
+    db.add(new_conv)
+    db.commit()
+    db.refresh(new_conv)
+    return new_conv
+
+
+@router.get("/tutor/conversations", response_model=List[TutorConversationResponse])
+def list_conversations(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retrieves all conversation sessions belonging to the authenticated learner.
+    """
+    return (
+        db.query(TutorConversation)
+        .filter(TutorConversation.user_id == current_user.id)
+        .order_by(TutorConversation.updated_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+@router.get("/tutor/conversations/{conversation_id}/messages", response_model=List[TutorMessageDetail])
+def get_conversation_messages(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retrieves the complete message history for a specific conversation session.
+    """
+    conv = db.query(TutorConversation).filter(
+        TutorConversation.id == conversation_id,
+        TutorConversation.user_id == current_user.id
+    ).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation session not found")
+
+    messages = (
+        db.query(TutorMessage)
+        .filter(TutorMessage.conversation_id == conversation_id)
+        .order_by(TutorMessage.created_at.asc())
+        .all()
+    )
+    return messages
+
+
+@router.post("/tutor/conversations/{conversation_id}/messages", response_model=TutorChatResponse)
+@limiter.limit("30/minute")
+def send_conversation_message(
+    conversation_id: int,
+    request: Request,
+    req: TutorChatRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Submits a student question scoped to a specific persistent conversation thread.
+    """
+    conv = db.query(TutorConversation).filter(
+        TutorConversation.id == conversation_id,
+        TutorConversation.user_id == current_user.id
+    ).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation session not found")
+
+    req.conversation_id = conv.id
+    if not req.topic_id and conv.topic_id:
+        req.topic_id = conv.topic_id
+
+    response = chat_with_tutor(request=request, req=req, db=db, current_user=current_user)
+
+    # Auto-title conversation if it still has default title
+    if conv.title in ["New Conversation", "", None]:
+        preview = req.message.strip().split("\n")[0]
+        conv.title = (preview[:47] + "...") if len(preview) > 50 else preview
+        db.commit()
+
+    return response

@@ -16,7 +16,7 @@ from app.database import engine, Base, SessionLocal, get_db, ACTIVE_DATABASE_URL
 from app.data.seed import seed_database
 from app.models import User
 from app.schemas import DeleteAccountResponse
-from app.routers import auth, quiz, analytics, tutor
+from app.routers import auth, quiz, analytics, tutor, admin, profile, feedback
 from app.routers.auth import get_current_user, delete_account
 from app.limiter import limiter
 
@@ -92,6 +92,9 @@ app.include_router(auth.router)
 app.include_router(quiz.router)
 app.include_router(analytics.router)
 app.include_router(tutor.router)
+app.include_router(admin.router)
+app.include_router(profile.router)
+app.include_router(feedback.router)
 
 @app.get("/health")
 def health_check():

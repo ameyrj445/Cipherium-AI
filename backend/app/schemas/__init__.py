@@ -236,6 +236,7 @@ class TutorChatRequest(BaseModel):
     message: str
     topic_id: Optional[int] = None
     mode: Optional[str] = "socratic" # "socratic" | "direct" | "exam_prep"
+    conversation_id: Optional[int] = None
 
 class TutorChatResponse(BaseModel):
     response: str
@@ -258,6 +259,7 @@ class UserSettingsResponse(BaseModel):
     daily_streak_reminder: bool = True
     diagnostic_quiz_alert: bool = True
     weak_topic_ping: bool = True
+    notification_retention: bool = True
     has_custom_api_key: bool = False
     custom_gemini_api_key: Optional[str] = None
 
@@ -268,6 +270,7 @@ class UserSettingsUpdate(BaseModel):
     daily_streak_reminder: Optional[bool] = None
     diagnostic_quiz_alert: Optional[bool] = None
     weak_topic_ping: Optional[bool] = None
+    notification_retention: Optional[bool] = None
     custom_gemini_api_key: Optional[str] = None
 
 # Daily Tasks schemas
@@ -288,3 +291,83 @@ class DailyTaskCreate(BaseModel):
 class DailyTaskToggleRequest(BaseModel):
     is_done: Optional[bool] = None
 
+
+
+# ============================================================================
+# Sprint 2 Schemas: Admin CMS, Tutor Conversations, Feedback
+# ============================================================================
+
+class AdminResourceCreate(BaseModel):
+    topic_id: int
+    title: str
+    resource_type: str = "article" # video, article, exercise, cheatsheet
+    url: str
+    difficulty: int = 1
+    estimated_minutes: int = 15
+    summary: Optional[str] = None
+
+class AdminQuestionCreate(BaseModel):
+    topic_id: int
+    question_text: str
+    options: List[str]
+    correct_answer: str
+    difficulty: int = 1
+    explanation: Optional[str] = None
+    status: str = "draft" # draft, review, published, archived
+
+class AdminQuestionStatusUpdate(BaseModel):
+    status: str
+
+class AdminQuestionResponse(BaseModel):
+    id: int
+    topic_id: int
+    question_text: str
+    options: List[str]
+    correct_answer: str
+    difficulty: int
+    explanation: Optional[str] = None
+    status: str = "published"
+    version: int = 1
+
+    model_config = ConfigDict(from_attributes=True)
+
+class TutorConversationCreate(BaseModel):
+    topic_id: Optional[int] = None
+    title: Optional[str] = None
+
+class TutorConversationResponse(BaseModel):
+    id: int
+    user_id: int
+    topic_id: Optional[int] = None
+    title: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class TutorMessageDetail(BaseModel):
+    id: int
+    role: str
+    message: str
+    topic_id: Optional[int] = None
+    conversation_id: Optional[int] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class FeedbackCreate(BaseModel):
+    feedback_type: str # tutor_rating, rec_rating, bug, too_easy, too_hard, not_relevant
+    target_id: Optional[int] = None
+    rating: Optional[int] = None # -1, 0, 1
+    comment: Optional[str] = None
+
+class FeedbackResponse(BaseModel):
+    id: int
+    user_id: int
+    feedback_type: str
+    target_id: Optional[int] = None
+    rating: Optional[int] = None
+    comment: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
