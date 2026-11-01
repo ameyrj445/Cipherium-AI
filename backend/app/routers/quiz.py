@@ -10,7 +10,6 @@ Endpoints:
 
 import json
 import random
-from uuid import uuid4
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -104,8 +103,6 @@ def submit_quiz_attempt(
     question = db.query(Question).filter(Question.id == attempt_data.question_id).first()
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")
-    if attempt_data.hint_count < 0:
-        raise HTTPException(status_code=422, detail="hint_count cannot be negative")
 
     # Case-insensitive whitespace-trimmed evaluation with NoneType safety
     selected_clean = (attempt_data.selected_answer or "").strip().lower()
@@ -117,18 +114,13 @@ def submit_quiz_attempt(
         question_id=question.id,
         selected_answer=attempt_data.selected_answer,
         is_correct=is_correct,
-        time_taken_seconds=attempt_data.time_taken_seconds,
-        hint_count=attempt_data.hint_count,
-        quiz_id=attempt_data.quiz_id or str(uuid4()),
-        is_finalized=False,
+        time_taken_seconds=attempt_data.time_taken_seconds
     )
     db.add(attempt)
     db.commit()
     db.refresh(attempt)
 
-    # A submitted answer is deliberately not folded into TopicMastery until the
-    # session is completed.  This makes completion atomic across all its topics.
-    # We still calculate its cognitive state for immediate feedback.
+    # Query all historical attempts by this user for the topic to recalculate mastery
     topic_attempts = (
         db.query(QuizAttempt)
         .join(Question)
@@ -139,7 +131,30 @@ def submit_quiz_attempt(
 
     mastery_score, status, total_att, correct_att = calculate_topic_mastery(topic_attempts)
     cog_state = calculate_topic_cognitive_state(topic_attempts)
-    penalized_bkt = max(0.0, cog_state["bkt_probability"] - (0.05 * attempt.hint_count))
+
+    # Upsert TopicMastery record
+    tm = (
+        db.query(TopicMastery)
+        .filter(TopicMastery.user_id == current_user.id, TopicMastery.topic_id == question.topic_id)
+        .first()
+    )
+    if not tm:
+        tm = TopicMastery(
+            user_id=current_user.id,
+            topic_id=question.topic_id,
+            mastery_score=mastery_score,
+            status=status,
+            attempt_count=total_att,
+            correct_count=correct_att
+        )
+        db.add(tm)
+    else:
+        tm.mastery_score = mastery_score
+        tm.status = status
+        tm.attempt_count = total_att
+        tm.correct_count = correct_att
+    
+    db.commit()
 
     return QuizAttemptResult(
         id=attempt.id,
@@ -150,100 +165,11 @@ def submit_quiz_attempt(
         topic_name=question.topic.name if question.topic else "",
         new_mastery_score=mastery_score,
         new_status=status,
-        bkt_probability=round(penalized_bkt, 4),
+        bkt_probability=cog_state["bkt_probability"],
         retention_rate=cog_state["retention_rate"],
         next_review_due=cog_state["next_review_due"],
-        retention_status=cog_state["retention_status"],
-        quiz_id=attempt.quiz_id,
+        retention_status=cog_state["retention_status"]
     )
-
-
-@router.get("/quizzes/{quiz_id}")
-def get_quiz_session(
-    quiz_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Return session metadata and question ids without exposing answer keys."""
-    attempts = (
-        db.query(QuizAttempt)
-        .filter(QuizAttempt.user_id == current_user.id, QuizAttempt.quiz_id == quiz_id)
-        .order_by(QuizAttempt.attempted_at.asc(), QuizAttempt.id.asc())
-        .all()
-    )
-    if not attempts:
-        raise HTTPException(status_code=404, detail="Quiz session not found")
-    return {
-        "id": quiz_id,
-        "total_questions": len(attempts),
-        "is_finalized": all(a.is_finalized for a in attempts),
-        "question_ids": [a.question_id for a in attempts],
-    }
-
-
-@router.post("/quizzes/{quiz_id}/complete")
-def complete_quiz_session(
-    quiz_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Finalize one session and atomically apply its topic-level mastery changes."""
-    attempts = (
-        db.query(QuizAttempt)
-        .join(Question)
-        .filter(QuizAttempt.user_id == current_user.id, QuizAttempt.quiz_id == quiz_id)
-        .order_by(QuizAttempt.attempted_at.asc(), QuizAttempt.id.asc())
-        .all()
-    )
-    if not attempts:
-        raise HTTPException(status_code=404, detail="Quiz session not found")
-
-    topic_ids = sorted({attempt.question.topic_id for attempt in attempts})
-    deltas = []
-    for topic_id in topic_ids:
-        mastery = (
-            db.query(TopicMastery)
-            .filter(TopicMastery.user_id == current_user.id, TopicMastery.topic_id == topic_id)
-            .first()
-        )
-        before = mastery.mastery_score if mastery else 0.0
-        topic_attempts = (
-            db.query(QuizAttempt)
-            .join(Question)
-            .filter(QuizAttempt.user_id == current_user.id, Question.topic_id == topic_id)
-            .order_by(QuizAttempt.attempted_at.asc(), QuizAttempt.id.asc())
-            .all()
-        )
-        # Run the final chronological BKT pass after the entire session has
-        # been recorded.  BKT is derived from the attempt history (rather than
-        # persisted separately), so analytics will read this same final state.
-        calculate_topic_cognitive_state(topic_attempts)
-        after, status, attempt_count, correct_count = calculate_topic_mastery(topic_attempts)
-        if mastery is None:
-            mastery = TopicMastery(
-                user_id=current_user.id, topic_id=topic_id, mastery_score=after,
-                status=status, attempt_count=attempt_count, correct_count=correct_count,
-            )
-            db.add(mastery)
-        else:
-            mastery.mastery_score = after
-            mastery.status = status
-            mastery.attempt_count = attempt_count
-            mastery.correct_count = correct_count
-        deltas.append({"topic_id": topic_id, "before": round(before, 3), "after": round(after, 3)})
-
-    for attempt in attempts:
-        attempt.is_finalized = True
-    db.commit()
-
-    score = sum(1 for attempt in attempts if attempt.is_correct)
-    total = len(attempts)
-    return {
-        "score": score,
-        "total": total,
-        "accuracy_pct": round((score / total) * 100, 2) if total else 0.0,
-        "mastery_deltas": deltas,
-    }
 
 
 @router.post("/quizzes/exam")

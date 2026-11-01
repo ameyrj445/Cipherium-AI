@@ -61,11 +61,6 @@ class QuizAttempt(Base):
     selected_answer = Column(String(255), nullable=False)
     is_correct = Column(Boolean, nullable=False)
     time_taken_seconds = Column(Integer, default=0)
-    # Attempts are grouped into a client-visible quiz session.  Keeping this on
-    # the attempt lets a session span questions from more than one topic.
-    quiz_id = Column(String(36), index=True, nullable=True)
-    hint_count = Column(Integer, default=0, nullable=False)
-    is_finalized = Column(Boolean, default=False, nullable=False)
     attempted_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="attempts")
