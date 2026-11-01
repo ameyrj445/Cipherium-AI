@@ -21,7 +21,6 @@ from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
 BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW_OULAD_DIR = os.path.join(BACKEND_DIR, "data", "raw", "oulad")
 MODEL_FILE = os.path.join(os.path.dirname(__file__), "weak_topic_classifier.joblib")
-SAMPLE_CSV = os.path.join(BACKEND_DIR, "app", "datasets", "oulad_student_assessment.csv")
 
 
 def find_raw_dataset_dir() -> str | None:
@@ -34,11 +33,11 @@ def find_raw_dataset_dir() -> str | None:
     return None
 
 
-def run_pipeline():
+def run_pipeline() -> RandomForestClassifier | None:
     raw_dir = find_raw_dataset_dir()
     if not raw_dir:
         print(f"[Pipeline] Raw OULAD dataset not found in {RAW_OULAD_DIR}. Aborting.")
-        return False
+        return None
 
     print(f"[Pipeline] Found raw OULAD dataset at: {raw_dir}")
     t0 = time.time()
@@ -58,7 +57,7 @@ def run_pipeline():
     print(f"[Pipeline] Ingesting assessment submissions ({assess_path})...")
     df_assess = pd.read_csv(assess_path)
     df_meta = pd.read_csv(meta_path)
-    
+
     # Impute missing assessment score with 0.0 (unsubmitted work)
     df_assess["score"] = df_assess["score"].fillna(0.0)
     assess_merged = df_assess.merge(df_meta, on="id_assessment", how="inner")
@@ -77,7 +76,7 @@ def run_pipeline():
         "code_presentation": "category",
         "sum_click": "int32"
     }
-    
+
     for chunk in pd.read_csv(vle_path, usecols=usecols, dtype=dtypes, chunksize=2_000_000):
         chunks.append(chunk.groupby(["code_module", "code_presentation", "id_student"], observed=True)["sum_click"].sum())
 
@@ -92,7 +91,7 @@ def run_pipeline():
     # Impute cold-starts for early dropouts
     merged["assessment_score"] = merged["assessment_score"].fillna(0.0).round(1)
     merged["vle_clicks_total"] = merged["vle_clicks_total"].fillna(0)
-    
+
     # Normalize semester-level click totals to per-topic / module activity
     # OULAD courses have ~8 assessment modules on average; this matches topic-level quiz telemetry
     merged["vle_clicks"] = (merged["vle_clicks_total"] / 8.0).round(0).astype(int)
@@ -138,18 +137,9 @@ def run_pipeline():
     joblib.dump(model, MODEL_FILE)
     print(f"[Pipeline] Successfully saved trained weights to: {MODEL_FILE}")
 
-    # 8. Export representative cleaned sample for portable offline fallback & CI
-    sample_df = merged[feature_cols + ["is_weak"]].sample(n=min(2000, len(merged)), random_state=42)
-    sample_df.insert(0, "id_assessment", range(1, len(sample_df) + 1))
-    sample_df.insert(1, "id_student", range(1001, 1001 + len(sample_df)))
-    sample_df.insert(2, "topic_code", "OULAD-CORE")
-    sample_df.insert(3, "date_submitted", 45)
-    sample_df.to_csv(SAMPLE_CSV, index=False)
-    print(f"[Pipeline] Exported representative sample dataset to: {SAMPLE_CSV}")
-
     elapsed = round(time.time() - t0, 2)
     print(f"[Pipeline] Complete pipeline executed successfully in {elapsed}s.\n")
-    return True
+    return model
 
 
 if __name__ == "__main__":
