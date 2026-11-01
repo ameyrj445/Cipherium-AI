@@ -22,6 +22,7 @@ class User(Base):
     messages = relationship("TutorMessage", back_populates="user")
     settings = relationship("UserSettings", back_populates="user", uselist=False)
     tasks = relationship("DailyTask", back_populates="user")
+    mastery_events = relationship("MasteryEvent", back_populates="user")
 
 class Topic(Base):
     __tablename__ = "topics"
@@ -37,6 +38,7 @@ class Topic(Base):
     questions = relationship("Question", back_populates="topic")
     resources = relationship("Resource", back_populates="topic")
     masteries = relationship("TopicMastery", back_populates="topic")
+    mastery_events = relationship("MasteryEvent", back_populates="topic")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -163,4 +165,8 @@ class DailyTask(Base):
     created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="tasks")
+
+
+# Imported after User and Topic so the relationships above can resolve cleanly.
+from app.models.mastery_event import MasteryEvent  # noqa: E402, F401
 

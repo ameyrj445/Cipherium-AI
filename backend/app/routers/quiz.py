@@ -21,6 +21,7 @@ from app.models import Topic, Question, QuizAttempt, TopicMastery, User
 from app.schemas import TopicResponse, QuestionResponse, QuizAttemptSubmit, QuizAttemptResult
 from app.routers.auth import get_current_user
 from app.services.analytics import calculate_topic_mastery, calculate_adaptive_difficulty, calculate_topic_cognitive_state
+from app.services.bkt_service import update_bkt_with_audit
 from app.utils.idempotency import get_cached, store_cached
 
 router = APIRouter(tags=["Topics & Quizzes"])
@@ -149,8 +150,14 @@ def submit_quiz_attempt(
     )
 
     mastery_score, status, total_att, correct_att = calculate_topic_mastery(topic_attempts)
-    cog_state = calculate_topic_cognitive_state(topic_attempts)
-    penalized_bkt = max(0.0, cog_state["bkt_probability"] - (0.05 * attempt.hint_count))
+    cog_state = update_bkt_with_audit(
+        topic_attempts,
+        db=db,
+        user_id=current_user.id,
+        topic_id=question.topic_id,
+        posterior_penalty=0.05 * attempt.hint_count,
+    )
+    db.commit()
 
     response = QuizAttemptResult(
         id=attempt.id,
@@ -161,7 +168,7 @@ def submit_quiz_attempt(
         topic_name=question.topic.name if question.topic else "",
         new_mastery_score=mastery_score,
         new_status=status,
-        bkt_probability=round(penalized_bkt, 4),
+        bkt_probability=cog_state["bkt_probability"],
         retention_rate=cog_state["retention_rate"],
         next_review_due=cog_state["next_review_due"],
         retention_status=cog_state["retention_status"],

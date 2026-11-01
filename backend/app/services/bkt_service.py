@@ -192,3 +192,36 @@ def evaluate_bkt_and_retention(
         "consecutive_correct": consecutive_correct,
         "stability_days": review_info["stability_days"]
     }
+
+
+def update_bkt_with_audit(
+    attempts: List[Any],
+    *,
+    db: Any,
+    user_id: int,
+    topic_id: int,
+    posterior_penalty: float = 0.0,
+    event_type: str = "quiz_attempt",
+) -> Dict[str, Any]:
+    """Calculate a BKT transition and append its immutable audit event.
+
+    ``attempts`` must end with the newly recorded interaction.  Keeping the
+    persistence here ensures a BKT update and its audit record cannot drift
+    apart at router call sites.
+    """
+    prior_state = evaluate_bkt_and_retention(attempts[:-1])
+    updated_state = evaluate_bkt_and_retention(attempts)
+    posterior = max(0.0, updated_state["bkt_probability"] - posterior_penalty)
+    updated_state["bkt_probability"] = round(posterior, 4)
+
+    # Local import avoids coupling pure BKT evaluation to ORM initialization.
+    from app.models.mastery_event import MasteryEvent
+
+    db.add(MasteryEvent(
+        user_id=user_id,
+        topic_id=topic_id,
+        prior=prior_state["bkt_probability"],
+        posterior=updated_state["bkt_probability"],
+        event_type=event_type,
+    ))
+    return updated_state
