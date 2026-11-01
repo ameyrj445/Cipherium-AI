@@ -8,7 +8,8 @@ force the model to leak system prompts, or induce unrestricted behavior (e.g. DA
 This utility applies defense-in-depth sanitization:
 1. Strips null bytes (`\\x00`) to prevent low-level string termination vulnerabilities.
 2. Truncates inputs to an upper bound (2000 characters) to prevent token-exhaustion denial of service.
-3. Checks for high-risk prompt injection and jailbreak signatures.
+3. Checks for high-risk prompt injection and jailbreak signatures while avoiding false positives
+   on valid academic and technical computer science questions (e.g. "print instructions for C++").
 """
 
 import re
@@ -22,9 +23,8 @@ INJECTION_PATTERNS = [
     r"override\s+(all\s+)?(previous|prior|system)\s+instructions?",
     r"system\s+prompt\s+override",
     r"you\s+are\s+now\s+an?\s+unrestricted",
-    r"jailbreak",
-    r"(reveal|print|display|show|dump)\s+(your\s+)?system\s+prompt",
-    r"(reveal|print|display|show|dump)\s+(your\s+)?(secret\s+)?instructions?",
+    r"\bjailbreak\b",
+    r"(reveal|print|display|show|dump)\s+((your|the)\s+)?(system\s+prompt|internal\s+instructions?|initial\s+instructions?|secret\s+instructions?)",
     r"bypass\s+(your\s+)?safety\s+guidelines?",
     r"\bdan\s+mode\b",
 ]
