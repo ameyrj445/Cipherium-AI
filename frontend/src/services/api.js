@@ -88,6 +88,9 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   getProfile: () => api.get('/auth/me'),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
+  deleteAccount: () => api.delete('/me'),
 };
 
 // ── Diagnostic Quizzes & Assessments ──────────────────────────────────────────
@@ -139,6 +142,10 @@ export const geminiAPI = {
 export const tutorAPI = {
   sendMessage: (data) => api.post('/tutor/chat', data),
   getHistory: (limit = 30) => api.get(`/tutor/history?limit=${limit}`),
+  createConversation: (data) => api.post('/tutor/conversations', data),
+  getConversations: (params) => api.get('/tutor/conversations', { params }),
+  getConversationMessages: (id) => api.get(`/tutor/conversations/${id}/messages`),
+  sendConversationMessage: (id, data) => api.post(`/tutor/conversations/${id}/messages`, data),
   streamMessage: async (data, onChunk, onDone, onError, signal) => {
     try {
       const token = sessionToken || getStoredSession()?.token;
@@ -201,6 +208,31 @@ export const tutorAPI = {
       if (onError) onError(err);
     }
   },
+};
+
+// ── Learner Profile & GDPR Data Portability ──────────────────────────────────
+export const profileAPI = {
+  exportData: (format = 'json') =>
+    api.get(`/me/export?format=${format}`, {
+      responseType: format === 'json' ? 'json' : 'blob',
+    }),
+};
+
+// ── Recommendation & Dialogue Feedback ───────────────────────────────────────
+export const feedbackAPI = {
+  submit: (data) => api.post('/feedback', data),
+  getMyFeedback: (params) => api.get('/feedback/my', { params }),
+};
+
+// ── Admin Content Management System (CMS) ────────────────────────────────────
+export const adminAPI = {
+  createResource: (data) => api.post('/admin/resources', data),
+  bumpResourceVersion: (id) => api.post(`/admin/resources/${id}/version`),
+  createQuestion: (data) => api.post('/admin/questions', data),
+  updateQuestionStatus: (id, status) => api.patch(`/admin/questions/${id}/status`, { status }),
+  getQuestions: (params) => api.get('/admin/questions', { params }),
+  getFeedback: (params) => api.get('/admin/feedback', { params }),
+  getOverview: () => api.get('/admin/analytics/overview'),
 };
 
 export default api;

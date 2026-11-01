@@ -5,7 +5,6 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from fastapi import HTTPException, Depends
@@ -19,7 +18,7 @@ from app.schemas import DeleteAccountResponse
 from app.routers import auth, quiz, analytics, tutor, admin, profile, feedback, health
 from app.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
 from app.routers.auth import get_current_user, delete_account
-from app.limiter import limiter
+from app.limiter import limiter, rate_limit_exceeded_handler
 
 # Structured logging configuration
 logging.basicConfig(
@@ -57,7 +56,7 @@ app = FastAPI(
 
 # Attach SlowAPI rate limiter state and exception handler
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # Robust CORS configuration
