@@ -479,7 +479,7 @@ export default function NotificationDropdown({
                       >
                         {notif.badge}
                       </span>
-                      <span style={{ fontSize: '0.68rem', color: '#6B7280' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>
                         {notif.time}
                       </span>
                     </div>
@@ -515,7 +515,7 @@ export default function NotificationDropdown({
                     style={{
                       background: 'transparent',
                       border: 'none',
-                      color: '#6B7280',
+                      color: '#9CA3AF',
                       cursor: 'pointer',
                       padding: '2px',
                       borderRadius: '4px',

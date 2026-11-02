@@ -315,7 +315,7 @@ export default function GlobalSearch({
           <span
             style={{
               fontSize: '0.68rem',
-              color: '#6B7280',
+              color: '#9CA3AF',
               background: '#28282E',
               border: '1px solid #383842',
               borderRadius: '4px',
@@ -458,7 +458,7 @@ export default function GlobalSearch({
                 }}
               >
                 <span>MATCHING RESULTS ({results.length})</span>
-                <span style={{ fontSize: '0.64rem', color: '#6B7280' }}>Use ↑ ↓ to navigate · ↵ to select</span>
+                <span style={{ fontSize: '0.64rem', color: '#9CA3AF' }}>Use ↑ ↓ to navigate · ↵ to select</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -608,7 +608,7 @@ export default function GlobalSearch({
               justifyContent: 'space-between',
               alignItems: 'center',
               fontSize: '0.66rem',
-              color: '#6B7280',
+              color: '#9CA3AF',
               marginTop: '4px',
             }}
           >

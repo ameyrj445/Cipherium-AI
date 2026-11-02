@@ -482,7 +482,7 @@ export default function StudyPlanView({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div style={{ background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)', padding: '10px 12px', borderRadius: '10px' }}>
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #9CA3AF)' }}>Total Commitment</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#6366F1', marginTop: '2px' }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-accent, #A5B4FC)', marginTop: '2px' }}>
                     {calculatedTotalHours} Hours
                   </div>
                   <div style={{ fontSize: '0.66rem', color: 'var(--text-tertiary, #6B7280)' }}>

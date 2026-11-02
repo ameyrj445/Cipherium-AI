@@ -12,12 +12,16 @@ export default function StatCard({
   accentColor = '#6366F1',
   onClick = null,
 }) {
+  const Container = onClick ? 'button' : 'div';
   return (
-    <div
+    <Container
+      type={onClick ? 'button' : undefined}
       className="ui-card"
       onClick={onClick}
       style={{
         padding: '20px',
+        textAlign: 'left',
+        font: 'inherit',
         display: 'flex',
         alignItems: 'center',
         gap: '14px',
@@ -83,6 +87,6 @@ export default function StatCard({
           </div>
         )}
       </div>
-    </div>
+    </Container>
   );
 }

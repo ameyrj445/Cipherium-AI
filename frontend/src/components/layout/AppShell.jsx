@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../Sidebar';
 import TopHeader from '../TopHeader';
 import { breakpoints, layout } from '../../theme/designTokens.js';
@@ -48,6 +48,49 @@ export default function AppShell({
   });
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const drawerRef = useRef(null);
+  const mainRef = useRef(null);
+
+  useEffect(() => {
+    if (!isMobile || !mobileDrawerOpen) return;
+    const drawer = drawerRef.current;
+    const previousFocus = document.activeElement;
+    const focusable = () => Array.from(drawer.querySelectorAll(
+      'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+    )).filter((element) => !element.closest('[hidden], [inert]'));
+    const focusFirst = () => (focusable()[0] || drawer).focus();
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setMobileDrawerOpen(false);
+      } else if (event.key === 'Tab') {
+        const items = focusable();
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (!first) {
+          event.preventDefault();
+          drawer.focus();
+        } else if (event.shiftKey && (document.activeElement === first || !drawer.contains(document.activeElement))) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !drawer.contains(document.activeElement))) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    const onFocusIn = (event) => {
+      if (!drawer.contains(event.target)) focusFirst();
+    };
+    focusFirst();
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('focusin', onFocusIn);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('focusin', onFocusIn);
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+    };
+  }, [isMobile, mobileDrawerOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -94,6 +137,13 @@ export default function AppShell({
         overflowX: 'hidden',
       }}
     >
+        <a
+          href="#main-content"
+          inert={isMobile && mobileDrawerOpen ? true : undefined}
+          aria-hidden={isMobile && mobileDrawerOpen ? true : undefined}
+          className="skip-to-content"
+          onClick={(event) => { event.preventDefault(); mainRef.current?.focus(); }}
+        >Skip to main content</a>
       {/* 1. Left Fixed Sidebar (Desktop / Tablet) */}
       {!isMobile && (
         <Sidebar
@@ -119,7 +169,20 @@ export default function AppShell({
           }}
           onClick={() => setMobileDrawerOpen(false)}
         >
-          <div onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close navigation menu"
+              onClick={() => setMobileDrawerOpen(false)}
+              style={{ position: 'fixed', top: '8px', left: '250px', zIndex: 201, minWidth: '44px', minHeight: '44px', padding: '8px', borderRadius: '8px', background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--text-secondary)' }}
+            >Close</button>
             <Sidebar
               activeNav={activeNav}
               setActiveNav={setActiveNav}
@@ -137,6 +200,8 @@ export default function AppShell({
 
       {/* 2. Main Content Wrapper: Left Margin matches sidebar width */}
       <div
+        inert={isMobile && mobileDrawerOpen ? true : undefined}
+        aria-hidden={isMobile && mobileDrawerOpen ? true : undefined}
         style={{
           flex: 1,
           display: 'flex',
@@ -168,6 +233,9 @@ export default function AppShell({
 
         {/* Main Content Area filling remaining width and height */}
         <main
+          id="main-content"
+          ref={mainRef}
+          tabIndex={-1}
           style={{
             flex: 1,
             width: '100%',

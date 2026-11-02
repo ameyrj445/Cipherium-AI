@@ -186,10 +186,10 @@ export default function SettingsView({
           >
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
               <div>
-                <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
+                <label htmlFor="profile-name" style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
                   Full Name
                 </label>
-                <input
+                <input id="profile-name"
                   type="text"
                   readOnly
                   value={user?.name || 'Alex Chen'}
@@ -207,10 +207,10 @@ export default function SettingsView({
               </div>
 
               <div>
-                <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
+                <label htmlFor="profile-email" style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
                   Email Address
                 </label>
-                <input
+                <input id="profile-email"
                   type="text"
                   readOnly
                   value={user?.email || 'student@cipherium.ai'}
@@ -228,10 +228,10 @@ export default function SettingsView({
               </div>
 
               <div>
-                <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
+                <label htmlFor="target-role" style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
                   Target Role / Specialization
                 </label>
-                <select
+                <select id="target-role"
                   value={profile.targetRole}
                   onChange={(e) => updateSetting('targetRole', e.target.value)}
                   style={{
@@ -254,10 +254,10 @@ export default function SettingsView({
               </div>
 
               <div>
-                <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
+                <label htmlFor="weekly-hours" style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
                   Weekly Study Goal (Hours)
                 </label>
-                <select
+                <select id="weekly-hours"
                   value={profile.weeklyHours}
                   onChange={(e) => updateSetting('weeklyHours', Number(e.target.value))}
                   style={{
@@ -328,10 +328,10 @@ export default function SettingsView({
 
               {/* Diagnostic Staircase Tuning */}
               <div>
-                <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
+                <label htmlFor="difficulty-mode" style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
                   Adaptive Diagnostic Behavior
                 </label>
-                <select
+                <select id="difficulty-mode"
                   value={profile.difficultyMode}
                   onChange={(e) => updateSetting('difficultyMode', e.target.value)}
                   style={{
@@ -354,11 +354,11 @@ export default function SettingsView({
 
                 {/* Custom API Key Input */}
                 <div>
-                  <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
+                  <label htmlFor="custom-api-key" style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary, #9CA3AF)', display: 'block', marginBottom: '6px' }}>
                     Optional Custom Gemini API Key (Bring Your Own Key)
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <input
+                    <input id="custom-api-key"
                       type={showApiKey ? 'text' : 'password'}
                       placeholder="AIzaSy... (leave blank to use server environment key)"
                       value={profile.customApiKey}

@@ -26,7 +26,7 @@ export const CURATED_BLUEPRINTS = [
     hoursPerWeek: 8,
     category: 'ML',
     tags: ['Math Foundations', 'PyTorch Core', 'OULAD Analytics'],
-    accentColor: '#6366F1',
+    accentColor: 'var(--text-accent, #A5B4FC)',
     borderColor: 'rgba(99, 102, 241, 0.4)',
     bgGlow: 'rgba(40, 30, 90, 0.25)',
   },

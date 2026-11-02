@@ -43,7 +43,7 @@ export default function PageHeader({
               display: 'inline-block',
               fontSize: `${typography?.caption ?? 12}px`,
               fontWeight: 800,
-              color: colors?.primaryBrand || '#6366F1',
+              color: 'var(--text-accent, #A5B4FC)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               marginBottom: `${spacing?.space4 ?? 4}px`,

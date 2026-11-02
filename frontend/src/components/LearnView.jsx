@@ -167,7 +167,7 @@ export default function LearnView({
     const subj = selectedSubject;
     if (!subj) {
       return (
-        <div style={{ maxWidth: '920px', margin: '0 auto', padding: '40px 0', textAlign: 'center', color: '#64748b' }}>
+        <div style={{ maxWidth: '920px', margin: '0 auto', padding: '40px 0', textAlign: 'center', color: '#9CA3AF' }}>
           <p>{subjectsLoading ? 'Loading subject roadmap…' : 'This subject roadmap is no longer available.'}</p>
           <button className="btn btn-white" onClick={() => setSelectedSubjectId(null)}>← Back to Subjects</button>
         </div>
@@ -577,7 +577,7 @@ export default function LearnView({
                 const selected = plan.id === customPlan?.id;
                 const expanded = expandedPlanId === plan.id;
                 return <React.Fragment key={plan.id}><div className="ui-card" style={{ padding: '20px 24px', textAlign: 'left', border: selected ? '1.5px solid #6366F1' : '1px solid var(--border-stroke, #2D2D35)', background: selected ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-surface, #1E1E22)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center' }}><div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#818CF8', background: 'rgba(99, 102, 241, 0.15)', padding: '3px 9px', borderRadius: '10px' }}>⚡ Active Roadmap</span><div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary, #F3F4F6)', marginTop: '9px' }}>{plan.subject}</div><div style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.78rem', marginTop: '4px' }}>Level: {plan.skill_level || 'Beginner'} · Target: {plan.target_hours_per_week} hrs/week · Duration: {plan.duration_weeks} weeks</div></div><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ textAlign: 'right' }}><div style={{ color: '#6366F1', fontWeight: 800, fontSize: '1.55rem' }}>{progress}%</div><div style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.72rem' }}>{completedTopics} of {totalTopics} subtopics completed</div></div><button type="button" onClick={() => { onSelectPlan?.(plan); onOpenStudyPlan?.(); }} style={{ padding: '8px 11px', borderRadius: '9px', border: '1px solid var(--border-stroke, #2D2D35)', background: 'var(--bg-shell, #161618)', color: 'var(--text-primary, #F3F4F6)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Edit Plan</button><button type="button" onClick={() => { if (window.confirm(`Delete the ${plan.subject} study plan? This cannot be undone.`)) onDeletePlan?.(plan.id); }} style={{ padding: '8px 11px', borderRadius: '9px', border: '1px solid rgba(244, 63, 94, 0.3)', background: 'rgba(244, 63, 94, 0.1)', color: '#F43F5E', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Delete Plan</button><button type="button" onClick={() => { onSelectPlan?.(plan); setExpandedPlanId(expanded ? null : plan.id); setExpandedStages({ 0: true }); }} style={{ width: '38px', height: '38px', borderRadius: '10px', border: '1px solid var(--border-stroke, #2D2D35)', background: 'var(--bg-shell, #161618)', color: '#6366F1', cursor: 'pointer' }}>{expanded ? <ChevronUp size={19} /> : <ChevronDown size={19} />}</button></div></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center' }}><div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#818CF8', background: 'rgba(99, 102, 241, 0.15)', padding: '3px 9px', borderRadius: '10px' }}>⚡ Active Roadmap</span><div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary, #F3F4F6)', marginTop: '9px' }}>{plan.subject}</div><div style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.78rem', marginTop: '4px' }}>Level: {plan.skill_level || 'Beginner'} · Target: {plan.target_hours_per_week} hrs/week · Duration: {plan.duration_weeks} weeks</div></div><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ textAlign: 'right' }}><div style={{ color: 'var(--text-accent, #A5B4FC)', fontWeight: 800, fontSize: '1.55rem' }}>{progress}%</div><div style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.72rem' }}>{completedTopics} of {totalTopics} subtopics completed</div></div><button type="button" onClick={() => { onSelectPlan?.(plan); onOpenStudyPlan?.(); }} style={{ padding: '8px 11px', borderRadius: '9px', border: '1px solid var(--border-stroke, #2D2D35)', background: 'var(--bg-shell, #161618)', color: 'var(--text-primary, #F3F4F6)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Edit Plan</button><button type="button" onClick={() => { if (window.confirm(`Delete the ${plan.subject} study plan? This cannot be undone.`)) onDeletePlan?.(plan.id); }} style={{ padding: '8px 11px', borderRadius: '9px', border: '1px solid rgba(244, 63, 94, 0.3)', background: 'rgba(244, 63, 94, 0.1)', color: '#F43F5E', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>Delete Plan</button><button type="button" aria-label={`${expanded ? 'Collapse' : 'Expand'} ${plan.subject} plan details`} aria-expanded={expanded} onClick={() => { onSelectPlan?.(plan); setExpandedPlanId(expanded ? null : plan.id); setExpandedStages({ 0: true }); }} style={{ width: '38px', height: '38px', borderRadius: '10px', border: '1px solid var(--border-stroke, #2D2D35)', background: 'var(--bg-shell, #161618)', color: 'var(--text-accent, #A5B4FC)', cursor: 'pointer' }}>{expanded ? <ChevronUp size={19} /> : <ChevronDown size={19} />}</button></div></div>
                   <div style={{ height: '8px', background: 'var(--border-stroke, #2D2D35)', borderRadius: '8px', overflow: 'hidden', marginTop: '16px' }}><div style={{ height: '100%', width: `${progress}%`, background: '#6366F1', borderRadius: '8px' }} /></div>
                   <div style={{ display: 'flex', gap: '26px', marginTop: '12px', fontSize: '0.76rem', color: 'var(--text-secondary, #9CA3AF)' }}><span>Total hours: <strong style={{ color: 'var(--text-primary, #F3F4F6)' }}>{totalHours}h</strong></span><span>Hours logged: <strong style={{ color: 'var(--text-primary, #F3F4F6)' }}>{loggedHours}h</strong></span><span>Hours remaining: <strong style={{ color: 'var(--text-primary, #F3F4F6)' }}>{Math.max(totalHours - loggedHours, 0)}h</strong></span></div>
                 </div>{expanded && <InlinePlanDetails plan={plan} onUpdateProgress={onUpdateProgress} onStartPractice={onSelectTopic} onAskTutor={onSelectTopic} />}</React.Fragment>;
@@ -625,7 +625,7 @@ export default function LearnView({
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#6366F1', lineHeight: 1 }}>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-accent, #A5B4FC)', lineHeight: 1 }}>
                         {planStats.pct}%
                       </div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #9CA3AF)', marginTop: '4px' }}>
@@ -636,7 +636,7 @@ export default function LearnView({
                       type="button"
                       onClick={() => setExpandedPlanId(expandedPlanId === customPlan.id ? null : customPlan.id)}
                       title={expandedPlanId === customPlan.id ? 'Collapse plan details' : 'Expand plan details'}
-                      style={{ width: '34px', height: '34px', borderRadius: '9px', border: '1px solid var(--border-stroke, #2D2D35)', background: 'var(--bg-shell, #161618)', color: '#6366F1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ width: '34px', height: '34px', borderRadius: '9px', border: '1px solid var(--border-stroke, #2D2D35)', background: 'var(--bg-shell, #161618)', color: 'var(--text-accent, #A5B4FC)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       {expandedPlanId === customPlan.id ? <ChevronUp size={19} /> : <ChevronDown size={19} />}
                     </button>
@@ -1005,8 +1005,8 @@ export default function LearnView({
 
           {/* Subject Cards Grid: repeat(auto-fill, minmax(340px, 1fr)) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
-            {subjectsLoading && <p style={{ color: '#64748b', margin: 0 }}>Loading subject roadmaps...</p>}
-            {!subjectsLoading && subjects.length === 0 && <p style={{ color: '#64748b', margin: 0 }}>No subject roadmaps are available yet.</p>}
+            {subjectsLoading && <p style={{ color: '#9CA3AF', margin: 0 }}>Loading subject roadmaps...</p>}
+            {!subjectsLoading && subjects.length === 0 && <p style={{ color: '#9CA3AF', margin: 0 }}>No subject roadmaps are available yet.</p>}
             {subjects
               .filter(s => {
                 if (!searchQuery.trim()) return true;

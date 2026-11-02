@@ -580,7 +580,7 @@ export default function AnalyticsFullView({
               {/* Progress Summary Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '16px', marginBottom: '22px' }}>
                 {[
-                  { label: 'Overall Completion', value: `${completion}%`, Icon: Target, color: '#6366F1' },
+                  { label: 'Overall Completion', value: `${completion}%`, Icon: Target, color: 'var(--text-accent, #A5B4FC)' },
                   { label: 'Concepts Mastered', value: `${totals.topicsDone}/${totals.topics}`, Icon: CheckCircle2, color: '#10B981' },
                   { label: 'Resources Completed', value: `${totals.resourcesDone}/${totals.resources}`, Icon: BookOpen, color: '#8B5CF6' },
                   { label: 'Tracked Hours', value: `${totals.loggedHours}/${totals.planHours}h`, Icon: Clock, color: '#F59E0B' },
