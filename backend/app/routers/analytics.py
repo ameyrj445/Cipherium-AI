@@ -33,11 +33,17 @@ from app.schemas import (
 from app.routers.auth import get_current_user, require_admin
 from app.services.analytics import compute_recommendation_score, calculate_topic_cognitive_state
 from app.services.knowledge_graph import build_curriculum_dag
-from app.ml.predictor import predict_weak_topic
+from app.ml.predictor import predict_weak_topic, get_model_info
 from app.services.study_plan_generator import generate_study_plan, is_plan_stale
 
 
 router = APIRouter(tags=["Analytics, Recommendations & Roadmaps"])
+
+
+@router.get("/analytics/model-info")
+def get_model_information(admin_user: User = Depends(require_admin)):
+    """Return deployed ML metadata and benchmark results to administrators."""
+    return get_model_info()
 
 
 @router.get("/roadmaps/status")
