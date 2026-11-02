@@ -584,6 +584,7 @@ export default function App() {
         recommendations={recommendations}
       >
         {/* DYNAMIC ROUTING ACCORDING TO ACTIVENAV */}
+        <ErrorBoundary key={activeNav} scope="view">
         {activeNav === 'Dashboard' && (
           <PageContainer>
             {/* Row 1: Slim Hero / Onboarding Banner (Full width: 12 cols) */}
@@ -771,6 +772,7 @@ export default function App() {
             customPlan={learningPlan}
           />
         )}
+        </ErrorBoundary>
       </AppShell>
 
       {/* Modern Authentication Modal */}

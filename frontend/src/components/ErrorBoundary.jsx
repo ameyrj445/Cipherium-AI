@@ -12,20 +12,24 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Cipherium Application Error Caught:', error, errorInfo);
+    if (import.meta.env.DEV) {
+      console.error('Cipherium Application Error Caught:', error, errorInfo);
+    }
   }
 
   handleReset = () => {
     this.setState({ hasError: false, error: null });
-    window.location.reload();
+    if (this.props.scope !== 'view') window.location.reload();
   };
 
   render() {
     if (this.state.hasError) {
+      const isView = this.props.scope === 'view';
       return (
         <div
+          role="alert"
           style={{
-            minHeight: '100vh',
+            minHeight: isView ? '320px' : '100vh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -62,14 +66,22 @@ export default class ErrorBoundary extends React.Component {
               Something went wrong
             </h2>
             <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.5, margin: '0 0 24px' }}>
-              An unexpected interface error occurred. You can reload the application to restore your active workspace.
+              {isView
+                ? 'This page could not be displayed. You can try opening it again or choose another page.'
+                : 'An unexpected interface error occurred. You can reload the application to restore your active workspace.'}
             </p>
+            {import.meta.env.DEV && this.state.error && (
+              <pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: '0.75rem', color: '#334155' }}>
+                {this.state.error.message}
+              </pre>
+            )}
             <button
+              type="button"
               onClick={this.handleReset}
               className="btn btn-primary"
               style={{ width: '100%', padding: '12px' }}
             >
-              <RefreshCw size={16} /> Reload Application
+              <RefreshCw size={16} /> {isView ? 'Try Again' : 'Reload Application'}
             </button>
           </div>
         </div>
