@@ -19,10 +19,12 @@ To ensure high availability and zero setup friction for evaluators:
 """
 
 import os
+import time
 from typing import Optional, Dict
 import requests
 
 from app.config import settings
+from app.services.rag import retrieve_context, retrieve_context_with_ids
 from app.utils.sanitize import sanitize_user_input
 
 # In-memory curriculum knowledge base covering key foundational domains
@@ -90,11 +92,19 @@ def _build_system_instruction(mode: str) -> str:
         )
 
 
+def _reference_material(chunks: list[str]) -> str:
+    """Format retrieved notes in a prompt-safe, clearly delimited block."""
+    if not chunks:
+        return ""
+    return "[Reference Material]\n" + "\n\n".join(chunks) + "\n[End Reference Material]"
+
+
 def ask_ai_tutor(
     user_message: str,
     topic_code: Optional[str] = None,
     topic_name: Optional[str] = None,
-    mode: str = "socratic"
+    mode: str = "socratic",
+    retrieved_chunks: Optional[list[str]] = None,
 ) -> str:
     """
     Synthesizes an empathetic, pedagogical response to student questions.
@@ -109,6 +119,10 @@ def ask_ai_tutor(
         str: Markdown-formatted pedagogical response.
     """
     user_message = sanitize_user_input(user_message)
+    # Retrieval is optional; `retrieve_context` returns [] if Chroma is unavailable.
+    if retrieved_chunks is None:
+        retrieved_chunks = retrieve_context(user_message)
+    reference_material = _reference_material(retrieved_chunks)
     mode = mode.lower() if mode else "socratic"
     # 1. Prepare curriculum grounding context
     context = ""
@@ -125,7 +139,7 @@ def ask_ai_tutor(
                 "contents": [
                     {
                         "parts": [
-                            {"text": f"{system_instruction}\nContext: {context}\nStudent asks: {user_message}"}
+                            {"text": f"{reference_material}\n{system_instruction}\nContext: {context}\nStudent asks: {user_message}"}
                         ]
                     }
                 ]
@@ -145,6 +159,10 @@ def ask_ai_tutor(
         topic_code,
         f"The study of {t_name} is foundational to computational problem solving."
     )
+    # The offline responder cannot consume a system prompt, so make retrieved
+    # material part of its factual grounding as well.
+    if retrieved_chunks:
+        base_desc = "\n\n".join(retrieved_chunks)
 
     if mode == "socratic":
         return (
@@ -229,6 +247,26 @@ def ask_ai_tutor(
             )
 
 
+def generate_tutor_response(
+    user_message: str,
+    topic_code: Optional[str] = None,
+    topic_name: Optional[str] = None,
+    mode: str = "socratic",
+) -> tuple[str, int, int, list[str]]:
+    """Generate an answer plus persistence-ready telemetry for a tutor message."""
+    retrieved_chunks, retrieval_chunk_ids = retrieve_context_with_ids(user_message)
+    start = time.monotonic()
+    response = ask_ai_tutor(
+        user_message=user_message,
+        topic_code=topic_code,
+        topic_name=topic_name,
+        mode=mode,
+        retrieved_chunks=retrieved_chunks,
+    )
+    latency_ms = int((time.monotonic() - start) * 1000)
+    return response, latency_ms, len(response.split()), retrieval_chunk_ids
+
+
 def stream_ai_tutor(
     user_message: str,
     topic_code: Optional[str] = None,
@@ -240,6 +278,10 @@ def stream_ai_tutor(
     Enables low-latency Server-Sent Events (SSE) streaming for real-time interactive UI.
     """
     user_message = sanitize_user_input(user_message)
+    # Perform retrieval here too so streaming has the same graceful RAG entry
+    # point as non-streaming requests. `ask_ai_tutor` performs its own lookup
+    # when composing the final answer.
+    retrieve_context(user_message)
     full_text = ask_ai_tutor(user_message, topic_code, topic_name, mode)
     # Split by paragraphs or words to yield smooth realistic stream chunks
     lines = full_text.split("\n")

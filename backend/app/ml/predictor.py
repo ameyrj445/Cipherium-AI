@@ -23,6 +23,9 @@ Random Forest is well-suited for tabular student telemetry because:
 """
 
 import os
+import json
+import logging
+from datetime import datetime, timezone
 import joblib
 import numpy as np
 import pandas as pd
@@ -33,9 +36,40 @@ from sklearn.metrics import accuracy_score, f1_score
 # Resolve local path for model weights serialization
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_FILE = os.path.join(MODEL_DIR, "weak_topic_classifier.joblib")
+BENCHMARK_REPORT_FILE = os.path.join(os.path.dirname(os.path.dirname(MODEL_DIR)), "data", "benchmark_report.json")
+MODEL_VERSION = "RandomForest-OULAD-v1"
+logger = logging.getLogger(__name__)
 
 # In-memory cached model instance
 _model = None
+
+
+def model_training_date() -> str | None:
+    """Use serialized-model metadata when it exists; otherwise report untrained."""
+    if not os.path.exists(MODEL_FILE):
+        return None
+    return datetime.fromtimestamp(os.path.getmtime(MODEL_FILE), timezone.utc).isoformat()
+
+
+def get_model_info() -> dict:
+    """Return runtime model metadata and optional persisted benchmark scores."""
+    benchmark_scores = {}
+    try:
+        with open(BENCHMARK_REPORT_FILE, encoding="utf-8") as report_file:
+            report = json.load(report_file)
+        benchmark_scores = {
+            key: report[key] for key in ("bkt", "random_forest") if key in report
+        }
+    except (OSError, json.JSONDecodeError):
+        pass
+    return {
+        "model_version": MODEL_VERSION,
+        "trained_at": model_training_date(),
+        "benchmark_scores": benchmark_scores,
+    }
+
+
+logger.info("ML predictor startup: version=%s trained_at=%s", MODEL_VERSION, model_training_date() or "untrained")
 
 
 def train_or_load_classifier():

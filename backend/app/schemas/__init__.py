@@ -266,6 +266,8 @@ class UserSettingsResponse(BaseModel):
     diagnostic_quiz_alert: bool = True
     weak_topic_ping: bool = True
     notification_retention: bool = True
+    monthly_token_used: int = 0
+    token_quota: int = 50000
     has_custom_api_key: bool = False
     custom_gemini_api_key: Optional[str] = None
 

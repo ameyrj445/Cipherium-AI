@@ -1,5 +1,6 @@
 import logging
 import sys
+from datetime import date
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import engine, Base, SessionLocal, get_db, ACTIVE_DATABASE_URL
 from app.data.seed import seed_database
-from app.models import User
+from app.models import User, UserSettings
 from app.schemas import DeleteAccountResponse
 from app.routers import auth, quiz, analytics, tutor, admin, profile, feedback, health
 from app.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
@@ -28,6 +29,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger("cipherium.api")
 
+
+def reset_monthly_token_usage_if_due(db: Session) -> None:
+    """Reset quotas once the application starts on the first day of a month."""
+    if date.today().day != 1:
+        return
+    db.query(UserSettings).update({"monthly_token_used": 0}, synchronize_session=False)
+    db.commit()
+    logger.info("Reset monthly AI token usage for all users.")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting Cipherium AI API in [{settings.ENVIRONMENT}] environment.")
@@ -38,6 +48,7 @@ async def lifespan(app: FastAPI):
     # Seed default topics, questions, and test user
     db = SessionLocal()
     try:
+        reset_monthly_token_usage_if_due(db)
         seed_database(db)
         logger.info("Database schema initialized and seed records verified.")
     except Exception as exc:

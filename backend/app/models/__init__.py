@@ -160,6 +160,9 @@ class TutorMessage(Base):
     message = Column(Text, nullable=False)
     topic_id = Column(Integer, ForeignKey("topics.id"), nullable=True)
     conversation_id = Column(Integer, ForeignKey("tutor_conversations.id"), nullable=True)
+    latency_ms = Column(Integer, nullable=True)
+    token_count = Column(Integer, nullable=True)
+    retrieval_chunk_ids = Column(Text, nullable=True)  # JSON list of Chroma chunk IDs
     created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="messages")
@@ -178,6 +181,8 @@ class UserSettings(Base):
     diagnostic_quiz_alert = Column(Boolean, default=True)
     weak_topic_ping = Column(Boolean, default=True)
     notification_retention = Column(Boolean, default=True, nullable=False)
+    monthly_token_used = Column(Integer, default=0, nullable=False)
+    token_quota = Column(Integer, default=50000, nullable=False)
     custom_gemini_api_key = Column(String(255), nullable=True)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
