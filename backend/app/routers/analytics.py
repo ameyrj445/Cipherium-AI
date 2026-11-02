@@ -8,7 +8,7 @@ from datetime import datetime, timezone, date, timedelta
 from app.database import get_db
 from app.models import (
     Topic, TopicMastery, QuizAttempt, Resource, StudyPlan,
-    SubjectRoadmap, User, Question, DailyTask, UserSettings, TutorMessage, MasteryEvent
+    SubjectRoadmap, User, Question, DailyTask, UserSettings, TutorMessage, MasteryEvent, ReviewSchedule
 )
 from app.schemas import (
     MasteryAnalyticsResponse,
@@ -32,6 +32,7 @@ from app.schemas import (
 )
 from app.routers.auth import get_current_user, require_admin
 from app.services.analytics import compute_recommendation_score, calculate_topic_cognitive_state
+from app.services.bkt_service import SpacedRepetitionScheduler
 from app.services.knowledge_graph import build_curriculum_dag
 from app.ml.predictor import predict_weak_topics, get_model_info
 from app.services.study_plan_generator import generate_study_plan, is_plan_stale
@@ -323,19 +324,17 @@ def get_retention_schedule(
     Returns topics grouped by Spaced Repetition urgency and Ebbinghaus memory decay.
     Prioritizes concepts that are slipping from student retention.
     """
-    topics = db.query(Topic).all()
-    all_attempts = (
-        db.query(QuizAttempt)
-        .join(Question)
-        .filter(QuizAttempt.user_id == current_user.id)
-        .order_by(QuizAttempt.attempted_at.asc())
+    schedules = (
+        db.query(ReviewSchedule)
+        .join(Topic)
+        .filter(ReviewSchedule.user_id == current_user.id)
+        .order_by(ReviewSchedule.next_review_at.asc())
         .all()
     )
-    attempts_by_topic = {}
-    for a in all_attempts:
-        if a.question and a.question.topic_id:
-            attempts_by_topic.setdefault(a.question.topic_id, []).append(a)
-
+    mastery_by_topic = {
+        mastery.topic_id: mastery
+        for mastery in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
+    }
     schedule_items = []
     due_today_cnt = 0
     crit_cnt = 0
@@ -343,31 +342,39 @@ def get_retention_schedule(
     opt_cnt = 0
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
-    for t in topics:
-        t_attempts = attempts_by_topic.get(t.id, [])
-        cog_state = calculate_topic_cognitive_state(t_attempts)
-        status = cog_state["retention_status"]
+    for schedule in schedules:
+        topic = schedule.topic
+        next_review = schedule.next_review_at
+        last_review = next_review - timedelta(days=schedule.memory_stability)
+        days_elapsed = max(0.0, (now - last_review).total_seconds() / 86400.0)
+        retention_rate = SpacedRepetitionScheduler.calculate_retention_rate(schedule.memory_stability, days_elapsed)
+        if schedule.memory_stability <= 0.5 or retention_rate < 0.60:
+            status = "critical_review"
+        elif next_review <= now or retention_rate < 0.80:
+            status = "review_recommended"
+        else:
+            status = "optimal"
 
         if status == "critical_review":
             crit_cnt += 1
             due_today_cnt += 1
         elif status == "review_recommended":
             rec_cnt += 1
-            if cog_state["next_review_due"] and cog_state["next_review_due"] <= now:
+            if next_review <= now:
                 due_today_cnt += 1
         else:
             opt_cnt += 1
 
         schedule_items.append(
             RetentionScheduleItem(
-                topic_id=t.id,
-                topic_name=t.name,
-                topic_code=t.code,
-                bkt_probability=cog_state["bkt_probability"],
-                retention_rate=cog_state["retention_rate"],
-                next_review_due=cog_state["next_review_due"],
+                topic_id=topic.id,
+                topic_name=topic.name,
+                topic_code=topic.code,
+                bkt_probability=(mastery_by_topic.get(topic.id).mastery_score if mastery_by_topic.get(topic.id) else 0.2),
+                retention_rate=retention_rate,
+                next_review_due=next_review,
                 retention_status=status,
-                attempt_count=len(t_attempts)
+                attempt_count=schedule.review_count,
             )
         )
 
