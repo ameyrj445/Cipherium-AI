@@ -9,6 +9,7 @@
  *     syllabus topic notes, key algorithmic formulas/snippets, and suggested follow-ups.
  */
 
+import TutorFeedback from './TutorFeedback';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Bot, Brain, Paperclip, Send, RefreshCw, BookOpen, ExternalLink,
@@ -85,6 +86,7 @@ export default function TutorPanel({
   tutorMode = 'socratic',
   setTutorMode = () => {},
   chatMessages = [],
+  feedback,
   chatInput = '',
   setChatInput = () => {},
   handleSendChat = () => {},
@@ -953,6 +955,8 @@ export default function TutorPanel({
                       />
                     )}
                   </div>
+
+                  <TutorFeedback message={msg} feedback={feedback} />
 
                   {/* Attached verified learning resources */}
                   {msg.suggested_resources && msg.suggested_resources.length > 0 && (

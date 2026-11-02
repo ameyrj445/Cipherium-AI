@@ -10,7 +10,7 @@
  */
 
 import useAccountDeletion from './hooks/useAccountDeletion';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { authAPI, quizAPI, analyticsAPI, tutorAPI, tasksAPI, getStoredSession, startSession, endSession } from './services/api';
 
 // Error Boundary & Modular Components
@@ -38,12 +38,16 @@ import SettingsView from './components/SettingsView';
 import KnowledgeGraphView from './components/KnowledgeGraphView';
 import RetentionScheduleCard from './components/RetentionScheduleCard';
 
+import { useTutorFeedback } from './hooks/useTutorFeedback';
 import { useDocumentMetadata } from './hooks/useDocumentMetadata';
 
 export default function App() {
   // Session & Auth
   const [restoredSession] = useState(() => getStoredSession());
   const [token, setToken] = useState(restoredSession?.token || '');
+  const sessionRef = useRef(token);
+  useLayoutEffect(() => { sessionRef.current = token; }, [token]);
+  const feedback = useTutorFeedback(token);
   const [user, setUser] = useState(restoredSession?.user || null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState(restoredSession?.expiresAt || null);
   const [showAuthModal, setShowAuthModal] = useState(!restoredSession);
@@ -66,8 +70,14 @@ export default function App() {
   const recoveryMode = recoveryLocation.path === '/reset-password' ? 'reset' : recoveryLocation.path === '/forgot-password' ? 'forgot' : null;
   const resetToken = recoveryMode === 'reset' ? new URLSearchParams(recoveryLocation.search).get('token') : null;
 
+  const [chatInput, setChatInput] = useState('');
+  const [tutorThinking, setTutorThinking] = useState(false);
+
   // Define session expiration handler before useEffect to satisfy temporal ordering
   const endInvalidSession = useCallback(() => {
+    sessionRef.current = '';
+    setChatInput('');
+    setTutorThinking(false);
     endSession();
     setToken('');
     setUser(null);
@@ -122,29 +132,26 @@ export default function App() {
   const [aiModel, setAiModel] = useState('gemini-2.5-flash');
   const [tutorMode, setTutorMode] = useState('socratic'); // 'socratic' | 'direct' | 'exam_prep'
   const [tutorTopicId, setTutorTopicId] = useState(null);
-  const [chatInput, setChatInput] = useState('');
-  const [tutorThinking, setTutorThinking] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    {
-      role: 'user',
-      text: 'Can you explain how binary search works with a visual example?'
-    },
-    {
-      role: 'assistant',
-      isCustomCard: true,
-      text: 'Sure! Binary search is an efficient algorithm to find an element in a sorted array. It repeatedly divides the search interval in half.',
-      array: [2, 5, 8, 12, 16, 23, 38],
-      highlightIndex: 3,
-      steps: [
-        '1. Start with low = 0, high = 6',
-        '2. Find the middle element: (0 + 6) / 2 = 3',
-        '3. Compare 12 with the middle element',
-        '4. If equal -> element found!'
-      ],
-      timeComp: 'O(log n)',
-      spaceComp: 'O(1)'
-    }
-  ]);
+  const [chatState, setChatState] = useState({ token, messages: [] });
+  const chatMessages = chatState.token === token ? chatState.messages : [];
+  const setChatMessages = useCallback((next) => setChatState((previous) => ({
+    token,
+    messages: typeof next === 'function'
+      ? next(previous.token === token ? previous.messages : []) : next,
+  })), [token]);
+  const chatGeneration = useRef(0);
+  const chatTouched = useRef(false);
+  useLayoutEffect(() => {
+    chatGeneration.current += 1;
+    chatTouched.current = false;
+  }, [token]);
+  const clearChat = () => {
+    chatTouched.current = true;
+    chatGeneration.current += 1;
+    setChatMessages([]);
+    setChatInput('');
+    setTutorThinking(false);
+  };
 
   // Today's Plan Checklist
   const [todayTasks, setTodayTasks] = useState([
@@ -161,10 +168,14 @@ export default function App() {
 
   // Load user data whenever token changes
   const loadUserData = useCallback(async () => {
+    const requestSession = token;
+    const historyGeneration = chatGeneration.current;
+    if (!requestSession) return;
     try {
       // Confirm a restored token before allowing plan generation or other
       // authenticated actions to be shown.
       const profileRes = await authAPI.getProfile();
+      if (sessionRef.current !== requestSession) return;
       if (profileRes.data) setUser(profileRes.data);
       const [topRes, anaRes, recRes, roadRes, planRes, plansRes, tasksRes, historyRes] = await Promise.all([
         quizAPI.getTopics().catch(() => ({ data: [] })),
@@ -176,6 +187,7 @@ export default function App() {
         tasksAPI.getTodayTasks().catch(() => ({ data: [] })),
         tutorAPI.getHistory(30).catch(() => ({ data: [] })),
       ]);
+      if (sessionRef.current !== requestSession) return;
       if (topRes.data) setTopics(topRes.data);
       if (anaRes.data) setAnalytics(anaRes.data);
       if (recRes.data) setRecommendations(recRes.data);
@@ -188,8 +200,9 @@ export default function App() {
           done: !!t.is_done,
         })));
       }
-      if (Array.isArray(historyRes.data) && historyRes.data.length > 0) {
+      if (!chatTouched.current && chatGeneration.current === historyGeneration && Array.isArray(historyRes.data)) {
         setChatMessages(historyRes.data.map((msg) => ({
+          id: msg.id,
           role: msg.role,
           text: msg.message,
           created_at: msg.created_at,
@@ -203,10 +216,11 @@ export default function App() {
       const currentPlan = savedPlans.find((plan) => plan.id === planRes?.data?.id) || savedPlans[0] || planRes?.data || null;
       setCustomPlan(currentPlan);
     } catch (err) {
+      if (sessionRef.current !== requestSession) return;
       console.error('Initialization error:', err);
       if (err.response?.status === 401) endInvalidSession();
     }
-  }, [endInvalidSession, plansStorageKey, cachePlans]);
+  }, [token, endInvalidSession, plansStorageKey, cachePlans, setChatMessages]);
 
   useEffect(() => {
     if (token) {
@@ -248,6 +262,9 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    sessionRef.current = '';
+    setChatInput('');
+    setTutorThinking(false);
     endSession();
     setToken('');
     setSessionExpiresAt(null);
@@ -346,6 +363,10 @@ export default function App() {
     e?.preventDefault?.();
     if (!chatInput.trim() || tutorThinking) return;
 
+    const requestSession = token;
+    chatTouched.current = true;
+    const generation = ++chatGeneration.current;
+    const isCurrentChat = () => sessionRef.current === requestSession && chatGeneration.current === generation;
     const userMsg = chatInput.trim();
     const currentMode = tutorMode || 'socratic';
     const updated = [...chatMessages, { role: 'user', text: userMsg }];
@@ -374,6 +395,7 @@ export default function App() {
         mode: currentMode,
       },
       (chunk) => {
+        if (!isCurrentChat()) return;
         accumulatedText += chunk;
         setChatMessages((prev) => {
           const next = [...prev];
@@ -389,6 +411,7 @@ export default function App() {
         });
       },
       (donePayload) => {
+        if (!isCurrentChat()) return;
         setChatMessages((prev) => {
           const next = [...prev];
           if (next[streamingIndex]) {
@@ -405,6 +428,7 @@ export default function App() {
         setTutorThinking(false);
       },
       async (err) => {
+        if (!isCurrentChat()) return;
         console.warn('Streaming error, falling back to standard API:', err);
         try {
           const res = await tutorAPI.sendMessage({
@@ -412,6 +436,7 @@ export default function App() {
             topic_id: tutorTopicId || undefined,
             mode: currentMode,
           });
+          if (!isCurrentChat()) return;
           setChatMessages((prev) => {
             const next = [...prev];
             next[streamingIndex] = {
@@ -424,6 +449,7 @@ export default function App() {
             return next;
           });
         } catch (fallbackErr) {
+          if (!isCurrentChat()) return;
           console.error('Tutor chat fallback error:', fallbackErr);
           setChatMessages((prev) => {
             const next = [...prev];
@@ -436,7 +462,7 @@ export default function App() {
             return next;
           });
         } finally {
-          setTutorThinking(false);
+          if (isCurrentChat()) setTutorThinking(false);
         }
       }
     );
@@ -773,6 +799,7 @@ export default function App() {
             tutorMode={tutorMode}
             setTutorMode={setTutorMode}
             chatMessages={chatMessages}
+            feedback={feedback}
             chatInput={chatInput}
             setChatInput={setChatInput}
             handleSendChat={handleSendChat}
@@ -780,7 +807,7 @@ export default function App() {
             topics={topics}
             tutorTopicId={tutorTopicId}
             setTutorTopicId={setTutorTopicId}
-            onClearHistory={() => setChatMessages([])}
+            onClearHistory={clearChat}
             embedded
           />
         )}

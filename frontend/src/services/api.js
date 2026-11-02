@@ -75,6 +75,10 @@ export const endSession = () => {
  */
 api.interceptors.request.use(
   (config) => {
+    // Feedback must never be reassigned to a different login while queued.
+    if (config.expectedSessionToken !== undefined && config.expectedSessionToken !== sessionToken) {
+      throw new axios.CanceledError('The feedback session has changed.');
+    }
     if (sessionToken) {
       config.headers.Authorization = `Bearer ${sessionToken}`;
     }
@@ -221,8 +225,8 @@ export const profileAPI = {
 
 // ── Recommendation & Dialogue Feedback ───────────────────────────────────────
 export const feedbackAPI = {
-  submit: (data) => api.post('/feedback', data),
-  getMyFeedback: (params) => api.get('/feedback/my', { params }),
+  submit: (data, expectedSessionToken) => api.post('/feedback', data, { expectedSessionToken }),
+  getMyFeedback: (params, expectedSessionToken) => api.get('/feedback/my', { params, expectedSessionToken }),
 };
 
 // ── Admin Content Management System (CMS) ────────────────────────────────────

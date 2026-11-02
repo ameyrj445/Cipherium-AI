@@ -6,6 +6,7 @@ import api, {
   endSession,
   setSessionToken,
   profileAPI,
+  feedbackAPI,
 } from '../services/api';
 
 describe('Centralized API & Session Management Service', () => {
@@ -100,5 +101,24 @@ describe('Profile export transport', () => {
       timeout: 60000,
     });
     get.mockRestore();
+  });
+});
+
+
+describe('Feedback session binding', () => {
+  it('rejects a queued request after the active login changes', () => {
+    setSessionToken('new-login');
+    const handler = api.interceptors.request.handlers[0].fulfilled;
+    expect(() => handler({ headers: {}, expectedSessionToken: 'old-login' })).toThrow('feedback session has changed');
+    expect(handler({ headers: {}, expectedSessionToken: 'new-login' }).headers.Authorization).toBe('Bearer new-login');
+  });
+  it('passes the captured login through both feedback requests', () => {
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ data: [] });
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} });
+    feedbackAPI.getMyFeedback({ limit: 100 }, 'bound-login');
+    feedbackAPI.submit({ target_id: 731, rating: 1 }, 'bound-login');
+    expect(get).toHaveBeenCalledWith('/feedback/my', { params: { limit: 100 }, expectedSessionToken: 'bound-login' });
+    expect(post).toHaveBeenCalledWith('/feedback', { target_id: 731, rating: 1 }, { expectedSessionToken: 'bound-login' });
+    vi.restoreAllMocks();
   });
 });
