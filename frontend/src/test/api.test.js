@@ -5,6 +5,7 @@ import api, {
   getStoredSession,
   endSession,
   setSessionToken,
+  profileAPI,
 } from '../services/api';
 
 describe('Centralized API & Session Management Service', () => {
@@ -86,5 +87,18 @@ describe('Centralized API & Session Management Service', () => {
     const transformed = handler(mockConfig);
 
     expect(transformed.headers.Authorization).toBeUndefined();
+  });
+});
+
+
+describe('Profile export transport', () => {
+  it.each(['json', 'csv'])('requests %s with a bounded timeout and matching response type', async (format) => {
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ data: {} });
+    await profileAPI.exportData(format);
+    expect(get).toHaveBeenCalledWith(`/me/export?format=${format}`, {
+      responseType: format === 'json' ? 'json' : 'blob',
+      timeout: 60000,
+    });
+    get.mockRestore();
   });
 });

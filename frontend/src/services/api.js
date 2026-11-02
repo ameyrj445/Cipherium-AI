@@ -215,6 +215,7 @@ export const profileAPI = {
   exportData: (format = 'json') =>
     api.get(`/me/export?format=${format}`, {
       responseType: format === 'json' ? 'json' : 'blob',
+      timeout: 60000,
     }),
 };
 

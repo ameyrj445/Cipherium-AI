@@ -62,7 +62,7 @@ describe('Settings account deletion (mocked API only)', () => {
     expect(screen.getByRole('button', { name: 'Deleting…' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
     expect(screen.getByLabelText('Deletion confirmation')).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('Deleting your account');
+    expect(screen.getByText('Deleting your account… Please wait.')).toHaveAttribute('role', 'status');
     fireEvent.keyDown(screen.getByLabelText('Deletion confirmation'), { key: 'Escape' });
     expect(screen.getByLabelText('Deletion confirmation')).toBeInTheDocument();
     await act(async () => resolve({ data: { message: 'Deleted' } }));
@@ -102,7 +102,7 @@ describe('Settings account deletion (mocked API only)', () => {
     view.rerender(<Harness visible={false} />);
     view.rerender(<Harness visible />);
     expect(screen.getByRole('button', { name: 'Delete account' })).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('Deleting your account');
+    expect(screen.getByText('Deleting your account… Please wait.')).toHaveAttribute('role', 'status');
     expect(authAPI.deleteAccount).toHaveBeenCalledTimes(1);
     await act(async () => resolve({}));
     expect(logout).toHaveBeenCalledTimes(1);
