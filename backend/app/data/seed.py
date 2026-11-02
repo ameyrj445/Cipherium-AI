@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from app.models import Topic, Question, Resource, SubjectRoadmap, User
+from app.models import Topic, Question, Resource, SubjectRoadmap, TopicPrerequisite, User
 from app.services.auth import hash_password
 
 TOPICS_DATA = [
@@ -326,6 +326,16 @@ def seed_database(db):
             db.commit()
             db.refresh(topic)
             topic_map[topic.code] = topic.id
+
+        # Keep the legacy JSON value and normalized graph edges in sync for
+        # transitional clients that still consume `Topic.prerequisites`.
+        for t_info in TOPICS_DATA:
+            for prerequisite_code in json.loads(t_info["prerequisites"]):
+                prerequisite_id = topic_map.get(prerequisite_code)
+                if prerequisite_id and prerequisite_id != topic_map[t_info["code"]]:
+                    db.add(TopicPrerequisite(
+                        topic_id=topic_map[t_info["code"]], prerequisite_id=prerequisite_id
+                    ))
 
         # Seed Questions
         for q_info in QUESTIONS_DATA:

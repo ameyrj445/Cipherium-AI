@@ -5,6 +5,16 @@ computes topological depths, detects circular dependencies, and resolves student
 from typing import List, Dict, Any, Tuple, Optional
 import json
 
+
+def topic_prerequisite_codes(topic: Any) -> List[str]:
+    """Read normalized prerequisite rows for ORM topics, with fixture fallback."""
+    if isinstance(topic, dict):
+        return parse_prerequisites(topic.get("prerequisites"))
+    links = getattr(topic, "prerequisite_links", None)
+    if links is not None:
+        return [link.prerequisite.code for link in links if getattr(link, "prerequisite", None)]
+    return parse_prerequisites(getattr(topic, "prerequisites", "[]"))
+
 def parse_prerequisites(prereqs: Any) -> List[str]:
     """Safely parses prerequisite codes into a list of strings."""
     if not prereqs:
@@ -43,8 +53,7 @@ def calculate_topological_depths(topics: List[Any]) -> Dict[str, int]:
 
     for t in topics:
         target_code = t.get("code") if isinstance(t, dict) else getattr(t, "code", "")
-        prereqs_val = t.get("prerequisites") if isinstance(t, dict) else getattr(t, "prerequisites", "[]")
-        prereqs = parse_prerequisites(prereqs_val)
+        prereqs = topic_prerequisite_codes(t)
 
         for src in prereqs:
             if src in graph and src != target_code:
@@ -74,8 +83,7 @@ def detect_circular_dependencies(topics: List[Any]) -> Tuple[bool, List[str]]:
     graph: Dict[str, List[str]] = {}
     for t in topics:
         code = t.get("code") if isinstance(t, dict) else getattr(t, "code", "")
-        prereqs_val = t.get("prerequisites") if isinstance(t, dict) else getattr(t, "prerequisites", "[]")
-        graph[code] = parse_prerequisites(prereqs_val)
+        graph[code] = topic_prerequisite_codes(t)
 
     # 0 = unvisited, 1 = visiting, 2 = visited
     state: Dict[str, int] = {k: 0 for k in graph}
@@ -136,8 +144,7 @@ def evaluate_node_states(
         tid = t.get("id") if isinstance(t, dict) else getattr(t, "id", 0)
         cat = t.get("category") if isinstance(t, dict) else getattr(t, "category", "General")
         desc = t.get("description") if isinstance(t, dict) else getattr(t, "description", "")
-        prereqs_val = t.get("prerequisites") if isinstance(t, dict) else getattr(t, "prerequisites", "[]")
-        prereqs = parse_prerequisites(prereqs_val)
+        prereqs = topic_prerequisite_codes(t)
 
         m_score = float(user_mastery_map.get(code, 0.0))
         bkt_score = float(bkt_map.get(code, 0.20))

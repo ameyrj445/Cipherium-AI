@@ -49,6 +49,8 @@ class Topic(Base):
     masteries = relationship("TopicMastery", back_populates="topic")
     mastery_events = relationship("MasteryEvent", back_populates="topic")
     review_schedules = relationship("ReviewSchedule", back_populates="topic")
+    prerequisite_links = relationship("TopicPrerequisite", foreign_keys="TopicPrerequisite.topic_id", back_populates="topic", cascade="all, delete-orphan")
+    dependent_links = relationship("TopicPrerequisite", foreign_keys="TopicPrerequisite.prerequisite_id", back_populates="prerequisite")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -236,3 +238,4 @@ class Feedback(Base):
 from app.models.mastery_event import MasteryEvent  # noqa: E402, F401
 from app.models.review_schedule import ReviewSchedule  # noqa: E402, F401
 from app.models.recommendation_arm import RecommendationArm  # noqa: E402, F401
+from app.models.topic_prerequisite import TopicPrerequisite  # noqa: E402, F401
