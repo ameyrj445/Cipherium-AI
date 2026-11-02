@@ -4,7 +4,9 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: { manifest: true },
   test: {
+    include: ['src/**/*.test.{js,jsx}'],
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',

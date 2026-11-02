@@ -11,7 +11,7 @@
 
 import { useTutorConversations } from './hooks/useTutorConversations';
 import useAccountDeletion from './hooks/useAccountDeletion';
-import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useLayoutEffect, lazy, Suspense } from 'react';
 import { authAPI, quizAPI, analyticsAPI, tasksAPI, getStoredSession, startSession, endSession } from './services/api';
 
 // Error Boundary & Modular Components
@@ -32,12 +32,12 @@ import PasswordRecovery from './components/PasswordRecovery';
 // Dedicated Views for Navigation
 import LearnView from './components/LearnView';
 import PracticeView from './components/PracticeView';
-import AnalyticsFullView from './components/AnalyticsFullView';
+const AnalyticsFullView = lazy(() => import('./components/AnalyticsFullView'));
 import ResourcesFullView from './components/ResourcesFullView';
 import StudyPlanView from './components/StudyPlanView';
 import SettingsView from './components/SettingsView';
-import AdminView from './components/AdminView';
-import KnowledgeGraphView from './components/KnowledgeGraphView';
+const AdminView = lazy(() => import('./components/AdminView'));
+const KnowledgeGraphView = lazy(() => import('./components/KnowledgeGraphView'));
 import RetentionScheduleCard from './components/RetentionScheduleCard';
 
 import { useRecommendationFeedback } from './hooks/useRecommendationFeedback';
@@ -506,6 +506,7 @@ export default function App() {
       >
         {/* DYNAMIC ROUTING ACCORDING TO ACTIVENAV */}
         <ErrorBoundary key={activeNav} scope="view">
+        <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: '24px' }}>Loading {activeNav}…</div>}>
         {activeNav === 'Dashboard' && (
           <PageContainer>
             {/* Row 1: Slim Hero / Onboarding Banner (Full width: 12 cols) */}
@@ -704,6 +705,7 @@ export default function App() {
             customPlan={learningPlan}
           />
         )}
+        </Suspense>
         </ErrorBoundary>
       </AppShell>
 

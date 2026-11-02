@@ -77,5 +77,5 @@ jobs:
       - name: Run oxlint / linter
         run: npm run lint
 
-      - name: Run Vite production build
-        run: npm run build
+      - name: Build and enforce initial JavaScript budget
+        run: npm run test:bundle

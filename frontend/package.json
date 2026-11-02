@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:bundle": "npm run build && node --test scripts/bundle-size.test.js"
   },
   "dependencies": {
     "axios": "^1.20.0",

@@ -68,11 +68,11 @@ describe('App state integration',()=>{
  });
  it('routes contextual graph, analytics, settings and resources callbacks',async()=>{
   render(<App/>);await screen.findByText('Completion 67');
-  go('Knowledge Graph');fireEvent.click(screen.getByText('Graph tutor'));expect(screen.getByText('Tutor input: Explain graph')).toBeInTheDocument();
-  go('Knowledge Graph');fireEvent.click(screen.getByText('Graph quiz'));await screen.findByText('Question text');expect(quizAPI.getNextQuestion).toHaveBeenCalledWith(2);
-  go('Analytics');fireEvent.click(screen.getByText('Practice analytics'));expect(screen.getByText('Graphs')).toBeInTheDocument();
+  go('Knowledge Graph');fireEvent.click(await screen.findByText('Graph tutor'));expect(screen.getByText('Tutor input: Explain graph')).toBeInTheDocument();
+  go('Knowledge Graph');fireEvent.click(await screen.findByText('Graph quiz'));await screen.findByText('Question text');expect(quizAPI.getNextQuestion).toHaveBeenCalledWith(2);
+  go('Analytics');fireEvent.click(await screen.findByText('Practice analytics'));expect(screen.getByText('Graphs')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Search Arrays'));expect(screen.getByText('Arrays')).toBeInTheDocument();
-  go('Admin');expect(screen.getByText('Admin view')).toBeInTheDocument();
+  go('Admin');expect(await screen.findByText('Admin view')).toBeInTheDocument();
   go('Dashboard');fireEvent.click(screen.getByText('All resources'));expect(screen.getByText('Resources view')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Preferences'));expect(screen.getByText('Settings view')).toBeInTheDocument();
   fireEvent.click(screen.getByText('Settings logout'));expect(screen.getByText('Login view')).toBeInTheDocument();expect(endSession).toHaveBeenCalledOnce();
