@@ -68,7 +68,7 @@ const TYPE_ICONS = {
 
 export default function LearnView({
   topics: _topics = [],
-  onSelectTopic: _onSelectTopic = null,
+  onSelectTopic = null,
   customPlan = null,
   customPlans = [],
   onSelectPlan,

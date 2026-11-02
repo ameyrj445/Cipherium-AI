@@ -72,7 +72,7 @@ jobs:
         run: npm ci
 
       - name: Run Vitest unit & component test suite
-        run: npm test --if-present
+        run: npm run test:coverage
 
       - name: Run oxlint / linter
         run: npm run lint

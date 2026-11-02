@@ -69,3 +69,6 @@ backend/data/raw/
 *.csv
 !backend/app/datasets/oulad_student_assessment.csv
 
+
+# Generated frontend coverage reports
+frontend/coverage/

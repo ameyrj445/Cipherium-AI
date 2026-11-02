@@ -13,6 +13,7 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
   const [selectedNode, setSelectedNode] = useState(null);
 
   const fetchGraph = () => {
+    setError('');
     setLoading(true);
     analyticsAPI.getKnowledgeGraph()
       .then((res) => {
@@ -38,7 +39,7 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
   const filteredNodes = useMemo(() => {
     if (!graphData?.nodes) return [];
     if (selectedCategory === 'All') return graphData.nodes;
-    return graphData.nodes.filter((n) => n.category === selectedCategory);
+    return graphData.nodes.filter((n) => (n.category || 'General') === selectedCategory);
   }, [graphData, selectedCategory]);
 
   // Group nodes by topological depth
