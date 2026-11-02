@@ -27,6 +27,7 @@ htmlcov/
 # Locally generated course notes and Chroma's persisted vector store
 backend/data/docs/
 backend/data/chroma/
+backend/data/perf_report.json
 
 # Node / Vite
 node_modules/

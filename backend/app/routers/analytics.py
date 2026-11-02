@@ -33,7 +33,7 @@ from app.schemas import (
 from app.routers.auth import get_current_user, require_admin
 from app.services.analytics import compute_recommendation_score, calculate_topic_cognitive_state
 from app.services.knowledge_graph import build_curriculum_dag
-from app.ml.predictor import predict_weak_topic, get_model_info
+from app.ml.predictor import predict_weak_topics, get_model_info
 from app.services.study_plan_generator import generate_study_plan, is_plan_stale
 
 
@@ -225,12 +225,26 @@ def get_mastery_analytics(
         if a.question and a.question.topic_id:
             attempts_by_topic.setdefault(a.question.topic_id, []).append(a)
 
+    ml_features = []
+    for topic in topics:
+        mastery = user_masteries.get(topic.id)
+        attempt_count = mastery.attempt_count if mastery else 0
+        correct_count = mastery.correct_count if mastery else 0
+        accuracy = round((correct_count / attempt_count * 100), 1) if attempt_count else 0.0
+        ml_features.append({
+            "study_hours": max(1.0, round(attempt_count * 0.4, 1)),
+            "vle_clicks": max(10, attempt_count * 18),
+            "prior_attempts": attempt_count,
+            "assessment_score": accuracy if attempt_count else 45.0,
+        })
+    ml_results = predict_weak_topics(ml_features)
+
     topic_details: List[TopicMasteryDetail] = []
     strong_cnt = 0
     dev_cnt = 0
     weak_cnt = 0
 
-    for t in topics:
+    for index, t in enumerate(topics):
         m = user_masteries.get(t.id)
         if m:
             m_score = m.mastery_score
@@ -249,17 +263,7 @@ def get_mastery_analytics(
         t_attempts = attempts_by_topic.get(t.id, [])
         cog_state = calculate_topic_cognitive_state(t_attempts)
 
-        # Run Scikit-learn Random Forest model trained on OULAD dataset:
-        # Features: study_hours, vle_clicks, prior_attempts, assessment_score
-        estimated_study_hours = max(1.0, round(att_cnt * 0.4, 1))
-        estimated_clicks = max(10, att_cnt * 18)
-        simulated_score = acc_pct if att_cnt > 0 else 45.0
-        ml_res = predict_weak_topic(
-            study_hours=estimated_study_hours,
-            vle_clicks=estimated_clicks,
-            prior_attempts=att_cnt,
-            assessment_score=simulated_score
-        )
+        ml_res = ml_results[index]
         ml_weak_prob = ml_res["weak_probability"]
         ml_pred_label = "Intervention Needed" if ml_res["is_weak_prediction"] else "On Track"
 
