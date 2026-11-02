@@ -243,3 +243,9 @@ Overall Progress:
 | **Amey Sprint 2** (`feat/amey-s2`) | Amey | Vector RAG Pipeline (Chroma), Dialogue Telemetry, Dynamic Roadmap Regeneration, ML Model Benchmark Report, Token Quotas & LLM Cap | ✅ Merged |
 | **Amey Sprint 3** (`feat/amey-s3`) | Amey | API Performance Benchmarking, Review Schedule Persistence, Anti-Cheat Tutor Lock, Contextual Bandit Baseline, Topic Prerequisite Junction Table | ✅ Merged |
 | **Sarvesh Sprint 1** (`feat/sarvesh-s1`) | Sarvesh | Forgot & Reset Password UI, WCAG 2.2 Keyboard Accessibility, Scoped Error Boundary Recovery, Core View Vitest Suite Expansion | ✅ Merged |
+
+### Frontend verification notes
+
+| Task | Contributor | Implementation | Verification / remaining work |
+|---|---|---|---|
+| S2-6 conversation sidebar (`feat/sarvesh-s2`) | Sarvesh | API-backed conversation list/load-more, selection with saved message IDs, immediate New Conversation creation, conversation-scoped streaming/fallback, responsive sidebar and session-race protection. | Automated frontend tests, lint and build pass. Browser visual QA is blocked in the cloud environment; desktop/mobile visual checks and real-backend end-to-end persistence remain unverified. Independent review and team PR/merge remain separate gates. See `frontend/docs/tutor-conversations.md` for backend limits. |

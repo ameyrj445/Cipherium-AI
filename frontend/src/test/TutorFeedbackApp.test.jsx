@@ -13,7 +13,7 @@ vi.mock('../services/api', () => {
     quizAPI: { getTopics: empty() },
     analyticsAPI: Object.fromEntries(['getMastery', 'getRecommendations', 'generateRoadmap', 'getCurrentPlan', 'getCustomPlans'].map((key) => [key, empty()])),
     tasksAPI: { getTodayTasks: empty() },
-    tutorAPI: { getHistory: vi.fn(), streamMessage: vi.fn(), sendMessage: vi.fn() },
+    tutorAPI: { getHistory: vi.fn(), streamMessage: vi.fn(), sendMessage: vi.fn(), getConversations: empty(), getConversationMessages: empty(), createConversation: vi.fn().mockResolvedValue({ data: { id: 101, title: 'New' } }) },
     feedbackAPI: { getMyFeedback: vi.fn(), submit: vi.fn() },
   };
 });
@@ -80,6 +80,8 @@ describe('App tutor feedback integration', () => {
     render(<App />);
     fireEvent.click(screen.getByText('Tutor tab'));
     await waitFor(() => expect(tutorAPI.getHistory).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'New Conversation' }));
+    await waitFor(() => expect(screen.getByPlaceholderText(/Ask anything about your syllabus/)).not.toBeDisabled());
     const input = screen.getByPlaceholderText(/Ask anything about your syllabus/);
     fireEvent.change(input, { target: { value: 'A new question' } });
     fireEvent.keyDown(input, { key: 'Enter' });
@@ -95,11 +97,14 @@ describe('App tutor feedback integration', () => {
 
   it('ignores previous streaming callbacks after starting a new chat', async () => {
     await openTutor();
+    fireEvent.click(screen.getByRole('button', { name: 'New Conversation' }));
+    await waitFor(() => expect(screen.getByPlaceholderText(/Ask anything about your syllabus/)).not.toBeDisabled());
     const input = screen.getByPlaceholderText(/Ask anything about your syllabus/);
     fireEvent.change(input, { target: { value: 'First question' } });
     fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(tutorAPI.streamMessage).toHaveBeenCalled());
     const [, chunk, done, error] = tutorAPI.streamMessage.mock.calls[0];
-    fireEvent.click(screen.getByRole('button', { name: /New/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'New Conversation' }));
     await act(async () => { chunk('Stale answer'); done({}); await error(new Error('late')); });
     expect(screen.queryByText('Stale answer')).not.toBeInTheDocument();
     expect(tutorAPI.sendMessage).not.toHaveBeenCalled();

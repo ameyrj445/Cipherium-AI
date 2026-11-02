@@ -148,15 +148,16 @@ export const geminiAPI = {
 
 // ── AI Pedagogical Tutor Dialogue ─────────────────────────────────────────────
 export const tutorAPI = {
-  sendMessage: (data) => api.post('/tutor/chat', data),
-  getHistory: (limit = 30) => api.get(`/tutor/history?limit=${limit}`),
-  createConversation: (data) => api.post('/tutor/conversations', data),
-  getConversations: (params) => api.get('/tutor/conversations', { params }),
-  getConversationMessages: (id) => api.get(`/tutor/conversations/${id}/messages`),
-  sendConversationMessage: (id, data) => api.post(`/tutor/conversations/${id}/messages`, data),
-  streamMessage: async (data, onChunk, onDone, onError, signal) => {
+  sendMessage: (data, expectedSessionToken, signal) => api.post('/tutor/chat', data, { expectedSessionToken, signal, timeout: 60000 }),
+  getHistory: (limit = 30, expectedSessionToken, signal) => api.get(`/tutor/history?limit=${limit}`, { expectedSessionToken, signal, timeout: 15000 }),
+  createConversation: (data, expectedSessionToken, signal) => api.post('/tutor/conversations', data, { expectedSessionToken, signal, timeout: 15000 }),
+  getConversations: (params, expectedSessionToken) => api.get('/tutor/conversations', { params, expectedSessionToken, timeout: 15000 }),
+  getConversationMessages: (id, expectedSessionToken, signal) => api.get(`/tutor/conversations/${id}/messages`, { expectedSessionToken, signal, timeout: 15000 }),
+  sendConversationMessage: (id, data, expectedSessionToken, signal) => api.post(`/tutor/conversations/${id}/messages`, data, { expectedSessionToken, signal, timeout: 60000 }),
+  streamMessage: async (data, onChunk, onDone, onError, signal, expectedSessionToken) => {
     try {
       const token = sessionToken || getStoredSession()?.token;
+      if (expectedSessionToken !== undefined && token !== expectedSessionToken) return;
       const response = await fetch(`${API_BASE_URL}/tutor/chat/stream`, {
         method: 'POST',
         headers: {
@@ -173,7 +174,9 @@ export const tutorAPI = {
           const errJson = await response.json();
           if (errJson?.detail) errorDetail = errJson.detail;
         } catch (_) {}
-        throw new Error(errorDetail);
+        const error = new Error(errorDetail);
+        error.status = response.status;
+        throw error;
       }
 
       if (!response.body) {
@@ -183,37 +186,34 @@ export const tutorAPI = {
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split('\n\n');
-        buffer = events.pop();
-
-        for (const evt of events) {
-          const trimmed = evt.trim();
-          if (trimmed.startsWith('data: ')) {
-            try {
-              const parsed = JSON.parse(trimmed.slice(6));
-              if (parsed.done) {
-                if (onDone) onDone(parsed);
-              } else {
-                if (onChunk) onChunk(parsed.chunk);
-              }
-            } catch (err) {
-              console.error('Failed to parse SSE chunk:', err);
-            }
-          }
+      let completed = false;
+      const consume = (event) => {
+        const data = event.split(/\r?\n/).filter((line) => line.startsWith('data:')).map((line) => line.slice(5).trimStart()).join('\n');
+        if (!data || completed) return;
+        const parsed = JSON.parse(data);
+        if (parsed.error) throw new Error('The tutor response stream failed.');
+        if (parsed.done) {
+          completed = true;
+          onDone?.(parsed);
+        } else if (typeof parsed.chunk === 'string') onChunk?.(parsed.chunk);
+      };
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
+          const events = buffer.split(/\r?\n\r?\n/);
+          buffer = events.pop();
+          for (const event of events) consume(event);
+          if (done) { if (buffer.trim()) consume(buffer); break; }
         }
-      }
+        if (!completed) throw new Error('The response stream ended before completion.');
+      } finally { reader.releaseLock?.(); }
     } catch (err) {
       if (err.name === 'AbortError') {
         // Stream aborted gracefully
         return;
       }
-      if (onError) onError(err);
+      if (onError) await onError(err);
     }
   },
 };

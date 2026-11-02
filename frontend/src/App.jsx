@@ -9,9 +9,10 @@
  *   - Wraps the entire component tree in an Error Boundary for crash resilience.
  */
 
+import { useTutorConversations } from './hooks/useTutorConversations';
 import useAccountDeletion from './hooks/useAccountDeletion';
 import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
-import { authAPI, quizAPI, analyticsAPI, tutorAPI, tasksAPI, getStoredSession, startSession, endSession } from './services/api';
+import { authAPI, quizAPI, analyticsAPI, tasksAPI, getStoredSession, startSession, endSession } from './services/api';
 
 // Error Boundary & Modular Components
 import ErrorBoundary from './components/ErrorBoundary';
@@ -73,13 +74,13 @@ export default function App() {
   const resetToken = recoveryMode === 'reset' ? new URLSearchParams(recoveryLocation.search).get('token') : null;
 
   const [chatInput, setChatInput] = useState('');
-  const [tutorThinking, setTutorThinking] = useState(false);
+  const conversations = useTutorConversations(token);
+  const { messages: chatMessages, thinking: tutorThinking, topicId: tutorTopicId, setTopicId: setTutorTopicId } = conversations;
 
   // Define session expiration handler before useEffect to satisfy temporal ordering
   const endInvalidSession = useCallback(() => {
     sessionRef.current = '';
     setChatInput('');
-    setTutorThinking(false);
     endSession();
     setToken('');
     setUser(null);
@@ -133,27 +134,7 @@ export default function App() {
   // AI Tutor State
   const [aiModel, setAiModel] = useState('gemini-2.5-flash');
   const [tutorMode, setTutorMode] = useState('socratic'); // 'socratic' | 'direct' | 'exam_prep'
-  const [tutorTopicId, setTutorTopicId] = useState(null);
-  const [chatState, setChatState] = useState({ token, messages: [] });
-  const chatMessages = chatState.token === token ? chatState.messages : [];
-  const setChatMessages = useCallback((next) => setChatState((previous) => ({
-    token,
-    messages: typeof next === 'function'
-      ? next(previous.token === token ? previous.messages : []) : next,
-  })), [token]);
-  const chatGeneration = useRef(0);
-  const chatTouched = useRef(false);
-  useLayoutEffect(() => {
-    chatGeneration.current += 1;
-    chatTouched.current = false;
-  }, [token]);
-  const clearChat = () => {
-    chatTouched.current = true;
-    chatGeneration.current += 1;
-    setChatMessages([]);
-    setChatInput('');
-    setTutorThinking(false);
-  };
+  const clearChat = () => { conversations.newConversation(topics.find((topic) => topic.id === tutorTopicId)?.name || 'General'); setChatInput(''); };
 
   // Today's Plan Checklist
   const [todayTasks, setTodayTasks] = useState([
@@ -171,7 +152,6 @@ export default function App() {
   // Load user data whenever token changes
   const loadUserData = useCallback(async () => {
     const requestSession = token;
-    const historyGeneration = chatGeneration.current;
     if (!requestSession) return;
     try {
       // Confirm a restored token before allowing plan generation or other
@@ -179,7 +159,7 @@ export default function App() {
       const profileRes = await authAPI.getProfile();
       if (sessionRef.current !== requestSession) return;
       if (profileRes.data) setUser(profileRes.data);
-      const [topRes, anaRes, recRes, roadRes, planRes, plansRes, tasksRes, historyRes] = await Promise.all([
+      const [topRes, anaRes, recRes, roadRes, planRes, plansRes, tasksRes] = await Promise.all([
         quizAPI.getTopics().catch(() => ({ data: [] })),
         analyticsAPI.getMastery().catch(() => ({ data: null })),
         analyticsAPI.getRecommendations().catch(() => ({ data: [] })),
@@ -187,7 +167,6 @@ export default function App() {
         analyticsAPI.getCurrentPlan().catch(() => null),
         analyticsAPI.getCustomPlans().catch(() => ({ data: [] })),
         tasksAPI.getTodayTasks().catch(() => ({ data: [] })),
-        tutorAPI.getHistory(30).catch(() => ({ data: [] })),
       ]);
       if (sessionRef.current !== requestSession) return;
       if (topRes.data) setTopics(topRes.data);
@@ -202,14 +181,6 @@ export default function App() {
           done: !!t.is_done,
         })));
       }
-      if (!chatTouched.current && chatGeneration.current === historyGeneration && Array.isArray(historyRes.data)) {
-        setChatMessages(historyRes.data.map((msg) => ({
-          id: msg.id,
-          role: msg.role,
-          text: msg.message,
-          created_at: msg.created_at,
-        })));
-      }
       const savedPlans = Array.isArray(plansRes.data) && plansRes.data.length
         ? plansRes.data
         : JSON.parse(localStorage.getItem(plansStorageKey) || '[]');
@@ -222,7 +193,7 @@ export default function App() {
       console.error('Initialization error:', err);
       if (err.response?.status === 401) endInvalidSession();
     }
-  }, [token, endInvalidSession, plansStorageKey, cachePlans, setChatMessages]);
+  }, [token, endInvalidSession, plansStorageKey, cachePlans]);
 
   useEffect(() => {
     if (token) {
@@ -266,7 +237,6 @@ export default function App() {
   const handleLogout = () => {
     sessionRef.current = '';
     setChatInput('');
-    setTutorThinking(false);
     endSession();
     setToken('');
     setSessionExpiresAt(null);
@@ -360,114 +330,13 @@ export default function App() {
   // Only the plan deliberately added to Learn drives plan-specific surfaces.
   const learningPlan = customPlan?.is_added_to_learn ? customPlan : null;
 
-  // AI Tutor Chat
+  // Conversation requests are session-bound and invalidate on thread switches.
   const handleSendChat = async (e) => {
     e?.preventDefault?.();
-    if (!chatInput.trim() || tutorThinking) return;
-
-    const requestSession = token;
-    chatTouched.current = true;
-    const generation = ++chatGeneration.current;
-    const isCurrentChat = () => sessionRef.current === requestSession && chatGeneration.current === generation;
-    const userMsg = chatInput.trim();
-    const currentMode = tutorMode || 'socratic';
-    const updated = [...chatMessages, { role: 'user', text: userMsg }];
-    setChatMessages(updated);
+    if (!chatInput.trim() || tutorThinking || conversations.loadingMessages || conversations.blocked || conversations.activeId === 'legacy') return;
+    const text = chatInput;
     setChatInput('');
-    setTutorThinking(true);
-
-    const streamingIndex = updated.length;
-    // Add placeholder assistant message in streaming state
-    setChatMessages([
-      ...updated,
-      {
-        role: 'assistant',
-        text: '',
-        mode: currentMode,
-        streaming: true,
-      },
-    ]);
-
-    let accumulatedText = '';
-
-    await tutorAPI.streamMessage(
-      {
-        message: userMsg,
-        topic_id: tutorTopicId || undefined,
-        mode: currentMode,
-      },
-      (chunk) => {
-        if (!isCurrentChat()) return;
-        accumulatedText += chunk;
-        setChatMessages((prev) => {
-          const next = [...prev];
-          if (next[streamingIndex]) {
-            next[streamingIndex] = {
-              ...next[streamingIndex],
-              text: accumulatedText,
-              mode: currentMode,
-              streaming: true,
-            };
-          }
-          return next;
-        });
-      },
-      (donePayload) => {
-        if (!isCurrentChat()) return;
-        setChatMessages((prev) => {
-          const next = [...prev];
-          if (next[streamingIndex]) {
-            next[streamingIndex] = {
-              ...next[streamingIndex],
-              text: accumulatedText,
-              mode: donePayload?.mode || currentMode,
-              streaming: false,
-              suggested_resources: donePayload?.suggested_resources || [],
-            };
-          }
-          return next;
-        });
-        setTutorThinking(false);
-      },
-      async (err) => {
-        if (!isCurrentChat()) return;
-        console.warn('Streaming error, falling back to standard API:', err);
-        try {
-          const res = await tutorAPI.sendMessage({
-            message: userMsg,
-            topic_id: tutorTopicId || undefined,
-            mode: currentMode,
-          });
-          if (!isCurrentChat()) return;
-          setChatMessages((prev) => {
-            const next = [...prev];
-            next[streamingIndex] = {
-              role: 'assistant',
-              text: res.data.response,
-              mode: res.data.mode || currentMode,
-              streaming: false,
-              suggested_resources: res.data.suggested_resources || [],
-            };
-            return next;
-          });
-        } catch (fallbackErr) {
-          if (!isCurrentChat()) return;
-          console.error('Tutor chat fallback error:', fallbackErr);
-          setChatMessages((prev) => {
-            const next = [...prev];
-            next[streamingIndex] = {
-              role: 'assistant',
-              text: "I'm synthesizing an answer using syllabus and RAG notes...",
-              mode: currentMode,
-              streaming: false,
-            };
-            return next;
-          });
-        } finally {
-          if (isCurrentChat()) setTutorThinking(false);
-        }
-      }
-    );
+    await conversations.send(text, tutorMode);
   };
 
   // Practice & Quiz Handler
@@ -813,6 +682,7 @@ export default function App() {
             tutorTopicId={tutorTopicId}
             setTutorTopicId={setTutorTopicId}
             onClearHistory={clearChat}
+            conversations={{ ...conversations, select: (id) => { setChatInput(''); conversations.select(id); }, showLegacy: () => { setChatInput(''); conversations.showLegacy(); } }}
             embedded
           />
         )}
