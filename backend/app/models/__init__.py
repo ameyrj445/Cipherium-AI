@@ -30,6 +30,7 @@ class User(Base):
     feedbacks = relationship("Feedback", back_populates="user")
     mastery_events = relationship("MasteryEvent", back_populates="user")
     review_schedules = relationship("ReviewSchedule", back_populates="user")
+    recommendation_arms = relationship("RecommendationArm", back_populates="user")
     quiz_sessions = relationship("QuizSession", back_populates="user")
 
 class Topic(Base):
@@ -234,3 +235,4 @@ class Feedback(Base):
 # Imported after User and Topic so the relationships above can resolve cleanly.
 from app.models.mastery_event import MasteryEvent  # noqa: E402, F401
 from app.models.review_schedule import ReviewSchedule  # noqa: E402, F401
+from app.models.recommendation_arm import RecommendationArm  # noqa: E402, F401

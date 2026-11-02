@@ -33,6 +33,7 @@ from app.schemas import (
 from app.routers.auth import get_current_user, require_admin
 from app.services.analytics import compute_recommendation_score, calculate_topic_cognitive_state
 from app.services.bkt_service import SpacedRepetitionScheduler
+from app.services.bandit import bandit_enabled, choose_resource, reward_map, reward_resource
 from app.services.knowledge_graph import build_curriculum_dag
 from app.ml.predictor import predict_weak_topics, get_model_info
 from app.services.study_plan_generator import generate_study_plan, is_plan_stale
@@ -480,6 +481,11 @@ def get_recommendations(
 
     # Sort by relevance score descending
     ranked_list.sort(key=lambda x: (x.relevance_score or 0.0), reverse=True)
+    if bandit_enabled():
+        chosen = choose_resource(ranked_list, reward_map(db, current_user.id))
+        if chosen is not None:
+            ranked_list.remove(chosen)
+            ranked_list.insert(0, chosen)
     return ranked_list
 
 @router.post("/roadmaps/generate", response_model=RoadmapResponse)
@@ -760,7 +766,10 @@ def update_study_plan_progress(
             if m.get("id") == req.milestone_id:
                 for r in m.get("resources", []):
                     if r.get("id") == req.resource_id:
+                        was_completed = bool(r.get("completed", False))
                         r["completed"] = req.resource_completed
+                        if req.resource_completed and not was_completed:
+                            reward_resource(db, current_user.id, req.resource_id)
                 # Re-evaluate status
                 done_list = m.get("completed_subtopics", [])
                 all_subs_done = len(done_list) >= len(m.get("subtopics", []))
