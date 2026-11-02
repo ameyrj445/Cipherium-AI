@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Topic, TutorMessage, User, TutorConversation, utc_now
+from app.models import Topic, TutorMessage, User, TutorConversation, UserSettings, utc_now
 from app.schemas import TutorChatRequest, TutorChatResponse, ResourceResponse, TutorConversationCreate, TutorConversationResponse, TutorMessageDetail
 from app.routers.auth import get_current_user
 from app.services.tutor import ask_ai_tutor, generate_tutor_response, stream_ai_tutor
@@ -23,6 +23,24 @@ from app.utils.sanitize import sanitize_user_input
 from app.limiter import limiter
 
 router = APIRouter(tags=["AI Tutor"])
+
+QUOTA_EXCEEDED_MESSAGE = "Monthly AI quota exceeded. Upgrade or wait until next month."
+
+
+def _get_quota_settings(user_id: int, db: Session) -> UserSettings:
+    settings = db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
+    if settings is None:
+        settings = UserSettings(user_id=user_id, monthly_token_used=0, token_quota=50000)
+        db.add(settings)
+        db.flush()
+    return settings
+
+
+def _ensure_quota_available(user_id: int, db: Session) -> UserSettings:
+    settings = _get_quota_settings(user_id, db)
+    if settings.monthly_token_used >= settings.token_quota:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=QUOTA_EXCEEDED_MESSAGE)
+    return settings
 
 
 @router.post("/tutor/chat", response_model=TutorChatResponse)
@@ -51,6 +69,8 @@ def chat_with_tutor(
         clean_msg = sanitize_user_input(clean_msg)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+    quota_settings = _ensure_quota_available(current_user.id, db)
 
     topic = None
     if req.topic_id:
@@ -97,6 +117,7 @@ def chat_with_tutor(
         retrieval_chunk_ids=json.dumps(retrieval_chunk_ids),
     )
     db.add(assistant_msg_record)
+    quota_settings.monthly_token_used += token_count
     db.commit()
 
     # 4. Attach relevant learning resources matching the selected topic
@@ -145,6 +166,8 @@ def stream_chat_with_tutor(
         clean_msg = sanitize_user_input(clean_msg)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+    quota_settings = _ensure_quota_available(current_user.id, db)
 
     topic = None
     if req.topic_id:
@@ -216,6 +239,7 @@ def stream_chat_with_tutor(
             retrieval_chunk_ids=json.dumps(retrieval_chunk_ids),
         )
         db.add(assistant_record)
+        quota_settings.monthly_token_used += assistant_record.token_count
         db.commit()
 
     return StreamingResponse(

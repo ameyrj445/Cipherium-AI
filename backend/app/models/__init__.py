@@ -181,6 +181,8 @@ class UserSettings(Base):
     diagnostic_quiz_alert = Column(Boolean, default=True)
     weak_topic_ping = Column(Boolean, default=True)
     notification_retention = Column(Boolean, default=True, nullable=False)
+    monthly_token_used = Column(Integer, default=0, nullable=False)
+    token_quota = Column(Integer, default=50000, nullable=False)
     custom_gemini_api_key = Column(String(255), nullable=True)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
