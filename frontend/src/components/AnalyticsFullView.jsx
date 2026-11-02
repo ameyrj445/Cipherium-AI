@@ -555,6 +555,7 @@ export default function AnalyticsFullView({
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <input
+                    aria-label="Search plan or milestone"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Search plan or milestone"

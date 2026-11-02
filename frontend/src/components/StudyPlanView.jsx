@@ -260,6 +260,7 @@ export default function StudyPlanView({
                     <Search size={16} color="var(--text-secondary, #9CA3AF)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
                     <input
                       type="text"
+                      aria-label="Target subject or course name"
                       value={subjectInput}
                       onChange={(e) => setSubjectInput(e.target.value)}
                       placeholder="e.g. Data Structures & Algorithms, Operating Systems, Machine Learning..."
@@ -285,6 +286,7 @@ export default function StudyPlanView({
                       Duration (Weeks):
                     </label>
                     <select
+                      aria-label="Duration in weeks"
                       value={durationWeeks}
                       onChange={(e) => setDurationWeeks(Number(e.target.value))}
                       style={{
@@ -312,6 +314,7 @@ export default function StudyPlanView({
                       Weekly Commitment:
                     </label>
                     <select
+                      aria-label="Weekly commitment"
                       value={targetHoursPerWeek}
                       onChange={(e) => setTargetHoursPerWeek(Number(e.target.value))}
                       style={{
@@ -339,6 +342,7 @@ export default function StudyPlanView({
                       Starting Skill Level:
                     </label>
                     <select
+                      aria-label="Starting skill level"
                       value={skillLevel}
                       onChange={(e) => setSkillLevel(e.target.value)}
                       style={{
@@ -365,6 +369,7 @@ export default function StudyPlanView({
                       Learning Objective:
                     </label>
                     <select
+                      aria-label="Learning objective"
                       value={learningGoal}
                       onChange={(e) => setLearningGoal(e.target.value)}
                       style={{
@@ -668,6 +673,7 @@ export default function StudyPlanView({
               <div style={{ position: 'relative' }}>
                 <Search size={14} color="var(--text-secondary, #9CA3AF)" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
+                  aria-label="Search stages or topics"
                   value={stageSearch}
                   onChange={(event) => setStageSearch(event.target.value)}
                   placeholder="Search stages or topics..."
@@ -709,9 +715,16 @@ export default function StudyPlanView({
                       background: 'var(--bg-surface, #1E1E22)',
                     }}
                   >
-                    <div
+                    <button
+                      type="button"
                       onClick={() => toggleMilestone(idx)}
+                      aria-expanded={isExpanded}
+                      aria-label={`${m.title} milestone`}
                       style={{
+                        width: '100%',
+                        border: 0,
+                        color: 'inherit',
+                        textAlign: 'left',
                         padding: '16px 20px',
                         background: isStageComplete
                           ? 'rgba(16, 185, 129, 0.08)'
@@ -760,7 +773,7 @@ export default function StudyPlanView({
                         )}
                         {isExpanded ? <ChevronUp size={18} color="#9CA3AF" /> : <ChevronDown size={18} color="#9CA3AF" />}
                       </div>
-                    </div>
+                    </button>
 
                     {isExpanded && (
                       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px', borderTop: '1px solid var(--border-stroke, #2D2D35)' }}>

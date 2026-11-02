@@ -504,6 +504,7 @@ export default function PracticeView({
                               if (!quizResult && !quizLoading) setSelectedOption(opt);
                             }}
                             role="button"
+                            aria-pressed={isSelected}
                             tabIndex={0}
                             onKeyDown={(e) => {
                               if ((e.key === 'Enter' || e.key === ' ') && !quizResult && !quizLoading) {
@@ -1051,6 +1052,7 @@ export default function PracticeView({
 
               {examError && (
                 <div
+                  role="alert"
                   style={{
                     padding: '12px 16px',
                     borderRadius: '10px',
@@ -1329,9 +1331,11 @@ export default function PracticeView({
                       const isSelected = examAnswers[currentExamQuestion.id] === opt;
                       const letter = optionLetters[optIdx] || String(optIdx + 1);
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={optIdx}
                           onClick={() => handleSelectExamAnswer(currentExamQuestion.id, opt)}
+                          aria-pressed={isSelected}
                           style={{
                             padding: '14px 18px',
                             borderRadius: '10px',
@@ -1343,6 +1347,8 @@ export default function PracticeView({
                             gap: '12px',
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
+                            width: '100%',
+                            textAlign: 'left',
                           }}
                         >
                           <div
@@ -1364,7 +1370,7 @@ export default function PracticeView({
                             {letter}
                           </div>
                           <span style={{ fontSize: '0.88rem', lineHeight: 1.45, flex: 1 }}>{opt}</span>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
