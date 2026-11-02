@@ -229,8 +229,8 @@ export const profileAPI = {
 
 // ── Recommendation & Dialogue Feedback ───────────────────────────────────────
 export const feedbackAPI = {
-  submit: (data, expectedSessionToken) => api.post('/feedback', data, { expectedSessionToken }),
-  getMyFeedback: (params, expectedSessionToken) => api.get('/feedback/my', { params, expectedSessionToken }),
+  submit: (data, expectedSessionToken) => api.post('/feedback', data, { expectedSessionToken, timeout: 15000 }),
+  getMyFeedback: (params, expectedSessionToken) => api.get('/feedback/my', { params, expectedSessionToken, timeout: 15000 }),
 };
 
 // ── Admin Content Management System (CMS) ────────────────────────────────────

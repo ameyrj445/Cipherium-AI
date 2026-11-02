@@ -117,8 +117,8 @@ describe('Feedback session binding', () => {
     const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} });
     feedbackAPI.getMyFeedback({ limit: 100 }, 'bound-login');
     feedbackAPI.submit({ target_id: 731, rating: 1 }, 'bound-login');
-    expect(get).toHaveBeenCalledWith('/feedback/my', { params: { limit: 100 }, expectedSessionToken: 'bound-login' });
-    expect(post).toHaveBeenCalledWith('/feedback', { target_id: 731, rating: 1 }, { expectedSessionToken: 'bound-login' });
+    expect(get).toHaveBeenCalledWith('/feedback/my', { params: { limit: 100 }, expectedSessionToken: 'bound-login', timeout: 15000 });
+    expect(post).toHaveBeenCalledWith('/feedback', { target_id: 731, rating: 1 }, { expectedSessionToken: 'bound-login', timeout: 15000 });
     vi.restoreAllMocks();
   });
 });

@@ -38,6 +38,7 @@ import SettingsView from './components/SettingsView';
 import KnowledgeGraphView from './components/KnowledgeGraphView';
 import RetentionScheduleCard from './components/RetentionScheduleCard';
 
+import { useRecommendationFeedback } from './hooks/useRecommendationFeedback';
 import { useTutorFeedback } from './hooks/useTutorFeedback';
 import { useDocumentMetadata } from './hooks/useDocumentMetadata';
 
@@ -48,6 +49,7 @@ export default function App() {
   const sessionRef = useRef(token);
   useLayoutEffect(() => { sessionRef.current = token; }, [token]);
   const feedback = useTutorFeedback(token);
+  const recommendationFeedback = useRecommendationFeedback(token);
   const [user, setUser] = useState(restoredSession?.user || null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState(restoredSession?.expiresAt || null);
   const [showAuthModal, setShowAuthModal] = useState(!restoredSession);
@@ -700,6 +702,8 @@ export default function App() {
               />
 
               <RecommendedPanel
+                recommendations={recommendations}
+                recommendationFeedback={recommendationFeedback}
                 customPlan={learningPlan}
                 activeResourceFilter={activeResourceFilter}
                 setActiveResourceFilter={setActiveResourceFilter}
@@ -787,6 +791,7 @@ export default function App() {
 
         {activeNav === 'Resources' && (
           <ResourcesFullView
+            recommendationFeedback={recommendationFeedback}
             recommendations={recommendations}
             customPlan={learningPlan}
           />

@@ -1,4 +1,5 @@
 import React from 'react';
+import RecommendationFeedback from '../RecommendationFeedback';
 import {
   ExternalLink, Clock, Play, FileText, Code2, BookOpen,
   CheckCircle2, Circle, Sparkles
@@ -56,6 +57,7 @@ export default function ResourceCard({
   isCompleted = false,
   compact = false,
   showAiReason = true,
+  recommendationFeedback = null,
 }) {
   if (!resource) return null;
 
@@ -86,6 +88,8 @@ export default function ResourceCard({
       className="ui-card"
       style={{
         padding: compact ? '16px' : '22px',
+        minWidth: 0,
+        overflowWrap: 'anywhere',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -204,6 +208,7 @@ export default function ResourceCard({
           borderTop: '1px solid var(--border-stroke, #2D2D35)',
           marginTop: '6px',
           gap: '8px',
+          flexWrap: 'wrap',
         }}
       >
         {onToggleComplete ? (
@@ -251,6 +256,7 @@ export default function ResourceCard({
           <ExternalLink size={12} />
         </a>
       </div>
+      <RecommendationFeedback targetId={resource.feedbackTargetId} title={resource.title} feedback={recommendationFeedback} />
     </div>
   );
 }

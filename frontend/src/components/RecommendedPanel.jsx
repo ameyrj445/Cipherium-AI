@@ -8,6 +8,8 @@ import ResourceCard from './common/ResourceCard';
  */
 export default function RecommendedPanel({
   customPlan = null,
+  recommendations = [],
+  recommendationFeedback = null,
   activeResourceFilter = 'All',
   setActiveResourceFilter,
   onOpenResources,
@@ -62,7 +64,11 @@ export default function RecommendedPanel({
     },
   ];
 
-  const allCards = dynamicCards.length > 0 ? dynamicCards : defaultCards;
+  // Only API recommendations carry database resource IDs; roadmap/default IDs are not feedback targets.
+  const diagnosticCards = recommendations.map((r) => ({ ...r, feedbackTargetId: r.id }));
+  // Keep actual recommendations visible even when the roadmap has three or more items.
+  // Roadmap cards fill remaining slots, and examples are only an empty-data fallback.
+  const allCards = diagnosticCards.length > 0 ? [...diagnosticCards, ...dynamicCards] : dynamicCards.length > 0 ? dynamicCards : defaultCards;
 
   const filteredCards = activeResourceFilter === 'All'
     ? allCards
@@ -80,7 +86,7 @@ export default function RecommendedPanel({
   return (
     <div>
       <SectionHeader
-        title={customPlan ? `Curated for ${customPlan.subject}` : 'Recommended for You'}
+        title={diagnosticCards.length === 0 && customPlan ? `Curated for ${customPlan.subject}` : 'Recommended for You'}
         actionLabel="View all →"
         onAction={onOpenResources}
       />
@@ -124,10 +130,11 @@ export default function RecommendedPanel({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {displayCards.map((r) => (
             <ResourceCard
-              key={r.id}
+              key={`${r.isFromPlan ? 'plan' : 'recommendation'}-${r.id}`}
               resource={r}
               compact
               showAiReason={false}
+              recommendationFeedback={recommendationFeedback}
             />
           ))}
         </div>
