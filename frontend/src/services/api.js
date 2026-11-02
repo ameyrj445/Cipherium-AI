@@ -108,6 +108,10 @@ export const quizAPI = {
 // ── Analytics, Machine Learning & Study Plans ─────────────────────────────────
 export const analyticsAPI = {
   getMastery: () => api.get('/analytics/mastery'),
+  getMasteryHistory: (topicId, { signal } = {}) => api.get('/analytics/mastery/history', {
+    params: topicId == null ? {} : { topic_id: topicId },
+    signal,
+  }),
   getRecommendations: () => api.get('/recommendations'),
   generateRoadmap: (targetHours) => api.post('/roadmaps/generate', { target_hours_per_week: targetHours }),
   getSubjectRoadmaps: () => api.get('/roadmaps/subjects'),
