@@ -24,6 +24,7 @@ export default function LoginScreen({
   setAuthError,
   handleAuth,
   loading = false,
+  onForgotPassword,
 }) {
   const handleQuickDemo = () => {
     setAuthEmail('student@cipherium.ai');
@@ -470,6 +471,7 @@ export default function LoginScreen({
                 </div>
               </div>
 
+              {authMode === 'login' && <button type="button" onClick={onForgotPassword} style={{ alignSelf: 'flex-end', border: 0, background: 'transparent', color: '#818cf8', cursor: 'pointer' }}>Forgot password?</button>}
               <button
                 type="submit"
                 disabled={loading}

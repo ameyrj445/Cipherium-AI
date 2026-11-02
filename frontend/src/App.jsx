@@ -25,6 +25,7 @@ import RecommendedPanel from './components/RecommendedPanel';
 import TutorPanel from './components/TutorPanel';
 import AuthModal from './components/AuthModal';
 import LoginScreen from './components/LoginScreen';
+import PasswordRecovery from './components/PasswordRecovery';
 
 // Dedicated Views for Navigation
 import LearnView from './components/LearnView';
@@ -51,6 +52,18 @@ export default function App() {
   const [authName, setAuthName] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [recoveryLocation, setRecoveryLocation] = useState(() => ({ path: window.location.pathname, search: window.location.search }));
+  useEffect(() => {
+    const sync = () => setRecoveryLocation({ path: window.location.pathname, search: window.location.search });
+    window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
+  }, []);
+  const navigateRecovery = (path) => {
+    window.history.pushState(null, '', path);
+    setRecoveryLocation({ path: window.location.pathname, search: window.location.search });
+  };
+  const recoveryMode = recoveryLocation.path === '/reset-password' ? 'reset' : recoveryLocation.path === '/forgot-password' ? 'forgot' : null;
+  const resetToken = recoveryMode === 'reset' ? new URLSearchParams(recoveryLocation.search).get('token') : null;
 
   // Define session expiration handler before useEffect to satisfy temporal ordering
   const endInvalidSession = useCallback(() => {
@@ -83,7 +96,7 @@ export default function App() {
   const [analyticsPeriod, setAnalyticsPeriod] = useState('Month');
 
   // Dynamic document title & meta tagging
-  const activePageKey = !token ? (authMode === 'login' ? 'Login' : 'Register') : activeNav;
+  const activePageKey = recoveryMode ? 'Login' : !token ? (authMode === 'login' ? 'Login' : 'Register') : activeNav;
   useDocumentMetadata(activePageKey);
 
   // Live Data States
@@ -537,6 +550,12 @@ export default function App() {
   })();
 
   // ── Show Login Interface First: Workspace is only unlocked after authentication ──
+  if (recoveryMode) {
+    return <ErrorBoundary><PasswordRecovery key={`${recoveryMode}:${resetToken || ''}`} mode={recoveryMode} token={resetToken}
+      onBack={() => navigateRecovery('/')} onSuccess={() => {
+        window.history.replaceState(null, '', '/reset-password');
+      }} /></ErrorBoundary>;
+  }
   if (!token) {
     return (
       <ErrorBoundary>
@@ -553,6 +572,7 @@ export default function App() {
           setAuthError={setAuthError}
           handleAuth={handleAuth}
           loading={authLoading}
+          onForgotPassword={() => navigateRecovery('/forgot-password')}
         />
       </ErrorBoundary>
     );
