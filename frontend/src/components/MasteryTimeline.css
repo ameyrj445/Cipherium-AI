@@ -1,0 +1,102 @@
+.mastery-timeline {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.mastery-timeline__filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 16px 0;
+}
+
+.mastery-timeline__filter label {
+  font-weight: 600;
+}
+
+.mastery-timeline__filter select {
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-stroke, #2d2d35);
+  border-radius: 8px;
+  color: var(--text-primary, #f3f4f6);
+  background: var(--bg-shell, #161618);
+  font: inherit;
+}
+
+.mastery-timeline__details {
+  margin-top: 20px;
+}
+
+.mastery-timeline__details summary {
+  padding: 10px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mastery-timeline__scroll-hint {
+  margin: 8px 0;
+  color: var(--text-secondary, #9ca3af);
+  font-size: 0.875rem;
+}
+
+.mastery-timeline__table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-stroke, #2d2d35);
+  border-radius: 8px;
+}
+
+.mastery-timeline__table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mastery-timeline__table caption {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary, #9ca3af);
+}
+
+.mastery-timeline__table th,
+.mastery-timeline__table td {
+  padding: 12px 16px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-stroke, #2d2d35);
+}
+
+.mastery-timeline__table th {
+  background: var(--bg-shell, #161618);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mastery-timeline__table td:nth-child(2) {
+  min-width: 140px;
+  max-width: 260px;
+  overflow-wrap: anywhere;
+}
+
+.mastery-timeline__date,
+.mastery-timeline__table td:nth-child(4),
+.mastery-timeline__table td:nth-child(5) {
+  white-space: nowrap;
+}
+
+.mastery-timeline__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.mastery-timeline__filter select:focus-visible,
+.mastery-timeline__details summary:focus-visible,
+.mastery-timeline__table-scroll:focus-visible {
+  outline: 2px solid var(--accent-primary, #818cf8);
+  outline-offset: 3px;
+}

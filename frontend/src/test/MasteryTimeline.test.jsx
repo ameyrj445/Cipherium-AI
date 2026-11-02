@@ -2,6 +2,8 @@ import React, { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MasteryTimeline from '../components/MasteryTimeline';
+import { readFileSync } from 'node:fs';
+const timelineStyles = readFileSync('src/components/MasteryTimeline.css', 'utf8');
 import { normalizeMasteryHistory } from '../utils/masteryHistory';
 import { analyticsAPI } from '../services/api';
 vi.mock('../services/api', () => ({ analyticsAPI: { getMasteryHistory: vi.fn() } }));
@@ -98,5 +100,34 @@ describe('MasteryTimeline', () => {
     await act(async () => current.resolve({ data: [] }));
     await act(async () => outcome === 'success' ? old.resolve({ data: [event()] }) : old.reject(new Error('stale')));
     expect(screen.getByRole('status')).toHaveTextContent('No mastery history yet'); expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});
+
+
+describe('mastery history table layout regressions', () => {
+  it('provides a keyboard-focusable named scroll region around all five columns', async () => {
+    const longName = 'A very long topic name '.repeat(12);
+    analyticsAPI.getMasteryHistory.mockResolvedValue({ data: [event()] });
+    render(<MasteryTimeline topics={[{ topic_id: 1, topic_name: longName }]} />);
+    await screen.findByText('1 saved mastery events.');
+    const table = openTable();
+    const region = screen.getByRole('region', { name: 'Mastery history table, scrollable' });
+    expect(region).toContainElement(table);
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(region).toHaveAccessibleDescription('On smaller screens, scroll horizontally to see every column.');
+    region.focus();
+    expect(region).toHaveFocus();
+    expect(within(table).getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual(['Event', 'Topic', 'Date (UTC)', 'Before event', 'After event']);
+    expect(within(table).getAllByRole('cell')).toHaveLength(5);
+    expect(within(table).getByText(longName.trim())).toBeInTheDocument();
+  });
+
+  it('keeps explicit padding and contained scrolling despite the global CSS reset', () => {
+    // jsdom does not measure layout; assert the scoped CSS contract, not visual correctness.
+    expect(timelineStyles).toMatch(/\.mastery-timeline__table th,\s*\.mastery-timeline__table td\s*\{[^}]*padding: 12px 16px/s);
+    expect(timelineStyles).toMatch(/\.mastery-timeline__table-scroll\s*\{[^}]*max-width: 100%;[^}]*overflow-x: auto/s);
+    expect(timelineStyles).toMatch(/\.mastery-timeline__table\s*\{[^}]*width: 100%;[^}]*min-width: 680px/s);
+    expect(timelineStyles).toMatch(/td:nth-child\(2\)\s*\{[^}]*overflow-wrap: anywhere/s);
+    expect(timelineStyles).toMatch(/select\s*\{[^}]*max-width: 100%/s);
   });
 });

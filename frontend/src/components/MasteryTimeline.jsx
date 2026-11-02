@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useMemo, useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { analyticsAPI } from '../services/api';
+import './MasteryTimeline.css';
 
 import { normalizeMasteryHistory, validId } from '../utils/masteryHistory';
 
@@ -40,14 +41,16 @@ export default function MasteryTimeline({ topics = [] }) {
   const incomplete = state.skipped > 0 || rows.some((row) => row.timestamp === null || row.prior === null || row.posterior === null);
 
   return (
-    <section className="ui-card" aria-labelledby={`${id}-title`} style={{ gridColumn: '1 / -1', minWidth: 0, padding: '24px' }}>
+    <section className="ui-card mastery-timeline" aria-labelledby={`${id}-title`} style={{ gridColumn: '1 / -1', minWidth: 0, padding: '24px' }}>
       <h3 id={`${id}-title`}>Mastery timeline</h3>
       <p>Saved mastery estimates before and after each learning event. Each topic has its own timeline; events are equally spaced, not elapsed time.</p>
-      <label htmlFor={`${id}-topic`}>Timeline topic </label>
+      <div className="mastery-timeline__filter">
+      <label htmlFor={`${id}-topic`}>Timeline topic</label>
       <select id={`${id}-topic`} value={selection} onChange={(event) => setSelection(event.target.value)}>
         <option value="all">All topics</option>
         {options.map(([topicId, name]) => <option key={topicId} value={topicId}>{name}</option>)}
       </select>
+      </div>
       {state.status === 'loading' && <p role="status">Loading mastery history…</p>}
       {state.status === 'error' && <div role="alert">
         <p>{state.auth ? 'Your session cannot access mastery history. Please sign in again.' : 'Could not load mastery history. Please try again.'}</p>
@@ -75,13 +78,14 @@ export default function MasteryTimeline({ topics = [] }) {
             </div>}
           </div>;
         })}
-        {rows.length > 0 && <details>
+        {rows.length > 0 && <details className="mastery-timeline__details">
           <summary>View mastery history table</summary>
-          <div style={{ overflowX: 'auto' }}>
-            <table>
+          <p id={`${id}-scroll-hint`} className="mastery-timeline__scroll-hint">On smaller screens, scroll horizontally to see every column.</p>
+          <div className="mastery-timeline__table-scroll" role="region" aria-label="Mastery history table, scrollable" aria-describedby={`${id}-scroll-hint`} tabIndex={0}>
+            <table className="mastery-timeline__table">
               <caption>Mastery history, oldest first (times in UTC)</caption>
               <thead><tr><th scope="col">Event</th><th scope="col">Topic</th><th scope="col">Date (UTC)</th><th scope="col">Before event</th><th scope="col">After event</th></tr></thead>
-              <tbody>{rows.map((row) => <tr key={`${row.id}-${row.index}`}><td>{row.id}</td><td>{options.find(([topicId]) => topicId === row.topicId)?.[1]}</td><td>{row.timestamp === null ? 'Date unavailable' : new Date(row.timestamp).toISOString()}</td><td>{percent(row.prior)}</td><td>{percent(row.posterior)}</td></tr>)}</tbody>
+              <tbody>{rows.map((row) => <tr key={`${row.id}-${row.index}`}><td>{row.id}</td><td>{options.find(([topicId]) => topicId === row.topicId)?.[1]}</td><td className="mastery-timeline__date">{row.timestamp === null ? 'Date unavailable' : new Date(row.timestamp).toISOString()}</td><td>{percent(row.prior)}</td><td>{percent(row.posterior)}</td></tr>)}</tbody>
             </table>
           </div>
         </details>}
