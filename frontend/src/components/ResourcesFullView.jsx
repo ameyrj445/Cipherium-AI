@@ -282,6 +282,7 @@ export default function ResourcesFullView({ recommendations = [], customPlan = n
                 }}
               />
               <input
+                aria-label="Search learning resources"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search topics, platforms (LeetCode, GFG, YouTube), or techniques..."
@@ -323,6 +324,7 @@ export default function ResourcesFullView({ recommendations = [], customPlan = n
             {/* Live Count Indicator */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span
+                aria-live="polite"
                 style={{
                   fontSize: '0.8rem',
                   color: 'var(--text-secondary, #9CA3AF)',

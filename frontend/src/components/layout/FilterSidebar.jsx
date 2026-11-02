@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronRight, X, SlidersHorizontal, Check } from 'lucide-react';
 import { breakpoints } from '../../theme/designTokens.js';
 
@@ -23,6 +23,8 @@ export default function FilterSidebar({
   });
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const drawerRef = useRef(null);
+  const triggerRef = useRef(null);
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
   useEffect(() => {
@@ -35,6 +37,34 @@ export default function FilterSidebar({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!mobileDrawerOpen) return undefined;
+    const drawer = drawerRef.current;
+    drawer?.querySelector('button')?.focus();
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setMobileDrawerOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !drawer) return;
+      const buttons = [...drawer.querySelectorAll('button:not(:disabled)')];
+      const first = buttons[0];
+      const last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      triggerRef.current?.focus();
+    };
+  }, [mobileDrawerOpen]);
 
   const toggleGroup = (groupId) => {
     setCollapsedGroups((prev) => ({
@@ -212,7 +242,7 @@ export default function FilterSidebar({
                         <span
                           style={{
                             fontSize: '0.72rem',
-                            color: 'var(--text-tertiary, #6B7280)',
+                            color: 'var(--text-secondary, #9CA3AF)',
                             marginLeft: '4px',
                           }}
                         >
@@ -236,7 +266,10 @@ export default function FilterSidebar({
       <div style={{ width: '100%', marginBottom: '16px', ...style }}>
         <button
           type="button"
+          ref={triggerRef}
           onClick={() => setMobileDrawerOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={mobileDrawerOpen}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -285,6 +318,10 @@ export default function FilterSidebar({
             onClick={() => setMobileDrawerOpen(false)}
           >
             <div
+              ref={drawerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Filter resources"
               style={{
                 width: '300px',
                 height: '100%',
@@ -309,6 +346,7 @@ export default function FilterSidebar({
                 </span>
                 <button
                   type="button"
+                  aria-label="Close filters"
                   onClick={() => setMobileDrawerOpen(false)}
                   style={{
                     background: 'transparent',
