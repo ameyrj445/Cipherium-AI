@@ -7,6 +7,7 @@ import {
   BarChart2,
   FolderKanban,
   Settings,
+  Shield,
   Brain,
   Network,
   LogOut,
@@ -38,6 +39,7 @@ export default function Sidebar({
     { name: 'Analytics', icon: BarChart2 },
     { name: 'Resources', icon: FolderKanban },
     { name: 'AI Tutor', icon: Brain },
+    ...(user?.role === 'admin' ? [{ name: 'Admin', icon: Shield }] : []),
   ];
 
   return (

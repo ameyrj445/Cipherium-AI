@@ -36,6 +36,7 @@ import AnalyticsFullView from './components/AnalyticsFullView';
 import ResourcesFullView from './components/ResourcesFullView';
 import StudyPlanView from './components/StudyPlanView';
 import SettingsView from './components/SettingsView';
+import AdminView from './components/AdminView';
 import KnowledgeGraphView from './components/KnowledgeGraphView';
 import RetentionScheduleCard from './components/RetentionScheduleCard';
 
@@ -685,6 +686,10 @@ export default function App() {
             conversations={{ ...conversations, select: (id) => { setChatInput(''); conversations.select(id); }, showLegacy: () => { setChatInput(''); conversations.showLegacy(); } }}
             embedded
           />
+        )}
+
+        {activeNav === 'Admin' && (
+          <AdminView key={`${token}:${user?.role}`} user={user} token={token} topics={topics} />
         )}
 
         {activeNav === 'Settings' && (

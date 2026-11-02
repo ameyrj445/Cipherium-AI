@@ -1,0 +1,23 @@
+.admin-view { width:100%; min-width:0; max-width:1100px; color:var(--text-primary,#f3f4f6); }
+.admin-view h1 { font-size:1.7rem; } .admin-view h2 { font-size:1.35rem; }
+.admin-view p { line-height:1.6; overflow-wrap:anywhere; }
+.admin-tabs,.admin-actions { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin:16px 0; }
+.admin-view button { padding:10px 14px; border:1px solid var(--border-stroke,#626575); border-radius:8px; color:inherit; background:var(--bg-card,#242430); cursor:pointer; min-height:44px; }
+.admin-tabs [aria-selected="true"] { background:#4338ca; color:white; }
+.admin-view button:disabled { opacity:.55; cursor:not-allowed; }
+.admin-view :focus-visible { outline:3px solid #a5b4fc; outline-offset:3px; }
+.admin-view label { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
+.admin-view input,.admin-view textarea,.admin-view select { font:inherit; padding:10px; min-height:44px; box-sizing:border-box; width:100%; max-width:100%; color:var(--text-primary,#f3f4f6); background:var(--bg-input,#181820); border:1px solid var(--border-stroke,#626575); border-radius:6px; }
+.admin-view textarea { min-height:90px; resize:vertical; }
+.admin-form { margin:24px 0; padding:18px; border:1px solid var(--border-stroke,#626575); border-radius:12px; }
+.admin-form fieldset { min-width:0; border:0; padding:0; margin:0; }
+.admin-form legend { font-weight:600; padding:0; }
+.admin-view [role="alert"] { color:#fda4af; } .admin-view [role="status"] { color:#a5b4fc; }
+.admin-question-list { list-style:none; padding:0; }
+.admin-question-list li { padding:16px; margin:12px 0; border:1px solid var(--border-stroke,#626575); border-radius:10px; }
+.admin-content { white-space:pre-wrap; overflow-wrap:anywhere; }
+.admin-table-scroll { max-width:100%; overflow:auto; margin:16px 0; }
+.admin-view table { width:100%; border-collapse:collapse; min-width:640px; }
+.admin-view th,.admin-view td { padding:10px; text-align:left; vertical-align:top; border-bottom:1px solid var(--border-stroke,#626575); max-width:300px; overflow-wrap:anywhere; }
+.admin-view caption { text-align:left; padding:10px; font-weight:600; }
+@media(max-width:600px) { .admin-form { padding:12px; } .admin-actions button { flex:1 1 auto; } }

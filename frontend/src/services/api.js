@@ -233,15 +233,17 @@ export const feedbackAPI = {
   getMyFeedback: (params, expectedSessionToken) => api.get('/feedback/my', { params, expectedSessionToken, timeout: 15000 }),
 };
 
-// ── Admin Content Management System (CMS) ────────────────────────────────────
+// Administrative CMS requests are bound to the initiating login. Server RBAC
+// remains authoritative; hiding the navigation link is not an access control.
+const adminConfig = (expectedSessionToken, signal) => ({ expectedSessionToken, signal, timeout: 15000 });
 export const adminAPI = {
-  createResource: (data) => api.post('/admin/resources', data),
-  bumpResourceVersion: (id) => api.post(`/admin/resources/${id}/version`),
-  createQuestion: (data) => api.post('/admin/questions', data),
-  updateQuestionStatus: (id, status) => api.patch(`/admin/questions/${id}/status`, { status }),
-  getQuestions: (params) => api.get('/admin/questions', { params }),
-  getFeedback: (params) => api.get('/admin/feedback', { params }),
-  getOverview: () => api.get('/admin/analytics/overview'),
+  bumpResourceVersion: (id, token, signal) => api.post(`/admin/resources/${id}/version`, null, adminConfig(token, signal)),
+  getOverview: (token, signal) => api.get('/admin/analytics/overview', adminConfig(token, signal)),
+  getQuestions: (params, token, signal) => api.get('/admin/questions', { ...adminConfig(token, signal), params }),
+  createQuestion: (data, token, signal) => api.post('/admin/questions', data, adminConfig(token, signal)),
+  updateQuestionStatus: (id, status, token, signal) => api.patch(`/admin/questions/${id}/status`, { status }, adminConfig(token, signal)),
+  createResource: (data, token, signal) => api.post('/admin/resources', data, adminConfig(token, signal)),
+  getFeedback: (params, token, signal) => api.get('/admin/feedback', { ...adminConfig(token, signal), params }),
 };
 
 export default api;
