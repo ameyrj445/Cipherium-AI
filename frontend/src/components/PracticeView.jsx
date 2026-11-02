@@ -33,6 +33,9 @@ export default function PracticeView({
   setSelectedOption = () => {},
   quizResult = null,
   quizLoading = false,
+  quizError = '',
+  quizPendingSave = false,
+  quizSubmissionBlocked = false,
   loadNextQuestion = () => {},
   handleSubmitQuiz = () => {},
   selectedTopicId = null,
@@ -444,6 +447,10 @@ export default function PracticeView({
                   </div>
                 )}
 
+                {quizError && <div role="alert" style={{ padding: '12px', marginBottom: '12px' }}>
+                  <p>{quizError}</p>
+                  {quizPendingSave && <button type="button" onClick={handleSubmitQuiz} disabled={quizLoading}>Retry saving result</button>}
+                </div>}
                 {currentQuestion ? (
                   <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                     {/* Question Header */}
@@ -501,13 +508,13 @@ export default function PracticeView({
                           <div
                             key={idx}
                             onClick={() => {
-                              if (!quizResult && !quizLoading) setSelectedOption(opt);
+                              if (!quizResult && !quizLoading && !quizSubmissionBlocked) setSelectedOption(opt);
                             }}
                             role="button"
                             aria-pressed={isSelected}
                             tabIndex={0}
                             onKeyDown={(e) => {
-                              if ((e.key === 'Enter' || e.key === ' ') && !quizResult && !quizLoading) {
+                              if ((e.key === 'Enter' || e.key === ' ') && !quizResult && !quizLoading && !quizSubmissionBlocked) {
                                 setSelectedOption(opt);
                               }
                             }}
@@ -610,7 +617,7 @@ export default function PracticeView({
                         <button
                           type="button"
                           onClick={handleSubmitQuiz}
-                          disabled={!selectedOption || quizLoading}
+                          disabled={!selectedOption || quizLoading || quizSubmissionBlocked}
                           className="btn btn-primary"
                           style={{
                             padding: '12px 28px',

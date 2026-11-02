@@ -8,7 +8,7 @@ vi.mock('../services/api',()=>{
  return {getStoredSession:vi.fn(),startSession:vi.fn(),endSession:vi.fn(),
  authAPI:{getProfile:fn(),login:fn(),register:fn(),deleteAccount:fn()},
  analyticsAPI:Object.fromEntries(['getMastery','getRecommendations','generateRoadmap','getCurrentPlan','getCustomPlans','createCustomPlan','updatePlanProgress','saveCustomPlan','deleteCustomPlan'].map(k=>[k,fn()])),
- quizAPI:{getTopics:fn(),getNextQuestion:fn(),submitAttempt:fn()},tasksAPI:{getTodayTasks:fn(),toggleTask:fn()},
+ quizAPI:{getTopics:fn(),getNextQuestion:fn(),submitAttempt:fn(),completeSession:fn()},tasksAPI:{getTodayTasks:fn(),toggleTask:fn()},
  feedbackAPI:{getMyFeedback:fn(),submit:fn()}, tutorAPI:{getConversations:fn(),getHistory:fn()}};
 });
 vi.mock('../components/layout/AppShell',()=>({default:({children,setActiveNav,onLogout,onOpenAuth,onOpenSettings,onNavigate})=><><nav>{['Dashboard','Learn','Practice','Study Plan','Analytics','Resources','AI Tutor','Admin','Settings','Knowledge Graph'].map(n=><button key={n} onClick={()=>setActiveNav(n)}>Go {n}</button>)}<button onClick={onLogout}>Logout</button><button onClick={onOpenAuth}>Auth</button><button onClick={onOpenSettings}>Preferences</button><button onClick={()=>onNavigate('Practice',{topic:'Arrays'})}>Search Arrays</button></nav>{children}</>}));
@@ -37,7 +37,7 @@ beforeEach(()=>{
  analyticsAPI.getMastery.mockResolvedValue({data:{day_streak:2}});analyticsAPI.getRecommendations.mockResolvedValue({data:[]});
  analyticsAPI.createCustomPlan.mockResolvedValue({data:plan});analyticsAPI.saveCustomPlan.mockResolvedValue({data:plan});analyticsAPI.updatePlanProgress.mockResolvedValue({data:plan});
  tasksAPI.getTodayTasks.mockResolvedValue({data:[{id:5,title:'Task',is_done:false}]});
- quizAPI.getNextQuestion.mockResolvedValue({data:{id:4,text:'Question text'}});quizAPI.submitAttempt.mockResolvedValue({data:{feedback:'Correct'}});
+ quizAPI.getNextQuestion.mockResolvedValue({data:{id:4,text:'Question text'}});quizAPI.submitAttempt.mockResolvedValue({data:{feedback:'Correct',quiz_id:'session-1'}});
 });
 const go=n=>fireEvent.click(screen.getByText(`Go ${n}`));
 

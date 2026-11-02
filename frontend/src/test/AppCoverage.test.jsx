@@ -8,14 +8,14 @@ vi.mock('../services/api',()=>{
  return {getStoredSession:vi.fn(),startSession:vi.fn(),endSession:vi.fn(),
  authAPI:{getProfile:fn(),login:fn(),register:fn(),deleteAccount:fn()},
  analyticsAPI:Object.fromEntries(['getMastery','getRecommendations','generateRoadmap','getCurrentPlan','getCustomPlans','createCustomPlan','updatePlanProgress','saveCustomPlan','deleteCustomPlan'].map(k=>[k,fn()])),
- quizAPI:{getTopics:fn(),getNextQuestion:fn(),submitAttempt:fn()},tasksAPI:{getTodayTasks:fn(),toggleTask:fn()},
+ quizAPI:{getTopics:fn(),getNextQuestion:fn(),submitAttempt:fn(),completeSession:fn()},tasksAPI:{getTodayTasks:fn(),toggleTask:fn()},
  feedbackAPI:{getMyFeedback:fn(),submit:fn()}, tutorAPI:{getConversations:fn(),getHistory:fn()}};
 });
 vi.mock('../components/layout/AppShell',()=>({default:({children,setActiveNav,onLogout,onOpenAuth,onOpenSettings,onNavigate})=><><nav>{['Dashboard','Learn','Practice','Study Plan','Analytics','Resources','AI Tutor','Admin','Settings','Knowledge Graph'].map(n=><button key={n} onClick={()=>setActiveNav(n)}>Go {n}</button>)}<button onClick={onLogout}>Logout</button><button onClick={onOpenAuth}>Auth</button><button onClick={onOpenSettings}>Preferences</button><button onClick={()=>onNavigate('Practice',{topic:'Arrays'})}>Search Arrays</button></nav>{children}</>}));
 vi.mock('../components/LoginScreen',()=>({default:p=><><p>Login view</p><p>{p.authError}</p><button onClick={()=>p.handleAuth({preventDefault(){}})}>Authenticate</button><button onClick={()=>p.setAuthMode('register')}>Register mode</button><input aria-label="name" onChange={e=>p.setAuthName(e.target.value)}/><input aria-label="email" onChange={e=>p.setAuthEmail(e.target.value)}/><input aria-label="password" onChange={e=>p.setAuthPassword(e.target.value)}/><button onClick={p.onForgotPassword}>Forgot</button></>}));
 vi.mock('../components/StudyPlanView',()=>({default:p=><><p>Plan view</p><p>{p.error}</p><p>{p.plan?.subject}</p><button onClick={()=>p.onGeneratePlan({subject:'Math'})}>Generate</button><button onClick={()=>p.onUpdateProgress({milestone_id:'m'})}>Progress</button><button onClick={()=>p.onAddToLearn(true)}>Save plan</button><button onClick={()=>p.onAddToLearn(false)}>Unsave plan</button><button onClick={()=>p.onPracticeTopic('Math')}>Practice plan</button></>}));
 vi.mock('../components/LearnView',()=>({default:p=><><p>Learn view</p><p>{p.customPlans.length} plans</p><button onClick={()=>p.onDeletePlan(1)}>Delete plan</button><button onClick={()=>p.onSelectTopic(1)}>Quiz topic</button><button onClick={p.onOpenStudyPlan}>Open plan</button></>}));
-vi.mock('../components/PracticeView',()=>({default:p=><><p>Practice view</p><p>{p.currentQuestion?.text}</p><p>{p.quizResult?.feedback}</p><p>{p.initialTopic}</p><button onClick={()=>p.loadNextQuestion(1)}>Question</button><button onClick={()=>p.setSelectedOption('B')}>Answer B</button><button onClick={p.handleSubmitQuiz}>Submit</button><button onClick={p.onOpenStudyPlan}>Plan</button></>}));
+vi.mock('../components/PracticeView',()=>({default:p=><><p>Practice view</p><p>{p.currentQuestion?.text}</p><p>{p.quizResult?.feedback}</p><p>{p.quizError}</p>{p.quizPendingSave && <button onClick={p.handleSubmitQuiz}>Retry saving result</button>}<p>{p.initialTopic}</p><button onClick={()=>p.loadNextQuestion(1)}>Question</button><button onClick={()=>p.setSelectedOption('B')}>Answer B</button><button onClick={p.handleSubmitQuiz}>Submit</button><button onClick={p.onOpenStudyPlan}>Plan</button></>}));
 vi.mock('../components/AnalyticsFullView',()=>({default:p=><button onClick={()=>p.onPracticeTopic('Graphs')}>Practice analytics</button>}));
 vi.mock('../components/KnowledgeGraphView',()=>({default:p=><><button onClick={()=>p.onStartQuiz(2)}>Graph quiz</button><button onClick={()=>p.onAskTutor('Explain graph')}>Graph tutor</button></>}));
 vi.mock('../components/SettingsView',()=>({default:p=><><p>Settings view</p><button onClick={p.onLogout}>Settings logout</button></>}));
@@ -36,7 +36,7 @@ beforeEach(()=>{
  analyticsAPI.getMastery.mockResolvedValue({data:{day_streak:2}});analyticsAPI.getRecommendations.mockResolvedValue({data:[]});
  analyticsAPI.createCustomPlan.mockResolvedValue({data:plan});analyticsAPI.saveCustomPlan.mockResolvedValue({data:plan});analyticsAPI.updatePlanProgress.mockResolvedValue({data:plan});
  tasksAPI.getTodayTasks.mockResolvedValue({data:[{id:5,title:'Task',is_done:false}]});
- quizAPI.getNextQuestion.mockResolvedValue({data:{id:4,text:'Question text'}});quizAPI.submitAttempt.mockResolvedValue({data:{feedback:'Correct'}});
+ quizAPI.getNextQuestion.mockResolvedValue({data:{id:4,text:'Question text'}});quizAPI.submitAttempt.mockResolvedValue({data:{feedback:'Correct',quiz_id:'session-1'}});quizAPI.completeSession.mockResolvedValue({data:{}});
 });
 const go=n=>fireEvent.click(screen.getByText(`Go ${n}`));
 describe('App state integration',()=>{
@@ -64,7 +64,7 @@ describe('App state integration',()=>{
   fireEvent.click(screen.getByText('Submit'));expect(quizAPI.submitAttempt).not.toHaveBeenCalled();
   fireEvent.click(screen.getByText('Question'));await screen.findByText('Question text');
   fireEvent.click(screen.getByText('Answer B'));fireEvent.click(screen.getByText('Submit'));await screen.findByText('Correct');
-  expect(quizAPI.submitAttempt).toHaveBeenCalledWith({question_id:4,selected_answer:'B',time_taken_seconds:15});
+  expect(quizAPI.submitAttempt).toHaveBeenCalledWith({question_id:4,selected_answer:'B',time_taken_seconds:15},'a');
  });
  it('routes contextual graph, analytics, settings and resources callbacks',async()=>{
   render(<App/>);await screen.findByText('Completion 67');
@@ -89,5 +89,65 @@ describe('App state integration',()=>{
  it('surfaces authentication failure without creating a session',async()=>{
   getStoredSession.mockReturnValue(null);authAPI.login.mockRejectedValue(new Error('offline'));render(<App/>);fireEvent.click(screen.getByText('Authenticate'));
   await screen.findByText('Authentication failed. Please check credentials.');expect(startSession).not.toHaveBeenCalled();
+ });
+});
+
+describe('adaptive quiz finalization against the backend session contract', () => {
+ const answer = async () => {
+  go('Practice'); fireEvent.click(screen.getByText('Question')); await screen.findByText('Question text');
+  fireEvent.click(screen.getByText('Answer B'));
+ };
+ it('finalizes before showing success and retries only completion after a failure', async () => {
+  quizAPI.completeSession.mockRejectedValueOnce(new Error('timeout'));
+  render(<App/>); await screen.findByText('Completion 67'); await answer();
+  fireEvent.click(screen.getByText('Submit'));
+  await screen.findByText(/answer was recorded, but saving mastery/);
+  expect(screen.queryByText('Correct')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByText('Retry saving result'));
+  await screen.findByText('Correct');
+  expect(quizAPI.submitAttempt).toHaveBeenCalledTimes(1);
+  expect(quizAPI.completeSession).toHaveBeenCalledTimes(2);
+  expect(quizAPI.completeSession).toHaveBeenLastCalledWith('session-1','a');
+ });
+ it('blocks duplicate clicks and loading another question while completion is pending', async () => {
+  let finish; quizAPI.completeSession.mockImplementationOnce(() => new Promise(r => { finish = r; }));
+  render(<App/>); await screen.findByText('Completion 67'); await answer();
+  fireEvent.click(screen.getByText('Submit')); fireEvent.click(screen.getByText('Submit'));
+  await waitFor(() => expect(quizAPI.completeSession).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByText('Question'));
+  expect(quizAPI.getNextQuestion).toHaveBeenCalledTimes(1);
+  finish({data:{}}); await screen.findByText('Correct');
+  fireEvent.click(screen.getByText('Submit')); expect(quizAPI.submitAttempt).toHaveBeenCalledTimes(1);
+ });
+ it('does not blindly retry an ambiguous answer submission', async () => {
+  quizAPI.submitAttempt.mockRejectedValueOnce(new Error('connection lost'));
+  render(<App/>); await screen.findByText('Completion 67'); await answer();
+  fireEvent.click(screen.getByText('Submit'));
+  await screen.findByText(/answer submission could not be confirmed/);
+  fireEvent.click(screen.getByText('Submit')); fireEvent.click(screen.getByText('Question'));
+  expect(quizAPI.submitAttempt).toHaveBeenCalledTimes(1);
+  expect(quizAPI.completeSession).not.toHaveBeenCalled();
+  expect(quizAPI.getNextQuestion).toHaveBeenCalledTimes(1);
+ });
+ it('does not display success when the server response lacks a quiz session id', async () => {
+  quizAPI.submitAttempt.mockResolvedValueOnce({data:{feedback:'Not finalized'}});
+  render(<App/>); await screen.findByText('Completion 67'); await answer();
+  fireEvent.click(screen.getByText('Submit')); await screen.findByText(/answer submission could not be confirmed/);
+  expect(quizAPI.completeSession).not.toHaveBeenCalled();
+ });
+ it('ignores a completion response after logout', async () => {
+  let finish; quizAPI.completeSession.mockImplementationOnce(() => new Promise(r => { finish = r; }));
+  render(<App/>); await screen.findByText('Completion 67'); await answer();
+  fireEvent.click(screen.getByText('Submit'));
+  await waitFor(() => expect(quizAPI.completeSession).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByText('Logout')); finish({data:{}});
+  await screen.findByText('Login view'); expect(screen.queryByText('Correct')).not.toBeInTheDocument();
+ });
+ it('reports an analytics refresh failure separately from an already finalized result', async () => {
+  render(<App/>); await screen.findByText('Completion 67'); await answer();
+  analyticsAPI.getMastery.mockRejectedValueOnce(new Error('refresh failed'));
+  fireEvent.click(screen.getByText('Submit')); await screen.findByText('Correct');
+  await screen.findByText(/result was saved, but refreshing analytics failed/);
+  expect(screen.queryByText('Retry saving result')).not.toBeInTheDocument();
  });
 });
