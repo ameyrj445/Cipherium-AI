@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import api, {
+  authAPI,
   startSession,
   getStoredSession,
   endSession,
@@ -11,6 +12,12 @@ describe('Centralized API & Session Management Service', () => {
     localStorage.clear();
     setSessionToken('');
     vi.restoreAllMocks();
+  });
+
+  it('deletes the current account through the authenticated API client', async () => {
+    const request = vi.spyOn(api, 'delete').mockResolvedValue({ data: {} });
+    await authAPI.deleteAccount();
+    expect(request).toHaveBeenCalledExactlyOnceWith('/me');
   });
 
   it('startSession correctly persists token, user, and future expiresAt timestamp', () => {

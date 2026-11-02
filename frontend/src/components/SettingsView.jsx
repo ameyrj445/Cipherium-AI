@@ -4,6 +4,7 @@ import {
   LogOut, Eye, EyeOff, CheckCircle2
 } from 'lucide-react';
 import SettingSection from './common/SettingSection';
+import DeleteAccountSection from './common/DeleteAccountSection';
 import ToggleSwitch from './common/ToggleSwitch';
 import PageContainer from './layout/PageContainer';
 import PageHeader from './layout/PageHeader';
@@ -21,6 +22,8 @@ export default function SettingsView({
   sessionExpiresAt = null,
   onLogout = () => {},
   customPlan = null,
+  onDeleteAccount,
+  deletionPending = false,
 }) {
   const storageKey = user?.email ? `cipherium_settings_${user.email}` : 'cipherium_settings_default';
 
@@ -197,7 +200,7 @@ export default function SettingsView({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))',
           gap: '24px',
           alignItems: 'start',
         }}
@@ -570,6 +573,7 @@ export default function SettingsView({
               </div>
             </div>
           </SettingSection>
+          <DeleteAccountSection key={user?.id || user?.email || 'guest'} user={user} onLogout={onLogout} onDeleteAccount={onDeleteAccount} deletionPending={deletionPending} />
         </div>
       </div>
     </PageContainer>

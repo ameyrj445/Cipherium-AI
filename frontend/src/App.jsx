@@ -9,6 +9,7 @@
  *   - Wraps the entire component tree in an Error Boundary for crash resilience.
  */
 
+import useAccountDeletion from './hooks/useAccountDeletion';
 import React, { useState, useEffect, useCallback } from 'react';
 import { authAPI, quizAPI, analyticsAPI, tutorAPI, tasksAPI, getStoredSession, startSession, endSession } from './services/api';
 
@@ -261,6 +262,8 @@ export default function App() {
     setSelectedTopicId(null);
     setShowAuthModal(false);
   };
+
+  const { deleteAccount, deletionPending } = useAccountDeletion(token, handleLogout);
 
   // Custom Study Plan Handlers
   const handleGenerateCustomPlan = async (planConfig) => {
@@ -789,6 +792,8 @@ export default function App() {
             setAiModel={setAiModel}
             sessionExpiresAt={sessionExpiresAt}
             onLogout={handleLogout}
+            onDeleteAccount={deleteAccount}
+            deletionPending={deletionPending}
             customPlan={learningPlan}
           />
         )}
