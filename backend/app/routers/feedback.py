@@ -14,6 +14,7 @@ from app.database import get_db
 from app.models import Feedback, User, UserSettings
 from app.schemas import FeedbackCreate, FeedbackResponse
 from app.routers.auth import get_current_user
+from app.services.bandit import reward_resource
 
 router = APIRouter(prefix="/feedback", tags=["Feedback & Recommendations"])
 
@@ -89,6 +90,8 @@ def submit_feedback(
         comment=payload.comment.strip() if payload.comment else None,
     )
     db.add(record)
+    if type_clean == "rec_rating" and payload.rating == 1 and payload.target_id is not None:
+        reward_resource(db, current_user.id, payload.target_id)
     db.commit()
     db.refresh(record)
 

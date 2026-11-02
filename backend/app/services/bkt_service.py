@@ -224,4 +224,19 @@ def update_bkt_with_audit(
         posterior=updated_state["bkt_probability"],
         event_type=event_type,
     ))
+    # Store the latest SM-2 schedule so analytics does not need to replay the
+    # complete attempt history on every retention-dashboard request.
+    from app.models.review_schedule import ReviewSchedule
+
+    schedule = (
+        db.query(ReviewSchedule)
+        .filter(ReviewSchedule.user_id == user_id, ReviewSchedule.topic_id == topic_id)
+        .first()
+    )
+    if schedule is None:
+        schedule = ReviewSchedule(user_id=user_id, topic_id=topic_id)
+        db.add(schedule)
+    schedule.next_review_at = _normalize_datetime(updated_state["next_review_due"])
+    schedule.memory_stability = float(updated_state["stability_days"])
+    schedule.review_count = len(attempts)
     return updated_state

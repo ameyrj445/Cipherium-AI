@@ -8,7 +8,7 @@ from datetime import datetime, timezone, date, timedelta
 from app.database import get_db
 from app.models import (
     Topic, TopicMastery, QuizAttempt, Resource, StudyPlan,
-    SubjectRoadmap, User, Question, DailyTask, UserSettings, TutorMessage, MasteryEvent
+    SubjectRoadmap, User, Question, DailyTask, UserSettings, TutorMessage, MasteryEvent, ReviewSchedule
 )
 from app.schemas import (
     MasteryAnalyticsResponse,
@@ -32,8 +32,10 @@ from app.schemas import (
 )
 from app.routers.auth import get_current_user, require_admin
 from app.services.analytics import compute_recommendation_score, calculate_topic_cognitive_state
+from app.services.bkt_service import SpacedRepetitionScheduler
+from app.services.bandit import bandit_enabled, choose_resource, reward_map, reward_resource
 from app.services.knowledge_graph import build_curriculum_dag
-from app.ml.predictor import predict_weak_topic, get_model_info
+from app.ml.predictor import predict_weak_topics, get_model_info
 from app.services.study_plan_generator import generate_study_plan, is_plan_stale
 
 
@@ -225,12 +227,26 @@ def get_mastery_analytics(
         if a.question and a.question.topic_id:
             attempts_by_topic.setdefault(a.question.topic_id, []).append(a)
 
+    ml_features = []
+    for topic in topics:
+        mastery = user_masteries.get(topic.id)
+        attempt_count = mastery.attempt_count if mastery else 0
+        correct_count = mastery.correct_count if mastery else 0
+        accuracy = round((correct_count / attempt_count * 100), 1) if attempt_count else 0.0
+        ml_features.append({
+            "study_hours": max(1.0, round(attempt_count * 0.4, 1)),
+            "vle_clicks": max(10, attempt_count * 18),
+            "prior_attempts": attempt_count,
+            "assessment_score": accuracy if attempt_count else 45.0,
+        })
+    ml_results = predict_weak_topics(ml_features)
+
     topic_details: List[TopicMasteryDetail] = []
     strong_cnt = 0
     dev_cnt = 0
     weak_cnt = 0
 
-    for t in topics:
+    for index, t in enumerate(topics):
         m = user_masteries.get(t.id)
         if m:
             m_score = m.mastery_score
@@ -249,17 +265,7 @@ def get_mastery_analytics(
         t_attempts = attempts_by_topic.get(t.id, [])
         cog_state = calculate_topic_cognitive_state(t_attempts)
 
-        # Run Scikit-learn Random Forest model trained on OULAD dataset:
-        # Features: study_hours, vle_clicks, prior_attempts, assessment_score
-        estimated_study_hours = max(1.0, round(att_cnt * 0.4, 1))
-        estimated_clicks = max(10, att_cnt * 18)
-        simulated_score = acc_pct if att_cnt > 0 else 45.0
-        ml_res = predict_weak_topic(
-            study_hours=estimated_study_hours,
-            vle_clicks=estimated_clicks,
-            prior_attempts=att_cnt,
-            assessment_score=simulated_score
-        )
+        ml_res = ml_results[index]
         ml_weak_prob = ml_res["weak_probability"]
         ml_pred_label = "Intervention Needed" if ml_res["is_weak_prediction"] else "On Track"
 
@@ -319,19 +325,17 @@ def get_retention_schedule(
     Returns topics grouped by Spaced Repetition urgency and Ebbinghaus memory decay.
     Prioritizes concepts that are slipping from student retention.
     """
-    topics = db.query(Topic).all()
-    all_attempts = (
-        db.query(QuizAttempt)
-        .join(Question)
-        .filter(QuizAttempt.user_id == current_user.id)
-        .order_by(QuizAttempt.attempted_at.asc())
+    schedules = (
+        db.query(ReviewSchedule)
+        .join(Topic)
+        .filter(ReviewSchedule.user_id == current_user.id)
+        .order_by(ReviewSchedule.next_review_at.asc())
         .all()
     )
-    attempts_by_topic = {}
-    for a in all_attempts:
-        if a.question and a.question.topic_id:
-            attempts_by_topic.setdefault(a.question.topic_id, []).append(a)
-
+    mastery_by_topic = {
+        mastery.topic_id: mastery
+        for mastery in db.query(TopicMastery).filter(TopicMastery.user_id == current_user.id).all()
+    }
     schedule_items = []
     due_today_cnt = 0
     crit_cnt = 0
@@ -339,31 +343,39 @@ def get_retention_schedule(
     opt_cnt = 0
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
-    for t in topics:
-        t_attempts = attempts_by_topic.get(t.id, [])
-        cog_state = calculate_topic_cognitive_state(t_attempts)
-        status = cog_state["retention_status"]
+    for schedule in schedules:
+        topic = schedule.topic
+        next_review = schedule.next_review_at
+        last_review = next_review - timedelta(days=schedule.memory_stability)
+        days_elapsed = max(0.0, (now - last_review).total_seconds() / 86400.0)
+        retention_rate = SpacedRepetitionScheduler.calculate_retention_rate(schedule.memory_stability, days_elapsed)
+        if schedule.memory_stability <= 0.5 or retention_rate < 0.60:
+            status = "critical_review"
+        elif next_review <= now or retention_rate < 0.80:
+            status = "review_recommended"
+        else:
+            status = "optimal"
 
         if status == "critical_review":
             crit_cnt += 1
             due_today_cnt += 1
         elif status == "review_recommended":
             rec_cnt += 1
-            if cog_state["next_review_due"] and cog_state["next_review_due"] <= now:
+            if next_review <= now:
                 due_today_cnt += 1
         else:
             opt_cnt += 1
 
         schedule_items.append(
             RetentionScheduleItem(
-                topic_id=t.id,
-                topic_name=t.name,
-                topic_code=t.code,
-                bkt_probability=cog_state["bkt_probability"],
-                retention_rate=cog_state["retention_rate"],
-                next_review_due=cog_state["next_review_due"],
+                topic_id=topic.id,
+                topic_name=topic.name,
+                topic_code=topic.code,
+                bkt_probability=(mastery_by_topic.get(topic.id).mastery_score if mastery_by_topic.get(topic.id) else 0.2),
+                retention_rate=retention_rate,
+                next_review_due=next_review,
                 retention_status=status,
-                attempt_count=len(t_attempts)
+                attempt_count=schedule.review_count,
             )
         )
 
@@ -469,6 +481,11 @@ def get_recommendations(
 
     # Sort by relevance score descending
     ranked_list.sort(key=lambda x: (x.relevance_score or 0.0), reverse=True)
+    if bandit_enabled():
+        chosen = choose_resource(ranked_list, reward_map(db, current_user.id))
+        if chosen is not None:
+            ranked_list.remove(chosen)
+            ranked_list.insert(0, chosen)
     return ranked_list
 
 @router.post("/roadmaps/generate", response_model=RoadmapResponse)
@@ -749,7 +766,10 @@ def update_study_plan_progress(
             if m.get("id") == req.milestone_id:
                 for r in m.get("resources", []):
                     if r.get("id") == req.resource_id:
+                        was_completed = bool(r.get("completed", False))
                         r["completed"] = req.resource_completed
+                        if req.resource_completed and not was_completed:
+                            reward_resource(db, current_user.id, req.resource_id)
                 # Re-evaluate status
                 done_list = m.get("completed_subtopics", [])
                 all_subs_done = len(done_list) >= len(m.get("subtopics", []))

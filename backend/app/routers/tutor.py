@@ -14,17 +14,19 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Topic, TutorMessage, User, TutorConversation, UserSettings, utc_now
+from app.models import Topic, TutorMessage, User, TutorConversation, UserSettings, QuizSession, utc_now
 from app.schemas import TutorChatRequest, TutorChatResponse, ResourceResponse, TutorConversationCreate, TutorConversationResponse, TutorMessageDetail
 from app.routers.auth import get_current_user
 from app.services.tutor import ask_ai_tutor, generate_tutor_response, stream_ai_tutor
 from app.services.rag import retrieve_context_with_ids
 from app.utils.sanitize import sanitize_user_input
 from app.limiter import limiter
+from app.services.quiz_lock import quiz_lock_active
 
 router = APIRouter(tags=["AI Tutor"])
 
 QUOTA_EXCEEDED_MESSAGE = "Monthly AI quota exceeded. Upgrade or wait until next month."
+QUIZ_LOCKED_MESSAGE = "Tutor is locked during an active quiz session."
 
 
 def _get_quota_settings(user_id: int, db: Session) -> UserSettings:
@@ -41,6 +43,18 @@ def _ensure_quota_available(user_id: int, db: Session) -> UserSettings:
     if settings.monthly_token_used >= settings.token_quota:
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=QUOTA_EXCEEDED_MESSAGE)
     return settings
+
+
+def _ensure_tutor_unlocked(user_id: int, db: Session) -> None:
+    if not quiz_lock_active(user_id):
+        return
+    active_session = (
+        db.query(QuizSession.id)
+        .filter(QuizSession.user_id == user_id, QuizSession.status == "active")
+        .first()
+    )
+    if active_session:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=QUIZ_LOCKED_MESSAGE)
 
 
 @router.post("/tutor/chat", response_model=TutorChatResponse)
@@ -70,6 +84,7 @@ def chat_with_tutor(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
+    _ensure_tutor_unlocked(current_user.id, db)
     quota_settings = _ensure_quota_available(current_user.id, db)
 
     topic = None
@@ -167,6 +182,7 @@ def stream_chat_with_tutor(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
+    _ensure_tutor_unlocked(current_user.id, db)
     quota_settings = _ensure_quota_available(current_user.id, db)
 
     topic = None

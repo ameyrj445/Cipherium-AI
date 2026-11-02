@@ -65,6 +65,8 @@ def test_full_student_lifecycle_integration(client):
     att_data = attempt_res.json()
     assert "is_correct" in att_data
     assert "new_mastery_score" in att_data
+    complete_initial_quiz = client.post(f"/quizzes/{att_data['quiz_id']}/complete", headers=headers)
+    assert complete_initial_quiz.status_code == 200
 
     # 6. Timed Mock Exam Generation & Completion
     exam_res = client.post("/quizzes/exam?question_count=5&time_limit_minutes=15&max_difficulty=3", headers=headers)
@@ -75,11 +77,16 @@ def test_full_student_lifecycle_integration(client):
         assert "correct_answer" in eq
         assert "explanation" in eq
         # Submit attempt for each exam question
-        client.post("/quizzes/attempts", headers=headers, json={
+        exam_attempt_res = client.post("/quizzes/attempts", headers=headers, json={
             "question_id": eq["id"],
             "selected_answer": eq["correct_answer"],
             "time_taken_seconds": 10
         })
+        assert exam_attempt_res.status_code == 200
+        complete_exam_attempt = client.post(
+            f"/quizzes/{exam_attempt_res.json()['quiz_id']}/complete", headers=headers
+        )
+        assert complete_exam_attempt.status_code == 200
 
     # 7. Mastery Analytics & Dynamic Streak
     mastery_res = client.get("/analytics/mastery", headers=headers)

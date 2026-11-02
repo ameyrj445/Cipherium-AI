@@ -23,6 +23,7 @@ from app.routers.auth import get_current_user
 from app.services.analytics import calculate_topic_mastery, calculate_adaptive_difficulty, calculate_topic_cognitive_state
 from app.services.bkt_service import update_bkt_with_audit
 from app.services.study_plan_generator import regenerate_if_stale
+from app.services.quiz_lock import clear_quiz_lock, set_quiz_lock
 from app.utils.idempotency import get_cached, store_cached
 
 router = APIRouter(tags=["Topics & Quizzes"])
@@ -197,6 +198,10 @@ def submit_quiz_attempt(
     if attempt_data.hint_count < 0:
         raise HTTPException(status_code=422, detail="hint_count cannot be negative")
 
+    # A valid quiz interaction activates the anti-cheat tutor lock for the
+    # session's lifetime (two hours when no Redis service is configured).
+    set_quiz_lock(current_user.id)
+
     # Case-insensitive whitespace-trimmed evaluation with NoneType safety
     selected_clean = (attempt_data.selected_answer or "").strip().lower()
     correct_clean = (question.correct_answer or "").strip().lower()
@@ -345,6 +350,7 @@ def complete_quiz_session(
         ).update({"status": "completed", "completed_at": utc_now()}, synchronize_session=False)
     roadmap_regenerated = regenerate_if_stale(current_user.id, db)
     db.commit()
+    clear_quiz_lock(current_user.id)
 
     score = sum(1 for attempt in attempts if attempt.is_correct)
     total = len(attempts)

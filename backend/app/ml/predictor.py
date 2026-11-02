@@ -145,3 +145,24 @@ def predict_weak_topic(
         "weak_probability": round(prob_weak, 3),
         "model": "RandomForest-OULAD-Trained"
     }
+
+
+def predict_weak_topics(feature_rows: list[dict]) -> list[dict]:
+    """Batch weak-topic predictions to avoid one Random Forest pass per topic."""
+    global _model
+    if not feature_rows:
+        return []
+    if _model is None:
+        _model = train_or_load_classifier()
+    features = pd.DataFrame(feature_rows, columns=[
+        "study_hours", "vle_clicks", "prior_attempts", "assessment_score"
+    ])
+    probabilities = _model.predict_proba(features)[:, 1]
+    return [
+        {
+            "is_weak_prediction": bool(probability >= 0.50),
+            "weak_probability": round(float(probability), 3),
+            "model": "RandomForest-OULAD-Trained",
+        }
+        for probability in probabilities
+    ]

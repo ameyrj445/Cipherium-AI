@@ -29,6 +29,8 @@ class User(Base):
     conversations = relationship("TutorConversation", back_populates="user")
     feedbacks = relationship("Feedback", back_populates="user")
     mastery_events = relationship("MasteryEvent", back_populates="user")
+    review_schedules = relationship("ReviewSchedule", back_populates="user")
+    recommendation_arms = relationship("RecommendationArm", back_populates="user")
     quiz_sessions = relationship("QuizSession", back_populates="user")
 
 class Topic(Base):
@@ -46,6 +48,9 @@ class Topic(Base):
     resources = relationship("Resource", back_populates="topic")
     masteries = relationship("TopicMastery", back_populates="topic")
     mastery_events = relationship("MasteryEvent", back_populates="topic")
+    review_schedules = relationship("ReviewSchedule", back_populates="topic")
+    prerequisite_links = relationship("TopicPrerequisite", foreign_keys="TopicPrerequisite.topic_id", back_populates="topic", cascade="all, delete-orphan")
+    dependent_links = relationship("TopicPrerequisite", foreign_keys="TopicPrerequisite.prerequisite_id", back_populates="prerequisite")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -231,3 +236,6 @@ class Feedback(Base):
 
 # Imported after User and Topic so the relationships above can resolve cleanly.
 from app.models.mastery_event import MasteryEvent  # noqa: E402, F401
+from app.models.review_schedule import ReviewSchedule  # noqa: E402, F401
+from app.models.recommendation_arm import RecommendationArm  # noqa: E402, F401
+from app.models.topic_prerequisite import TopicPrerequisite  # noqa: E402, F401
