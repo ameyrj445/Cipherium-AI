@@ -92,3 +92,13 @@ warnings**. Production build and all four bundle-gate tests pass with **165,511
 initial-JS gzip bytes**. The five real App/FastAPI/disposable-SQLite journeys pass
 with external services disabled. No real email, provider, personal database or
 screen-reader validation is implied.
+
+## Retention reflow follow-up — 2026-11-03
+
+A PC browser audit at `52663d5` found Dashboard empty retention text clipping at
+320px because its grid imposed a 290px minimum inside 216px of available space.
+The follow-up candidate removes that hard minimum on narrow containers and wraps
+long populated-card content. Local 562 tests/59 files (84.33% branches), lint,
+production build, four bundle checks and five isolated backend journeys pass.
+Rendered candidate retest and independent review remain pending; see
+`mobile-reflow.md`. This does not close actual zoom or screen-reader acceptance.

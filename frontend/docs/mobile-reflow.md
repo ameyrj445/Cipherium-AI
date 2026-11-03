@@ -60,3 +60,24 @@ rendered-mobile pass, remote CI result or WCAG conformance claim.
 Status: candidate awaiting independent review and PC rendered retest; not pushed.
 Physical touch-device behavior, full screen-reader/contrast audit and 200%/400%
 zoom remain separate acceptance checks.
+
+## Retention-card follow-up — 2026-11-03
+
+PC mocked-App audit of team commit `52663d5` found the Dashboard empty retention
+schedule's 290px minimum track clipped text inside its 216px content area at a
+320px viewport. This candidate changes that track minimum to `min(290px, 100%)`,
+retaining the 290px desktop grid behavior. Populated topic cards also allow long
+unbroken names/codes, status labels, metrics and quiz actions to wrap.
+
+Local automated candidate results: 562 tests across 59 files, 84.33% inclusive
+branch coverage, lint (existing warnings), production build, four bundle checks
+and five isolated actual-App/FastAPI/SQLite journeys pass. Initial static-import
+JavaScript closure: 165,585 gzip bytes. Two added tests protect the empty-grid and
+long-content style/interaction contracts; JSDOM does not measure pixel layout.
+
+Awaiting independent review and rendered retest before publication: empty and
+populated Dashboard retention cards at 320/375/390/640 and desktop 1280+, including
+long unbroken topic names/codes, all review statuses and clicking the quiz action.
+Check card/text edges, not only document scroll width (overflow can be clipped).
+Narrow viewport checks are reflow approximations, not actual browser zoom tests.
+No screen-reader, physical touch-device or full WCAG-conformance claim is made.
