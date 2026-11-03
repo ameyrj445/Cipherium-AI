@@ -43,4 +43,16 @@ The comment is required, whitespace-only input is rejected, and the UI limit is 
 - Lint: exit 0, unchanged 40 baseline warnings.
 - Production build: passed, existing large-chunk warning remains on S2.
 - Tests exercise exact payloads, fresh/saved eligibility, focus/inert cleanup, draft cancellation, request locking across view/message/session changes, definite rejections, ambiguous outcomes, and stale callbacks.
-- No browser rendering/mobile/screen-reader verification or live backend transaction is claimed. No backend files are changed.
+- Subsequent desktop mocked-browser QA verified modal open/close, Escape, focus trapping/return, blank-input rejection, the displayed 2,000-character limit, known-rejection retry, pending/success/ambiguous-error states and draft isolation across answers. Mobile, screen-reader and live report persistence remain unverified. No backend files are changed.
+
+### Local stacked S3 integration verification
+
+Integrated the flag feature onto S3 base `d4c06fecc00886e6a4a64d7e0722c844a3cc895d` in a separate worktree. Only `FEATURE_TRACKER.md` conflicted; resolution keeps the newer S3 verification rows verbatim and adds the S2-3 row and feedback-type corrections.
+
+- Full unit suite and coverage run: 56 files, 524 tests pass.
+- Inclusive branch coverage: 83.95% (3,459 / 4,120), above the 80% gate; statements 85.88%, lines 87.45%, functions 75.64%.
+- Lint: exit 0, 40 existing warnings.
+- Production build and all four bundle tests pass; initial static-import JS closure is 164,562 gzip bytes, below 250,000.
+- The exact merged tree subsequently passed all five isolated real-App/FastAPI/SQLite journeys. The pinned Python environment omitted optional Chroma/transformers and exercised real product offline fallbacks; external providers were disabled. These existing journeys do not verify live report-POST persistence.
+- Published S2 commit: `e1fb9299deede2d1b45e6add12650d5991028539`; S3 integration: `fa9765450eb44484038e92f2d34928b366b37060`. The API-created commit IDs differ from the local tested commits, but content trees were verified identical.
+- Mobile/assistive-technology QA and remote CI remain unverified. Desktop report-component checks used mocked API responses; they are not live moderation or persistence verification.

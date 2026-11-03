@@ -273,7 +273,7 @@ export default function MilestoneProgressTree({
                     <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-tertiary, #6B7280)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
                       Curated Study Material for this Stage
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                       {milestone.resources.map((res, rIdx) => (
                         <ResourceCard
                           key={res.id || rIdx}

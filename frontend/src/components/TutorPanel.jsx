@@ -9,6 +9,7 @@
  *     syllabus topic notes, key algorithmic formulas/snippets, and suggested follow-ups.
  */
 
+import AiUsage from './AiUsage';
 import TutorFeedback from './TutorFeedback';
 import './TutorPanel.css';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
@@ -82,6 +83,7 @@ const GENERAL_QUESTIONS = [
 ];
 
 export default function TutorPanel({
+  quota,
   aiModel = 'gemini-2.5-flash',
   setAiModel = () => {},
   tutorMode = 'socratic',
@@ -104,7 +106,7 @@ export default function TutorPanel({
   const [rightCollapsed, setRightCollapsed] = useState(isNarrowScreen);
   const leftToggleRef = useRef(null);
   const rightToggleRef = useRef(null);
-  const composerBlocked = !!(conversations?.blocked || conversations?.loadingMessages || conversations?.creating || conversations?.activeId === 'legacy' || (conversations && conversations.activeId == null));
+  const composerBlocked = !!(quota?.exhausted || conversations?.blocked || conversations?.loadingMessages || conversations?.creating || conversations?.activeId === 'legacy' || (conversations && conversations.activeId == null));
   useEffect(() => {
     const media = window.matchMedia?.('(max-width: 900px)');
     const collapse = (event) => {
@@ -614,6 +616,7 @@ export default function TutorPanel({
         {conversations?.loadingMessages && <p role="status" className="tutor-status">Loading conversation…</p>}
         {conversations?.activeId === null && <p className="tutor-status">Start a new conversation or select a saved conversation to continue.</p>}
         {conversations?.creating && <p role="status" className="tutor-status">Creating conversation…</p>}
+        <AiUsage quota={quota} compact />
         {conversations?.error && <p role="alert" className="tutor-status">{conversations.error}</p>}
         {conversations?.activeId === 'legacy' && <p className="tutor-status">Earlier history shows the oldest 30 messages across all chats and is read-only. Start or select a conversation to send a new message.</p>}
         {/* Scrollable Message Thread */}

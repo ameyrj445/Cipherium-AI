@@ -62,16 +62,16 @@ export default class ErrorBoundary extends React.Component {
             >
               <AlertTriangle size={28} color="#ef4444" />
             </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#F3F4F6', margin: '0 0 8px' }}>
               Something went wrong
             </h2>
-            <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.5, margin: '0 0 24px' }}>
+            <p style={{ color: '#9CA3AF', fontSize: '0.88rem', lineHeight: 1.5, margin: '0 0 24px' }}>
               {isView
                 ? 'This page could not be displayed. You can try opening it again or choose another page.'
                 : 'An unexpected interface error occurred. You can reload the application to restore your active workspace.'}
             </p>
             {import.meta.env.DEV && this.state.error && (
-              <pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: '0.75rem', color: '#334155' }}>
+              <pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: '0.75rem', color: '#CBD5E1' }}>
                 {this.state.error.message}
               </pre>
             )}

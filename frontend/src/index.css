@@ -20,10 +20,11 @@
   --text-dark: #F3F4F6;
   --text-secondary: #9CA3AF;         /* Muted Silver */
   --text-gray: #9CA3AF;
-  --text-tertiary: #6B7280;          /* Dimmed Charcoal / Metadata */
-  --text-dim: #6B7280;
+  --text-tertiary: #9CA3AF;          /* Metadata: >= 4.5:1 on elevated dark surfaces */
+  --text-dim: #9CA3AF;
   --text-white: #FFFFFF;
   --text-light: #FFFFFF;
+  --text-accent: #A5B4FC;           /* Text-only accent; keep button background tokens separate */
 
   /* ── 3. Accents & Categorization Badges ── */
   --primary-brand: #6366F1;          /* Electric Blue / Indigo - Active Pill & Primary CTA */
@@ -123,9 +124,10 @@ body {
 }
 
 .btn-primary {
-  background: var(--primary-brand);
+  /* White label needs the darker brand shade (6.29:1). */
+  background: var(--primary-600);
   color: #FFFFFF;
-  border-color: var(--primary-brand);
+  border-color: var(--primary-600);
 }
 .btn-primary:hover {
   background: var(--primary-hover);
@@ -187,7 +189,7 @@ body {
 }
 .badge-hard {
   background: rgba(239, 68, 68, 0.12);
-  color: var(--status-hard);
+  color: #FCA5A5;
   border-color: rgba(239, 68, 68, 0.25);
 }
 .badge-recommended {
@@ -233,8 +235,9 @@ body {
 
 /* ── Accessibility & Focus Rings ── */
 :focus-visible {
-  outline: 2px solid var(--primary-brand, #6366F1);
-  outline-offset: 2px;
+  /* Inline outline:none must not erase a keyboard user's focus indicator. */
+  outline: 3px solid #A5B4FC !important;
+  outline-offset: 3px;
 }
 
 /* ── Typography & Text Truncation Utilities ── */
@@ -268,5 +271,85 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Native placeholder defaults vary by browser; retain readable contrast. */
+input::placeholder, textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
+@media (forced-colors: active) {
+  :focus-visible { outline-color: Highlight !important; }
+}
+
+.skip-to-content {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 300;
+  padding: 12px 16px;
+  color: #ffffff;
+  background: #3730a3;
+  border-radius: 6px;
+  transform: translateY(-200%);
+}
+.skip-to-content:focus { transform: translateY(0); }
+
+/* Reflow content rather than clipping desktop-width cards on narrow screens. */
+.page-container--grid > * {
+  min-width: 0;
+}
+.page-segmented-controls {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.page-segmented-controls > button {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
+  white-space: normal;
+}
+.top-header-bar { gap: 12px; }
+.top-header-leading, .top-header-breadcrumb { min-width: 0; }
+.top-header-controls {
+  min-width: 0;
+  flex: 1 1 340px;
+  max-width: 560px;
+  justify-content: flex-end;
+}
+.top-header-controls > :not(.global-search) { flex-shrink: 0; }
+.global-search { flex: 1 1 340px; min-width: 0; }
+.global-search input { min-width: 0; }
+.top-header-user-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1599px) {
+  .top-header-greeting { display: none !important; }
+}
+@media (max-width: 1023px) {
+  /* Inline spans describe desktop placement; all panels stack below 1024px. */
+  .page-container--grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .page-container--grid > * { grid-column: 1 / -1 !important; }
+}
+@media (max-width: 639px) {
+  .top-header-bar { padding-inline: 16px !important; gap: 8px; }
+  .top-header-breadcrumb, .top-header-user-name { display: none !important; }
+  .top-header-controls { gap: 8px !important; }
+}
+@media (max-width: 767px) {
+  .global-search-results,
+  .notification-panel {
+    position: fixed !important;
+    top: 62px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+    max-height: calc(100dvh - 78px) !important;
   }
 }

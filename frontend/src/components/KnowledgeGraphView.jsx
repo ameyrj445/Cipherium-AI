@@ -13,6 +13,7 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
   const [selectedNode, setSelectedNode] = useState(null);
 
   const fetchGraph = () => {
+    setError('');
     setLoading(true);
     analyticsAPI.getKnowledgeGraph()
       .then((res) => {
@@ -38,7 +39,7 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
   const filteredNodes = useMemo(() => {
     if (!graphData?.nodes) return [];
     if (selectedCategory === 'All') return graphData.nodes;
-    return graphData.nodes.filter((n) => n.category === selectedCategory);
+    return graphData.nodes.filter((n) => (n.category || 'General') === selectedCategory);
   }, [graphData, selectedCategory]);
 
   // Group nodes by topological depth
@@ -73,7 +74,7 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
       <div className="ui-card" style={{ padding: '40px', textAlign: 'center', maxWidth: '600px', margin: '40px auto' }}>
         <AlertCircle size={36} color="#ef4444" style={{ marginBottom: '12px' }} />
         <h3>Error Loading Knowledge Graph</h3>
-        <p style={{ color: '#64748b' }}>{error || 'Unable to retrieve knowledge map.'}</p>
+        <p style={{ color: '#9CA3AF' }}>{error || 'Unable to retrieve knowledge map.'}</p>
         <button onClick={fetchGraph} className="btn btn-primary" style={{ marginTop: '14px' }}>
           Retry Loading
         </button>
@@ -86,7 +87,7 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
       {/* Top Banner */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#6366f1', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-accent, #A5B4FC)', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Network size={14} /> CURRICULUM PREREQUISITE GRAPH
           </span>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '6px 0 4px', color: '#fff' }}>

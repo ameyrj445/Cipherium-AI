@@ -7,6 +7,7 @@ import {
 import PageContainer from './layout/PageContainer';
 import PageHeader from './layout/PageHeader';
 import StickyRail from './layout/StickyRail';
+import PlanFreshnessBanner from './PlanFreshnessBanner';
 
 const POPULAR_SUBJECTS = [
   { name: 'Data Structures & Algorithms', icon: '⚡', category: 'Core CS' },
@@ -182,6 +183,8 @@ export default function StudyPlanView({
           }
         />
       </div>
+
+      {plan && <PlanFreshnessBanner planId={plan.id} />}
 
       {/* ── GENERATOR MODE: TWO COLUMN (7 cols Form + 5 cols Live Preview) ── */}
       {showGenerator && (
@@ -482,7 +485,7 @@ export default function StudyPlanView({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div style={{ background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)', padding: '10px 12px', borderRadius: '10px' }}>
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #9CA3AF)' }}>Total Commitment</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#6366F1', marginTop: '2px' }}>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-accent, #A5B4FC)', marginTop: '2px' }}>
                     {calculatedTotalHours} Hours
                   </div>
                   <div style={{ fontSize: '0.66rem', color: 'var(--text-tertiary, #6B7280)' }}>
@@ -564,22 +567,22 @@ export default function StudyPlanView({
           {/* Summary stats bar across the top (Full 12 columns) */}
           <div style={{ gridColumn: '1 / -1' }}>
             <div
-              className="ui-card"
+              className="ui-card study-plan-summary"
               style={{
                 padding: '22px 26px',
                 borderRadius: '16px',
                 background: 'var(--bg-surface, #1E1E22)',
                 border: '1px solid var(--border-stroke, #2D2D35)',
                 display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))',
                 gap: '16px',
               }}
             >
               {/* Stat 1: Overall Progress */}
-              <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ minWidth: 0, overflowWrap: 'anywhere', padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#818CF8', fontWeight: 700, textTransform: 'uppercase' }}>Overall Progress</span>
-                  <Award size={16} color="#6366F1" />
+                  <Award aria-hidden="true" style={{ flexShrink: 0 }} size={16} color="#6366F1" />
                 </div>
                 <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-primary, #F3F4F6)', marginTop: '4px' }}>
                   {overallPercentage}%
@@ -590,10 +593,10 @@ export default function StudyPlanView({
               </div>
 
               {/* Stat 2: Milestones */}
-              <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ minWidth: 0, overflowWrap: 'anywhere', padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 700, textTransform: 'uppercase' }}>Milestones Done</span>
-                  <CheckCircle2 size={16} color="#10B981" />
+                  <CheckCircle2 aria-hidden="true" style={{ flexShrink: 0 }} size={16} color="#10B981" />
                 </div>
                 <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#10B981', marginTop: '4px' }}>
                   {completedMilestones} / {totalMilestones}
@@ -604,10 +607,10 @@ export default function StudyPlanView({
               </div>
 
               {/* Stat 3: Study Hours */}
-              <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ minWidth: 0, overflowWrap: 'anywhere', padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#F59E0B', fontWeight: 700, textTransform: 'uppercase' }}>Study Hours</span>
-                  <Clock size={16} color="#F59E0B" />
+                  <Clock aria-hidden="true" style={{ flexShrink: 0 }} size={16} color="#F59E0B" />
                 </div>
                 <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#F59E0B', marginTop: '4px' }}>
                   {loggedHours} / {totalHours}h
@@ -618,10 +621,10 @@ export default function StudyPlanView({
               </div>
 
               {/* Stat 4: Subtopics Checklist */}
-              <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ minWidth: 0, overflowWrap: 'anywhere', padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-shell, #161618)', border: '1px solid var(--border-stroke, #2D2D35)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#A78BFA', fontWeight: 700, textTransform: 'uppercase' }}>Subtopics</span>
-                  <Layers size={16} color="#A78BFA" />
+                  <Layers aria-hidden="true" style={{ flexShrink: 0 }} size={16} color="#A78BFA" />
                 </div>
                 <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-primary, #F3F4F6)', marginTop: '4px' }}>
                   {completedSubtopicsCount} / {totalSubtopicsCount}

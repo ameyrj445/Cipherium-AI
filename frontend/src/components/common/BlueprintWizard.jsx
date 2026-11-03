@@ -26,7 +26,7 @@ export const CURATED_BLUEPRINTS = [
     hoursPerWeek: 8,
     category: 'ML',
     tags: ['Math Foundations', 'PyTorch Core', 'OULAD Analytics'],
-    accentColor: '#6366F1',
+    accentColor: 'var(--text-accent, #A5B4FC)',
     borderColor: 'rgba(99, 102, 241, 0.4)',
     bgGlow: 'rgba(40, 30, 90, 0.25)',
   },
@@ -119,11 +119,11 @@ export default function BlueprintWizard({
         </>
       )}
 
-      {/* 3 Blueprint Cards Grid: repeat(auto-fill, minmax(340px, 1fr)) */}
+      {/* 3 Blueprint Cards Grid: repeat(auto-fill, minmax(min(340px, 100%), 1fr)) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(340px, 100%), 1fr))',
           gap: '24px',
           textAlign: 'left',
           marginBottom: showCustomCta ? '28px' : 0,

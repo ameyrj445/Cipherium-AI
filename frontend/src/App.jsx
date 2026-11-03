@@ -1,3 +1,4 @@
+import { UNAVAILABLE_QUOTA, CONFIRMED_EXHAUSTED_QUOTA } from './utils/aiQuota';
 /**
  * Cipherium AI - Primary Application Root & Dynamic Router
  *
@@ -11,7 +12,7 @@
 
 import { useTutorConversations } from './hooks/useTutorConversations';
 import useAccountDeletion from './hooks/useAccountDeletion';
-import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useLayoutEffect, lazy, Suspense } from 'react';
 import { authAPI, quizAPI, analyticsAPI, tasksAPI, getStoredSession, startSession, endSession } from './services/api';
 
 // Error Boundary & Modular Components
@@ -32,12 +33,12 @@ import PasswordRecovery from './components/PasswordRecovery';
 // Dedicated Views for Navigation
 import LearnView from './components/LearnView';
 import PracticeView from './components/PracticeView';
-import AnalyticsFullView from './components/AnalyticsFullView';
+const AnalyticsFullView = lazy(() => import('./components/AnalyticsFullView'));
 import ResourcesFullView from './components/ResourcesFullView';
 import StudyPlanView from './components/StudyPlanView';
 import SettingsView from './components/SettingsView';
-import AdminView from './components/AdminView';
-import KnowledgeGraphView from './components/KnowledgeGraphView';
+const AdminView = lazy(() => import('./components/AdminView'));
+const KnowledgeGraphView = lazy(() => import('./components/KnowledgeGraphView'));
 import RetentionScheduleCard from './components/RetentionScheduleCard';
 
 import { useRecommendationFeedback } from './hooks/useRecommendationFeedback';
@@ -76,11 +77,28 @@ export default function App() {
 
   const [chatInput, setChatInput] = useState('');
   const conversations = useTutorConversations(token);
+  // Do not trust the current settings API quota defaults. No production fixture toggle.
+  const quota = conversations.quotaExceeded ? CONFIRMED_EXHAUSTED_QUOTA : UNAVAILABLE_QUOTA;
   const { messages: chatMessages, thinking: tutorThinking, topicId: tutorTopicId, setTopicId: setTutorTopicId } = conversations;
+
+  // Diagnostic Quiz / Practice State
+  const [selectedTopicId, setSelectedTopicId] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [selectedOption, setSelectedOption] = useState('');
+  const [quizResult, setQuizResult] = useState(null);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizError, setQuizError] = useState('');
+  const [quizPendingSave, setQuizPendingSave] = useState(false);
+  const [quizSubmissionUnknown, setQuizSubmissionUnknown] = useState(false);
+  const quizWrite = useRef({ busy: false, pending: null, unknown: false });
+  useEffect(() => {
+    quizWrite.current = { busy: false, pending: null, unknown: false };
+  }, [token]);
 
   // Define session expiration handler before useEffect to satisfy temporal ordering
   const endInvalidSession = useCallback(() => {
     sessionRef.current = '';
+    setQuizError(''); setQuizPendingSave(false); setQuizSubmissionUnknown(false); setQuizLoading(false);
     setChatInput('');
     endSession();
     setToken('');
@@ -118,19 +136,11 @@ export default function App() {
   const [analytics, setAnalytics] = useState(null);
   const [topics, setTopics] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  const [_roadmap, setRoadmap] = useState(null);
   const [customPlan, setCustomPlan] = useState(null);
   const [customPlans, setCustomPlans] = useState([]);
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState('');
   const [practiceTopic, setPracticeTopic] = useState('');
-
-  // Diagnostic Quiz / Practice State
-  const [selectedTopicId, setSelectedTopicId] = useState(null);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [selectedOption, setSelectedOption] = useState('');
-  const [quizResult, setQuizResult] = useState(null);
-  const [quizLoading, setQuizLoading] = useState(false);
 
   // AI Tutor State
   const [aiModel, setAiModel] = useState('gemini-2.5-flash');
@@ -160,11 +170,12 @@ export default function App() {
       const profileRes = await authAPI.getProfile();
       if (sessionRef.current !== requestSession) return;
       if (profileRes.data) setUser(profileRes.data);
-      const [topRes, anaRes, recRes, roadRes, planRes, plansRes, tasksRes] = await Promise.all([
+      // Reading the workspace must not call the untargeted mutation endpoint
+      // /roadmaps/generate, which can overwrite an existing custom plan.
+      const [topRes, anaRes, recRes, planRes, plansRes, tasksRes] = await Promise.all([
         quizAPI.getTopics().catch(() => ({ data: [] })),
         analyticsAPI.getMastery().catch(() => ({ data: null })),
         analyticsAPI.getRecommendations().catch(() => ({ data: [] })),
-        analyticsAPI.generateRoadmap(10).catch(() => ({ data: null })),
         analyticsAPI.getCurrentPlan().catch(() => null),
         analyticsAPI.getCustomPlans().catch(() => ({ data: [] })),
         tasksAPI.getTodayTasks().catch(() => ({ data: [] })),
@@ -173,7 +184,6 @@ export default function App() {
       if (topRes.data) setTopics(topRes.data);
       if (anaRes.data) setAnalytics(anaRes.data);
       if (recRes.data) setRecommendations(recRes.data);
-      if (roadRes.data) setRoadmap(roadRes.data);
       if (Array.isArray(tasksRes.data) && tasksRes.data.length > 0) {
         setTodayTasks(tasksRes.data.map((t) => ({
           id: t.id,
@@ -222,6 +232,7 @@ export default function App() {
         id: res.data.user_id,
       };
 
+      setQuizError(''); setQuizPendingSave(false); setQuizSubmissionUnknown(false); setQuizLoading(false);
       const session = startSession(activeToken, userData);
       setToken(activeToken);
       setUser(userData);
@@ -237,6 +248,7 @@ export default function App() {
 
   const handleLogout = () => {
     sessionRef.current = '';
+    setQuizError(''); setQuizPendingSave(false); setQuizSubmissionUnknown(false); setQuizLoading(false);
     setChatInput('');
     endSession();
     setToken('');
@@ -246,7 +258,6 @@ export default function App() {
     setCustomPlans([]);
     setAnalytics(null);
     setRecommendations([]);
-    setRoadmap(null);
     setCurrentQuestion(null);
     setQuizResult(null);
     setSelectedTopicId(null);
@@ -334,7 +345,7 @@ export default function App() {
   // Conversation requests are session-bound and invalidate on thread switches.
   const handleSendChat = async (e) => {
     e?.preventDefault?.();
-    if (!chatInput.trim() || tutorThinking || conversations.loadingMessages || conversations.blocked || conversations.activeId === 'legacy') return;
+    if (quota.exhausted || !chatInput.trim() || tutorThinking || conversations.loadingMessages || conversations.blocked || conversations.activeId === 'legacy') return;
     const text = chatInput;
     setChatInput('');
     await conversations.send(text, tutorMode);
@@ -342,6 +353,8 @@ export default function App() {
 
   // Practice & Quiz Handler
   const loadNextQuestion = async (topicId = null) => {
+    if (quizWrite.current.busy || quizWrite.current.pending || quizWrite.current.unknown) return;
+    setQuizError('');
     setQuizLoading(true);
     setQuizResult(null);
     setSelectedOption('');
@@ -357,25 +370,58 @@ export default function App() {
   };
 
   const handleSubmitQuiz = async () => {
-    if (!selectedOption || !currentQuestion) return;
-    setQuizLoading(true);
+    const operation = quizWrite.current;
+    const requestSession = token;
+    if (operation.busy || operation.unknown || !requestSession || !selectedOption || !currentQuestion || quizResult) return;
+    operation.busy = true;
+    let finalized = false;
+    setQuizLoading(true); setQuizError('');
     try {
-      const res = await quizAPI.submitAttempt({
-        question_id: currentQuestion.id,
-        selected_answer: selectedOption,
-        time_taken_seconds: 15
-      });
-      setQuizResult(res.data);
+      if (!operation.pending) {
+        const response = await quizAPI.submitAttempt({
+          question_id: currentQuestion.id,
+          selected_answer: selectedOption,
+          time_taken_seconds: 15,
+        }, requestSession);
+        if (sessionRef.current !== requestSession) return;
+        const result = response.data;
+        if (!result?.quiz_id) {
+          operation.unknown = true;
+          throw new Error('Quiz result did not identify its session');
+        }
+        operation.pending = result;
+        setQuizPendingSave(true);
+      }
+      // Backend defers persisted mastery and tutor unlocking until completion.
+      // A retry resumes this known session; it must never resubmit the answer.
+      await quizAPI.completeSession(operation.pending.quiz_id, requestSession);
+      if (sessionRef.current !== requestSession) return;
+      const result = operation.pending;
+      finalized = true;
+      operation.pending = null;
+      setQuizPendingSave(false);
+      setQuizResult(result);
       const [anaRes, recRes] = await Promise.all([
-        analyticsAPI.getMastery(),
-        analyticsAPI.getRecommendations()
+        analyticsAPI.getMastery(), analyticsAPI.getRecommendations(),
       ]);
-      setAnalytics(anaRes.data);
-      setRecommendations(recRes.data);
-    } catch (e) {
-      console.error(e);
+      if (sessionRef.current !== requestSession) return;
+      setAnalytics(anaRes.data); setRecommendations(recRes.data);
+    } catch {
+      if (sessionRef.current !== requestSession) return;
+      if (finalized) {
+        setQuizError('Your result was saved, but refreshing analytics failed. Reload the dashboard to see the updated scores.');
+      } else if (operation.pending) {
+        setQuizError('Your answer was recorded, but saving mastery could not be confirmed. Retry saving this result without submitting another answer.');
+      } else if (!quizResult && operation.busy) {
+        // An uncertain answer POST cannot safely be repeated without server
+        // confirmation. Keep the current question locked rather than duplicating.
+        operation.unknown = true;
+        setQuizSubmissionUnknown(true);
+        setQuizError('The answer submission could not be confirmed. Check your quiz history before submitting again.');
+      }
     } finally {
-      setQuizLoading(false);
+      operation.busy = false;
+      if (sessionRef.current === requestSession) setQuizLoading(false);
     }
   };
 
@@ -506,6 +552,7 @@ export default function App() {
       >
         {/* DYNAMIC ROUTING ACCORDING TO ACTIVENAV */}
         <ErrorBoundary key={activeNav} scope="view">
+        <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: '24px' }}>Loading {activeNav}…</div>}>
         {activeNav === 'Dashboard' && (
           <PageContainer>
             {/* Row 1: Slim Hero / Onboarding Banner (Full width: 12 cols) */}
@@ -609,6 +656,9 @@ export default function App() {
             setSelectedOption={setSelectedOption}
             quizResult={quizResult}
             quizLoading={quizLoading}
+            quizError={quizError}
+            quizPendingSave={quizPendingSave}
+            quizSubmissionBlocked={quizPendingSave || quizSubmissionUnknown}
             loadNextQuestion={loadNextQuestion}
             handleSubmitQuiz={handleSubmitQuiz}
             selectedTopicId={selectedTopicId}
@@ -669,6 +719,7 @@ export default function App() {
 
         {activeNav === 'AI Tutor' && (
           <TutorPanel
+            quota={quota}
             aiModel={aiModel}
             setAiModel={setAiModel}
             tutorMode={tutorMode}
@@ -694,6 +745,7 @@ export default function App() {
 
         {activeNav === 'Settings' && (
           <SettingsView
+            quota={quota}
             user={user}
             aiModel={aiModel}
             setAiModel={setAiModel}
@@ -704,6 +756,7 @@ export default function App() {
             customPlan={learningPlan}
           />
         )}
+        </Suspense>
         </ErrorBoundary>
       </AppShell>
 
