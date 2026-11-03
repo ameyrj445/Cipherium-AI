@@ -275,13 +275,14 @@ export default function NotificationDropdown({
       {/* Popover Dropdown Panel */}
       {isOpen && (
         <div
+          className="notification-panel"
           role="dialog"
           aria-label="Notification Center"
           style={{
             position: 'absolute',
             right: 0,
             top: 'calc(100% + 8px)',
-            width: '380px',
+            width: 'min(380px, calc(100vw - 32px))',
             maxHeight: '480px',
             background: '#1A1A1E',
             border: '1px solid #2D2D35',

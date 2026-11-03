@@ -57,7 +57,7 @@ export default function TopHeader({
       }}
     >
       {/* Left Area: Mobile Drawer Toggle + Breadcrumb / Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="top-header-leading" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {onToggleMobileDrawer && (
           <button
             type="button"
@@ -79,7 +79,7 @@ export default function TopHeader({
           </button>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="top-header-breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span
             style={{
               fontSize: '0.7rem',
@@ -111,7 +111,7 @@ export default function TopHeader({
 
           {/* Show personalized greeting ONLY on Dashboard */}
           {isDashboard && (
-            <>
+            <span className="top-header-greeting" style={{ display: 'contents' }}>
               <span style={{ color: 'var(--border-stroke, #2D2D35)', fontSize: '0.8rem' }}>·</span>
               <span
                 style={{
@@ -123,13 +123,13 @@ export default function TopHeader({
               >
                 {greeting}, {userName}! 👋
               </span>
-            </>
+            </span>
           )}
         </div>
       </div>
 
       {/* Right Area: Search, Notifications, Profile Dropdown */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="top-header-controls" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <GlobalSearch
           onNavigate={onNavigate}
           topics={topics}
@@ -185,7 +185,7 @@ export default function TopHeader({
               >
                 {getInitials(userName)}
               </div>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary, #F3F4F6)' }}>
+              <span className="top-header-user-name" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary, #F3F4F6)' }}>
                 {userName}
               </span>
               <ChevronDown size={13} color="#9CA3AF" />

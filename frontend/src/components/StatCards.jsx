@@ -65,7 +65,7 @@ export default function StatCards({
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',
         gap: '16px',
         marginBottom: '28px',
       }}

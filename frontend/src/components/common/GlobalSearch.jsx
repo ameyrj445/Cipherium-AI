@@ -251,7 +251,7 @@ export default function GlobalSearch({
   };
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '340px' }}>
+    <div className="global-search" ref={containerRef} style={{ position: 'relative', width: '340px' }}>
       {/* Search Bar Input */}
       <div
         style={{
@@ -333,13 +333,14 @@ export default function GlobalSearch({
       {/* Instant Search Results Dropdown Menu */}
       {isOpen && (
         <div
+          className="global-search-results"
           role="listbox"
           style={{
             position: 'absolute',
             top: 'calc(100% + 6px)',
-            left: 0,
+            left: 'auto',
             right: 0,
-            width: '420px',
+            width: 'min(420px, calc(100vw - 32px))',
             maxHeight: '440px',
             background: '#1A1A1E',
             border: '1px solid #2D2D35',

@@ -296,3 +296,58 @@ input::placeholder, textarea::placeholder {
   transform: translateY(-200%);
 }
 .skip-to-content:focus { transform: translateY(0); }
+
+/* Reflow content rather than clipping desktop-width cards on narrow screens. */
+.page-container--grid > * {
+  min-width: 0;
+}
+.page-segmented-controls {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.page-segmented-controls > button {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
+  white-space: normal;
+}
+.top-header-bar { gap: 12px; }
+.top-header-leading, .top-header-breadcrumb { min-width: 0; }
+.top-header-controls {
+  min-width: 0;
+  flex: 1 1 340px;
+  max-width: 560px;
+  justify-content: flex-end;
+}
+.top-header-controls > :not(.global-search) { flex-shrink: 0; }
+.global-search { flex: 1 1 340px; min-width: 0; }
+.global-search input { min-width: 0; }
+.top-header-user-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1599px) {
+  .top-header-greeting { display: none !important; }
+}
+@media (max-width: 1023px) {
+  /* Inline spans describe desktop placement; all panels stack below 1024px. */
+  .page-container--grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .page-container--grid > * { grid-column: 1 / -1 !important; }
+}
+@media (max-width: 639px) {
+  .top-header-bar { padding-inline: 16px !important; gap: 8px; }
+  .top-header-breadcrumb, .top-header-user-name { display: none !important; }
+  .top-header-controls { gap: 8px !important; }
+  .global-search-results,
+  .notification-panel {
+    position: fixed !important;
+    top: 62px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+    max-height: calc(100dvh - 78px) !important;
+  }
+}

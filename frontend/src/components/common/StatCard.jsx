@@ -20,6 +20,7 @@ export default function StatCard({
       onClick={onClick}
       style={{
         padding: '20px',
+        minWidth: 0,
         textAlign: 'left',
         font: 'inherit',
         display: 'flex',
@@ -47,7 +48,7 @@ export default function StatCard({
         </div>
       )}
 
-      <div style={{ overflow: 'hidden' }}>
+      <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
         <div
           style={{
             fontSize: '1.45rem',

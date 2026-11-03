@@ -36,7 +36,7 @@ export default function PageHeader({
       }}
       {...rest}
     >
-      <div>
+      <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
         {eyebrow && (
           <span
             style={{

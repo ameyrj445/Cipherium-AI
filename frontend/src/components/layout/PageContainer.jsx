@@ -81,7 +81,7 @@ export default function PageContainer({
   };
 
   return (
-    <Component className={`page-container ${className}`.trim()} style={containerStyles} {...rest}>
+    <Component className={`page-container ${!noGrid ? 'page-container--grid' : ''} ${className}`.trim()} style={containerStyles} {...rest}>
       {children}
     </Component>
   );

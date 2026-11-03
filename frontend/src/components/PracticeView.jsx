@@ -278,6 +278,7 @@ export default function PracticeView({
         style={{ marginBottom: '16px' }}
         actions={
           <div
+            className="page-segmented-controls"
             style={{
               display: 'flex',
               background: 'var(--bg-surface, #1E1E22)',
@@ -918,7 +919,7 @@ export default function PracticeView({
 
               {/* Challenges Grid: auto-fill on wide screens */}
               {filteredChallenges.length ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: '18px' }}>
                   {filteredChallenges.map((item, index) => {
                     const [siteLabel, color, background] = siteFor(item.url);
                     return (

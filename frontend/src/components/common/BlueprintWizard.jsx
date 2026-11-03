@@ -119,11 +119,11 @@ export default function BlueprintWizard({
         </>
       )}
 
-      {/* 3 Blueprint Cards Grid: repeat(auto-fill, minmax(340px, 1fr)) */}
+      {/* 3 Blueprint Cards Grid: repeat(auto-fill, minmax(min(340px, 100%), 1fr)) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(340px, 100%), 1fr))',
           gap: '24px',
           textAlign: 'left',
           marginBottom: showCustomCta ? '28px' : 0,
