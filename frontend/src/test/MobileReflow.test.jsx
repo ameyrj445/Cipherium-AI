@@ -52,9 +52,9 @@ describe('mobile reflow contracts', () => {
     render(<TopHeader userName={'LongAccountName'.repeat(12)} isAuthenticated onToggleMobileDrawer={drawer} />);
     fireEvent.click(screen.getByRole('button', { name: 'Toggle navigation drawer' }));
     expect(drawer).toHaveBeenCalledOnce();
-    const search = screen.getByRole('textbox', { name: 'Search topics, roadmap, or concepts' });
+    const search = screen.getByRole('combobox', { name: 'Search topics, roadmap, or concepts' });
     fireEvent.focus(search);
-    expect(screen.getByRole('listbox')).toHaveClass('global-search-results');
+    expect(screen.getByRole('region', { name: 'Search suggestions' })).toHaveClass('global-search-results');
     fireEvent.change(search, { target: { value: 'unlikely-result' } });
     fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
     expect(search).toHaveValue('');

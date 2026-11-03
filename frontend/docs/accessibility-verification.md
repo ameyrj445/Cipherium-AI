@@ -60,3 +60,35 @@ Local `eac13c0e` addresses layout causes and passes 555 automated frontend tests
 including seven new reflow-contract/interaction regressions. Its rendered retest
 is still pending. This is not a physical-device, full contrast or screen-reader
 check. See `mobile-reflow.md`.
+
+## Shared-popover keyboard and semantics follow-up
+
+The assigned seven-page audit also covers the shared header. The follow-up to
+`e96ebb1` corrects these independently verified code-level gaps:
+
+- Search suggestions previously used a listbox role even for quick-navigation
+  buttons. Quick/no-match suggestions now use a labelled region, while actual
+  results use a labelled listbox associated with the combobox input.
+- Arrow-key selection is exposed through `aria-activedescendant` and
+  `aria-selected`; the selected option scrolls into view. A concise polite status
+  announces result count or no matches without making the full result list live.
+- Escape keeps search focus; leaving the widget closes suggestions. Option
+  mousedown preserves input focus so blur cannot unmount an option before click.
+- Notification navigation was only available through clicking a generic row.
+  Each action is now a native button, separate from its specifically named
+  dismiss control. Filter buttons expose their selected state.
+- Notification Escape returns focus to the bell; read/dismiss/clear actions
+  preserve focus on the panel when they remove the active control.
+
+`ShellPopoverAccessibility.test.jsx` adds five regressions covering these open
+states, axe scans, action dispatch and focus preservation. These automated tests
+are not proof of actual screen-reader speech or a complete browser Tab audit.
+Actual NVDA/VoiceOver, rendered contrast, zoom/forced-colors and final rendered
+popover QA remain manual acceptance gates. No backend or database changes.
+
+Follow-up cloud verification: **560 tests across 59 files pass**, inclusive
+frontend branch coverage **84.21%**; lint reports **0 errors and 40 existing
+warnings**. Production build and all four bundle-gate tests pass with **165,511
+initial-JS gzip bytes**. The five real App/FastAPI/disposable-SQLite journeys pass
+with external services disabled. No real email, provider, personal database or
+screen-reader validation is implied.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useId } from 'react';
 import {
   Search, X, BookOpen, Layers, Compass,
   Sparkles, ExternalLink, ArrowRight, CornerDownLeft
@@ -39,6 +39,7 @@ export default function GlobalSearch({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const listboxId = useId();
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -173,6 +174,12 @@ export default function GlobalSearch({
   // Ensure selected index is always valid within current results bounds
   const activeIndex = selectedIndex < results.length ? selectedIndex : 0;
 
+  const hasResults = isOpen && query.trim() !== '' && results.length > 0;
+
+  useEffect(() => {
+    if (hasResults) document.getElementById(`${listboxId}-${activeIndex}`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [hasResults, activeIndex, listboxId, query]);
+
   // Global keyboard shortcuts (/ or Ctrl+K / Cmd+K to focus, Escape to dismiss)
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
@@ -246,12 +253,18 @@ export default function GlobalSearch({
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setIsOpen(false);
-      inputRef.current?.blur();
+      // Escape dismisses suggestions without losing the user's keyboard position.
     }
   };
 
   return (
-    <div className="global-search" ref={containerRef} style={{ position: 'relative', width: '340px' }}>
+    <div className="global-search" ref={containerRef}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') { inputRef.current?.focus(); setIsOpen(false); }
+      }} style={{ position: 'relative', width: '340px' }}>
       {/* Search Bar Input */}
       <div
         style={{
@@ -271,6 +284,11 @@ export default function GlobalSearch({
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={hasResults}
+          aria-controls={hasResults ? listboxId : undefined}
+          aria-activedescendant={hasResults ? `${listboxId}-${activeIndex}` : undefined}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -330,11 +348,17 @@ export default function GlobalSearch({
         )}
       </div>
 
+      <span role="status" aria-live="polite" aria-atomic="true"
+        style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clipPath: 'inset(50%)', whiteSpace: 'nowrap', border: 0 }}>
+        {isOpen && query.trim() ? (results.length ? `${results.length} matching results` : 'No matching results') : ''}
+      </span>
+
       {/* Instant Search Results Dropdown Menu */}
       {isOpen && (
         <div
           className="global-search-results"
-          role="listbox"
+          role="region"
+          aria-label="Search suggestions"
           style={{
             position: 'absolute',
             top: 'calc(100% + 6px)',
@@ -462,7 +486,7 @@ export default function GlobalSearch({
                 <span style={{ fontSize: '0.64rem', color: '#9CA3AF' }}>Use ↑ ↓ to navigate · ↵ to select</span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div id={listboxId} role="listbox" aria-label="Matching results" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {results.map((item, index) => {
                   const isSelected = index === activeIndex;
                   const Icon = item.icon || BookOpen;
@@ -470,8 +494,10 @@ export default function GlobalSearch({
                   return (
                     <div
                       key={item.id}
+                      id={`${listboxId}-${index}`}
                       role="option"
                       aria-selected={isSelected}
+                      onMouseDown={(event) => event.preventDefault()}
                       onClick={() => handleSelectResult(item)}
                       onMouseEnter={() => setSelectedIndex(index)}
                       style={{

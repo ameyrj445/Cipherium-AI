@@ -85,6 +85,8 @@ export default function NotificationDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all'); // 'all' or 'unread'
   const containerRef = useRef(null);
+  const bellRef = useRef(null);
+  const panelRef = useRef(null);
 
   const storageKey = user?.email
     ? `cipherium_notifications_${user.email}`
@@ -173,21 +175,25 @@ export default function NotificationDropdown({
 
   // Handlers
   const handleMarkAllRead = () => {
+    panelRef.current?.focus();
     const updated = notifications.map((n) => ({ ...n, unread: false }));
     persistNotifications(updated);
   };
 
   const handleDismissOne = (e, notifId) => {
     e.stopPropagation();
+    panelRef.current?.focus();
     const updated = notifications.filter((n) => n.id !== notifId);
     persistNotifications(updated);
   };
 
   const handleClearAll = () => {
+    panelRef.current?.focus();
     persistNotifications([]);
   };
 
   const handleNotificationClick = (notif) => {
+    bellRef.current?.focus();
     // Mark as read
     const updated = notifications.map((n) => (n.id === notif.id ? { ...n, unread: false } : n));
     persistNotifications(updated);
@@ -217,10 +223,21 @@ export default function NotificationDropdown({
   };
 
   return (
-    <div ref={containerRef} style={{ position: 'relative' }}>
+    <div ref={containerRef}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && isOpen) {
+          event.preventDefault();
+          setIsOpen(false);
+          bellRef.current?.focus();
+        }
+      }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
+      }} style={{ position: 'relative' }}>
       {/* Bell Button */}
       <button
         type="button"
+        ref={bellRef}
         title="Notifications"
         aria-label="Notifications"
         aria-expanded={isOpen}
@@ -276,6 +293,8 @@ export default function NotificationDropdown({
       {isOpen && (
         <div
           className="notification-panel"
+          ref={panelRef}
+          tabIndex={-1}
           role="dialog"
           aria-label="Notification Center"
           style={{
@@ -362,6 +381,7 @@ export default function NotificationDropdown({
           >
             <button
               type="button"
+              aria-pressed={activeTab === 'all'}
               onClick={() => setActiveTab('all')}
               style={{
                 background: activeTab === 'all' ? '#272730' : 'transparent',
@@ -378,6 +398,7 @@ export default function NotificationDropdown({
             </button>
             <button
               type="button"
+              aria-pressed={activeTab === 'unread'}
               onClick={() => setActiveTab('unread')}
               style={{
                 background: activeTab === 'unread' ? '#272730' : 'transparent',
@@ -425,7 +446,7 @@ export default function NotificationDropdown({
               displayedNotifications.map((notif) => (
                 <div
                   key={notif.id}
-                  onClick={() => handleNotificationClick(notif)}
+
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -446,6 +467,12 @@ export default function NotificationDropdown({
                     e.currentTarget.style.background = notif.unread ? 'rgba(99, 102, 241, 0.08)' : 'transparent';
                   }}
                 >
+                  <button
+                    type="button"
+                    aria-label={`${notif.title}. ${notif.message}`}
+                    onClick={() => handleNotificationClick(notif)}
+                    style={{ display: 'flex', flex: 1, minWidth: 0, gap: '10px', textAlign: 'left', font: 'inherit', background: 'transparent', border: 0, padding: 0, cursor: 'pointer' }}
+                  >
                   {/* Category Icon */}
                   <div
                     style={{
@@ -508,10 +535,13 @@ export default function NotificationDropdown({
                     </div>
                   </div>
 
+                  </button>
+
                   {/* Dismiss Button */}
                   <button
                     type="button"
                     title="Dismiss"
+                    aria-label={`Dismiss ${notif.title}`}
                     onClick={(e) => handleDismissOne(e, notif.id)}
                     style={{
                       background: 'transparent',
@@ -556,6 +586,7 @@ export default function NotificationDropdown({
             <button
               type="button"
               onClick={() => {
+                bellRef.current?.focus();
                 setIsOpen(false);
                 if (onOpenSettings) onOpenSettings();
                 else onNavigate('Settings');
