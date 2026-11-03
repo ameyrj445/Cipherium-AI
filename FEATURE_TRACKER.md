@@ -176,7 +176,7 @@ Overall Progress:
 | **NFR-OBS-01** | Structured logs, trace IDs, metrics | ✅ Implemented | Trace ID middleware assigns and logs unique `X-Trace-ID` on all requests. |
 | **NFR-REL-01** | Database backups & tested restore | ⏳ Backlog | Automated backup cron not configured; volume mounts used for persistent storage. |
 | **NFR-UX-01** | WCAG 2.2 AA accessibility compliance | 🔶 Partial | Automated axe/keyboard regressions and sampled desktop checks are implemented; full rendered contrast, mobile/reflow and screen-reader audits remain outstanding. No WCAG conformance claim. See `frontend/docs/accessibility-verification.md`. |
-| **NFR-TEST-01** | $\ge 80\%$ test coverage on critical paths | ✅ Implemented | Latest local S3 mobile-reflow candidate `59e6ecf8`: 555 frontend tests and 84.04% aggregate branch coverage; five isolated backend-integrated journeys pass. Historical backend checkpoint: 188 tests. Counts alone do not prove every critical path; see `frontend/docs/verification-status.md` for scope and remaining gates. |
+| **NFR-TEST-01** | $\ge 80\%$ test coverage on critical paths | ✅ Implemented | Latest local S3 mobile-reflow candidate `eac13c0e`: 555 frontend tests and 84.07% aggregate branch coverage; five isolated backend-integrated journeys pass. Historical backend checkpoint: 188 tests. Counts alone do not prove every critical path; see `frontend/docs/verification-status.md` for scope and remaining gates. |
 | **NFR-COST-01** | Monthly LLM spending budget & alerts | 🔶 Partial | Hard monthly token quotas active per user; organization billing webhooks not configured. |
 
 ---
@@ -269,7 +269,7 @@ Overall Progress:
 
 The published S3 base `469974e0` failed sampled narrow-viewport overflow checks
 for Dashboard, Learn, Practice, Analytics and the shared header. Local candidate
-`59e6ecf8` reflows their grids and controls, bounds popovers, and preserves existing
+`eac13c0e` reflows their grids and controls, bounds popovers, and preserves existing
 actions. Seven new structural/interaction regressions pass; they are not pixel
 layout evidence. **Rendered retest pending; not release-ready on this evidence
 alone.** See `frontend/docs/mobile-reflow.md` and the verification matrix.

@@ -56,7 +56,7 @@ The desktop browser later completed a sampled audit on published `469974e0` at
 320/375/390/768 CSS pixels. Dashboard, Learn, Practice, Analytics and the top bar
 had overflow/clipped-control findings. Settings, Tutor and Admin had no observed
 overflow in those sampled states; skip-link/drawer/Admin keyboard samples passed.
-Local `59e6ecf8` addresses layout causes and passes 555 automated frontend tests,
+Local `eac13c0e` addresses layout causes and passes 555 automated frontend tests,
 including seven new reflow-contract/interaction regressions. Its rendered retest
 is still pending. This is not a physical-device, full contrast or screen-reader
 check. See `mobile-reflow.md`.

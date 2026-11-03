@@ -1,17 +1,17 @@
 # Frontend verification status
 
-Evidence checkpoint: 2026-11-03. Published bases: team S2 `3fc50885` and stacked S3 `469974e0`. Latest local mobile-reflow candidate: `59e6ecf8`.
+Evidence checkpoint: 2026-11-03. Published bases: team S2 `3fc50885` and stacked S3 `469974e0`. Latest local mobile-reflow candidate: `eac13c0e`.
 This records observed results, not a release approval or WCAG certification.
 Historical task reports retain their original totals; use the exact commit/tree
 when comparing results. Future source changes require affected checks to rerun.
 
 ## Latest combined local result
 
-The mobile-reflow candidate `59e6ecf807f548686fe61562ce9f3ed5f469205b`
-(tree `10ff3781b633b5152445040ef08f5338dd539d72`) passed 555 frontend tests
-across 58 files, 84.04% branch coverage, lint with existing warnings, production
+The mobile-reflow candidate `eac13c0e68cbe4db28a566f28e1b927c3e00c566`
+(tree `0c6cb0e99cf9a1fd474098d6527210a322ab3b3a`) passed 555 frontend tests
+across 58 files, 84.07% branch coverage, lint with existing warnings, production
 build and four bundle checks. Initial static-import JavaScript closure measured
-165,050 gzip bytes (<250,000 gate). Five isolated actual-App/FastAPI/SQLite journeys
+165,057 gzip bytes (<250,000 gate). Five isolated actual-App/FastAPI/SQLite journeys
 passed. It fixes layout causes found in the desktop browser's narrow-viewport audit;
 rendered acceptance on this candidate remains pending. See `mobile-reflow.md`.
 No push, PR or merge is implied by this local candidate.

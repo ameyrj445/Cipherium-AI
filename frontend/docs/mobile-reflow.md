@@ -3,7 +3,7 @@
 ## Evidence and scope
 
 Published S3 base: `469974e037a2e2155fce655b6c46449cc9cceca6`.
-Candidate: `59e6ecf807f548686fe61562ce9f3ed5f469205b`.
+Candidate: `eac13c0e68cbe4db28a566f28e1b927c3e00c566`.
 Date: 2026-11-03. Frontend only; no backend, database, authentication or API changes.
 
 The desktop-browser audit used isolated mocked data and responsive widths
@@ -26,16 +26,18 @@ The desktop-browser audit used isolated mocked data and responsive widths
   Analytics triage actions wrap without removing their callbacks or accessible names.
 - Header search can shrink. Narrow screens retain the drawer, search, notification
   and account controls while omitting duplicate breadcrumbs and visible account name.
-- Search/notification panels fit the narrow viewport and available screen height.
+- Profile-menu names wrap even when they contain a long unbroken string.
+- Search/notification panels fit the narrow viewport and available screen height
+  below 768px, including intermediate 640px widths with long account names.
   Search results remain aligned to the search control on wider screens.
 
 ## Automated result on candidate
 
-- 555 tests in 58 files pass; inclusive branch coverage 84.04%.
+- 555 tests in 58 files pass; inclusive branch coverage 84.07%.
 - Seven new tests protect grid opt-in, four small-width statistic fixtures,
   Practice-mode interactions and long-account-name header actions.
 - Lint passes with existing warnings. Production build and four bundle checks pass;
-  initial static-import JavaScript closure 165,050 gzip bytes (<250,000).
+  initial static-import JavaScript closure 165,057 gzip bytes (<250,000).
 - Five actual-App journeys pass against isolated real FastAPI/SQLite with external
   providers disabled. No user database is accessed by that harness.
 - `git diff --check` passes.
@@ -49,7 +51,8 @@ rendered-mobile pass, remote CI result or WCAG conformance claim.
   Analytics and header at 320/375/390/768; desktop smoke at 1280+.
 - No unintended horizontal page overflow or clipped controls; real clicks on
   Practice and Learn actions still navigate as expected.
-- Open search with/without results and notifications at 320; all panel edges and
+- Open search with/without results and notifications at 320 and 640; type, clear
+  and select a result; all panel edges and
   close/dismiss interactions remain reachable. Test a long account name.
 - Retain skip-link order, drawer focus trap/Escape/return focus and focus visibility.
 - Recheck Settings/Tutor/Admin to catch shared-container regressions.
