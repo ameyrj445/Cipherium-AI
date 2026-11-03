@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { open, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -12,7 +13,8 @@ const log = (await open(logPath, 'wx')).createWriteStream();
 const testLog = (await open(testLogPath, 'wx')).createWriteStream();
 let logError;
 for (const stream of [log, testLog]) stream.on('error', error => { logError ??= error; });
-const python = process.env.INTEGRATION_PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+const venvPython = path.resolve(frontend, '..', 'backend', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+const python = process.env.INTEGRATION_PYTHON || (existsSync(venvPython) ? venvPython : (process.platform === 'win32' ? 'python' : 'python3'));
 let backend;
 let tests;
 let stopping;
