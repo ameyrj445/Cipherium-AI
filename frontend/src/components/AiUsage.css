@@ -1,0 +1,6 @@
+.ai-usage { padding: 1rem; border: 1px solid var(--border-stroke); border-radius: 12px; background: var(--bg-surface); min-width: 0; overflow-wrap: anywhere; }
+.ai-usage h3 { margin: 0 0 .6rem; color: var(--text-primary); }
+.ai-usage p { margin: .4rem 0; color: var(--text-secondary); font-size: .875rem; line-height: 1.5; }
+.ai-usage progress { display: block; width: 100%; height: .75rem; accent-color: #dcbf52; }
+.ai-usage .ai-usage__warning { color: #f4d66c; }
+.ai-usage--compact { margin: .5rem 1rem; border-color: #8e7529; }

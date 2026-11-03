@@ -103,3 +103,11 @@ mobile device behavior or WCAG conformance.
 ## Narrow-card correction checkpoint
 
 Actual narrow-viewport PC QA found the previous above-trigger tooltip overlapped rating controls at 320/390/768 widths, without horizontal overflow. The correction places the tooltip in normal document flow below its trigger. All automated gates above were rerun on the corrected product tree; browser rechecking of those widths remains pending. The new CSS/DOM test verifies normal-flow declarations and ordering, not measured browser geometry.
+
+## AI quota frontend preparation (2026-11-03)
+
+S3-1 now has fixture-tested presentation and exact server-quota-rejection handling.
+Production settings remain **Usage unavailable**, with no synthetic percentage or
+reset date. No fixture is wired into App or enabled by configuration. Live meter,
+90% proactive warning and metadata-driven reset remain backend-blocked; see
+`ai-quota.md`. This addition does not close those acceptance requirements.

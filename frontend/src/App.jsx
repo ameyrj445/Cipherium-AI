@@ -1,3 +1,4 @@
+import { UNAVAILABLE_QUOTA, CONFIRMED_EXHAUSTED_QUOTA } from './utils/aiQuota';
 /**
  * Cipherium AI - Primary Application Root & Dynamic Router
  *
@@ -76,6 +77,8 @@ export default function App() {
 
   const [chatInput, setChatInput] = useState('');
   const conversations = useTutorConversations(token);
+  // Do not trust the current settings API quota defaults. No production fixture toggle.
+  const quota = conversations.quotaExceeded ? CONFIRMED_EXHAUSTED_QUOTA : UNAVAILABLE_QUOTA;
   const { messages: chatMessages, thinking: tutorThinking, topicId: tutorTopicId, setTopicId: setTutorTopicId } = conversations;
 
   // Diagnostic Quiz / Practice State
@@ -344,7 +347,7 @@ export default function App() {
   // Conversation requests are session-bound and invalidate on thread switches.
   const handleSendChat = async (e) => {
     e?.preventDefault?.();
-    if (!chatInput.trim() || tutorThinking || conversations.loadingMessages || conversations.blocked || conversations.activeId === 'legacy') return;
+    if (quota.exhausted || !chatInput.trim() || tutorThinking || conversations.loadingMessages || conversations.blocked || conversations.activeId === 'legacy') return;
     const text = chatInput;
     setChatInput('');
     await conversations.send(text, tutorMode);
@@ -718,6 +721,7 @@ export default function App() {
 
         {activeNav === 'AI Tutor' && (
           <TutorPanel
+            quota={quota}
             aiModel={aiModel}
             setAiModel={setAiModel}
             tutorMode={tutorMode}
@@ -743,6 +747,7 @@ export default function App() {
 
         {activeNav === 'Settings' && (
           <SettingsView
+            quota={quota}
             user={user}
             aiModel={aiModel}
             setAiModel={setAiModel}

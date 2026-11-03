@@ -1,3 +1,4 @@
+import AiUsage from './AiUsage';
 import React, { useState, useEffect } from 'react';
 import {
   User, Brain, Bell, ShieldCheck, RefreshCw,
@@ -17,6 +18,7 @@ import { settingsAPI, geminiAPI } from '../services/api';
  * to persist learner preferences, AI engine hyperparameters, and security controls.
  */
 export default function SettingsView({
+  quota,
   user = null,
   aiModel = 'gemini-2.5-flash',
   setAiModel = () => {},
@@ -177,6 +179,7 @@ export default function SettingsView({
       >
         {/* Column 1: Academic Profile & AI Engine */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <AiUsage quota={quota} />
           {/* 1. Academic & Student Profile */}
           <SettingSection
             icon={User}

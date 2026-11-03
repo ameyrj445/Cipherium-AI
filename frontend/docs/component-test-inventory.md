@@ -55,6 +55,8 @@ This is a source/test audit, not a claim of visual browser coverage. Test names 
 | layout/StickyRail.jsx | LayoutResponsiveCoverage.test.jsx | N/A — synchronous props/interaction only; no loading state |
 | layout/TwoPaneLayout.jsx | LayoutResponsiveCoverage.test.jsx | N/A — synchronous props/interaction only; no loading state |
 
+| AiUsage.jsx | AiUsage.test.jsx; AiQuotaApp.test.jsx | N/A — synchronous prepared presentation; explicit unavailable state tested, no live quota request |
+
 ## Limitations
 
 - AnalyticsFullView initiates auxiliary requests and maintains an internal loading flag, but does not render an explicit loading indicator. The test asserts it safely renders while requests remain pending; this is not equivalent to a visible loading-state UX.

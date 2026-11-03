@@ -1,9 +1,10 @@
+import { isMonthlyQuotaError } from '../utils/aiQuota';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { tutorAPI } from '../services/api';
 
 const PAGE_SIZE = 20;
 const empty = (token) => ({ token, items: [], activeId: 'legacy', messages: [], topicId: null,
-  listLoading: false, listError: '', hasMore: false, loadingMessages: false, error: '', creating: false, thinking: false, blocked: false });
+  quotaExceeded: false, listLoading: false, listError: '', hasMore: false, loadingMessages: false, error: '', creating: false, thinking: false, blocked: false });
 const validId = (id) => Number.isSafeInteger(id) && id > 0;
 const mapMessages = (rows) => rows.filter((m) => m && ['user', 'assistant'].includes(m.role)).map((m) => ({
   id: m.id, role: m.role, text: m.message || '', created_at: m.created_at,
@@ -109,7 +110,7 @@ export function useTutorConversations(token) {
   const send = useCallback(async (text, mode = 'socratic') => {
     text = text.trim();
     const s = current.current;
-    if (!text || !session.current || s.thinking || s.creating || s.loadingMessages || s.blocked || !validId(s.activeId)) return false;
+    if (!text || !session.current || s.quotaExceeded || s.thinking || s.creating || s.loadingMessages || s.blocked || !validId(s.activeId)) return false;
     const expected = session.current;
     const request = ++generation.current;
     const controller = new AbortController();
@@ -136,10 +137,17 @@ export function useTutorConversations(token) {
       update({ thinking: false });
       void list();
     };
+    const quotaFailure = (error) => {
+      if (!isCurrent() || received || !isMonthlyQuotaError(error)) return false;
+      // An explicit pre-stream quota rejection did not save this outgoing turn.
+      update({ thinking: false, quotaExceeded: true, messages: previous, error: '' });
+      return true;
+    };
     const fail = async (error) => {
       if (!isCurrent() || settled) return;
       settled = true;
       clearTimeout(streamTimer.current);
+      if (quotaFailure(error)) return;
       // Only an explicit unsupported endpoint can be safely retried through the
       // non-streaming route. A broken connection may already have saved a turn.
       if (!received && [404, 405, 501].includes(error?.status)) {
@@ -155,7 +163,10 @@ export function useTutorConversations(token) {
           update({ thinking: false });
           void list();
           return;
-        } catch { /* Ambiguous fallback failure is not retried. */ }
+        } catch (fallbackError) {
+          if (quotaFailure(fallbackError)) return;
+          /* Ambiguous fallback failure is not retried. */
+        }
       }
       if (isCurrent()) {
         answer({ streaming: false });

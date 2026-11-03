@@ -273,3 +273,5 @@ for Dashboard, Learn, Practice, Analytics and the shared header. Local candidate
 actions. Seven new structural/interaction regressions pass; they are not pixel
 layout evidence. **Rendered retest pending; not release-ready on this evidence
 alone.** See `frontend/docs/mobile-reflow.md` and the verification matrix.
+
+| S3-1 AI usage (`feat/sarvesh-s3`) | Sarvesh | **Frontend-prepared / backend-blocked:** fixture-tested bar, 90% warning, 100% send lock and reset display. Production deliberately shows unavailable; only a specific server quota rejection can set exhausted for the current login. | No production default numbers or invented reset date. Live activation awaits authoritative usage/reset contract. See `frontend/docs/ai-quota.md`. Unit/fixture tests are not live quota acceptance; browser/mobile, remote CI and team review remain separate gates. |
