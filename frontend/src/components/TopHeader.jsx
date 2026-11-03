@@ -218,7 +218,7 @@ export default function TopHeader({
               }}
             >
               <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border-stroke, #2D2D35)' }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#F3F4F6' }}>{userName}</div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#F3F4F6', overflowWrap: 'anywhere' }}>{userName}</div>
                 <div style={{ fontSize: '0.72rem', color: '#9CA3AF', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {userEmail || 'student@cipherium.ai'}
                 </div>

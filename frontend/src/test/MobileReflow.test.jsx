@@ -60,6 +60,7 @@ describe('mobile reflow contracts', () => {
     expect(search).toHaveValue('');
     fireEvent.click(screen.getByRole('button', { name: 'User profile menu' }));
     expect(screen.getByRole('button', { name: 'Sign Out' })).toBeInTheDocument();
+    expect(screen.getAllByText('LongAccountName'.repeat(12)).some(node => node.style.overflowWrap === 'anywhere')).toBe(true);
     expect(css).toMatch(/\.global-search input\s*{ min-width: 0; }/);
     expect(css).toMatch(/\.notification-panel\s*{[^}]*position: fixed !important;/);
   });
