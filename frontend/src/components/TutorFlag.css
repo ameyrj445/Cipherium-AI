@@ -1,0 +1,20 @@
+.tutor-flag { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .8rem; }
+.tutor-flag button, .tutor-flag-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border-stroke, #454550); border-radius: 8px; background: var(--bg-shell, #161618); color: var(--text-primary, #f3f4f6); font: inherit; cursor: pointer; }
+.tutor-flag button:focus-visible, .tutor-flag-dialog button:focus-visible, .tutor-flag-dialog textarea:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 3px; }
+.tutor-flag-overlay { position: fixed; inset: 0; z-index: 1200; background: rgb(0 0 0 / .7); display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.tutor-flag-dialog { box-sizing: border-box; width: 100%; max-width: 520px; max-height: calc(100dvh - 40px); overflow-y: auto; border: 1px solid var(--border-stroke, #454550); border-radius: 10px; padding: 20px; background: var(--bg-surface, #1e1e22); color: var(--text-primary, #f3f4f6); font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
+.tutor-flag-dialog header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.tutor-flag-dialog header button { flex-shrink: 0; width: 44px; }
+.tutor-flag-dialog h2 { margin: 8px 0; font-size: 1.15rem; }
+.tutor-flag-dialog p { margin: 12px 0; }
+.tutor-flag-dialog label { display: block; margin: 16px 0 8px; font-weight: 600; }
+.tutor-flag-dialog textarea { box-sizing: border-box; display: block; width: 100%; resize: vertical; min-height: 100px; padding: 10px 12px; border: 1px solid var(--border-stroke, #454550); border-radius: 8px; background: var(--bg-shell, #161618); color: inherit; font: inherit; }
+.tutor-flag-dialog .tutor-flag-count { margin-top: 6px; color: var(--text-secondary, #9ca3af); font-size: .75rem; }
+.tutor-flag [role="alert"], .tutor-flag-dialog [role="alert"] { color: #fca5a5; }
+.tutor-flag-dialog footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.tutor-flag-dialog .tutor-flag-submit { background: #4338ca; border-color: #818cf8; color: white; }
+.tutor-flag-dialog button:disabled { cursor: default; opacity: .65; }
+@media (max-width: 480px) {
+  .tutor-flag-overlay { padding: 12px; }
+  .tutor-flag-dialog { padding: 16px; max-height: calc(100dvh - 24px); }
+}

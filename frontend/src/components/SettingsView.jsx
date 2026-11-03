@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  User, Brain, Bell, ShieldCheck, Download, RefreshCw,
+  User, Brain, Bell, ShieldCheck, RefreshCw,
   LogOut, Eye, EyeOff, CheckCircle2
 } from 'lucide-react';
 import SettingSection from './common/SettingSection';
+import DeleteAccountSection from './common/DeleteAccountSection';
+import DataExport from './DataExport';
 import ToggleSwitch from './common/ToggleSwitch';
 import PageContainer from './layout/PageContainer';
 import PageHeader from './layout/PageHeader';
@@ -20,7 +22,8 @@ export default function SettingsView({
   setAiModel = () => {},
   sessionExpiresAt = null,
   onLogout = () => {},
-  customPlan = null,
+  onDeleteAccount,
+  deletionPending = false,
 }) {
   const storageKey = user?.email ? `cipherium_settings_${user.email}` : 'cipherium_settings_default';
 
@@ -118,36 +121,6 @@ export default function SettingsView({
   };
 
 
-  // Export Learning Telemetry as JSON
-  const handleExportData = () => {
-    const telemetry = {
-      user: {
-        name: user?.name || 'Student',
-        email: user?.email || '',
-        exportedAt: new Date().toISOString(),
-      },
-      settings: profile,
-      activeModel: aiModel,
-      activePlan: customPlan ? {
-        subject: customPlan.subject,
-        skillLevel: customPlan.skill_level,
-        durationWeeks: customPlan.duration_weeks,
-        completedHours: customPlan.completed_hours,
-      } : null,
-      platform: 'Cipherium AI v2.0',
-    };
-
-    const blob = new Blob([JSON.stringify(telemetry, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cipherium_telemetry_${(user?.email || 'student').split('@')[0]}_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   // Safely refresh cached progress without dropping auth
   const handleRefreshCache = () => {
     try {
@@ -197,7 +170,7 @@ export default function SettingsView({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))',
           gap: '24px',
           alignItems: 'start',
         }}
@@ -530,26 +503,10 @@ export default function SettingsView({
                 </button>
               </div>
 
-              {/* Telemetry Actions */}
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={handleExportData}
-                  className="btn btn-primary"
-                  style={{
-                    fontSize: '0.78rem',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Download size={14} />
-                  <span>Export Telemetry (.JSON)</span>
-                </button>
+              <DataExport />
 
+              {/* Cache Actions */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   onClick={handleRefreshCache}
@@ -570,6 +527,7 @@ export default function SettingsView({
               </div>
             </div>
           </SettingSection>
+          <DeleteAccountSection key={user?.id || user?.email || 'guest'} user={user} onLogout={onLogout} onDeleteAccount={onDeleteAccount} deletionPending={deletionPending} />
         </div>
       </div>
     </PageContainer>

@@ -1,4 +1,6 @@
 import React from 'react';
+import RecommendationFeedback from '../RecommendationFeedback';
+import { canRateRecommendation } from '../../hooks/useRecommendationFeedback';
 import {
   ExternalLink, Clock, Play, FileText, Code2, BookOpen,
   CheckCircle2, Circle, Sparkles
@@ -56,6 +58,7 @@ export default function ResourceCard({
   isCompleted = false,
   compact = false,
   showAiReason = true,
+  recommendationFeedback = null,
 }) {
   if (!resource) return null;
 
@@ -63,6 +66,11 @@ export default function ResourceCard({
   const typeConfig = getTypeConfig(resource.resource_type || resource.type);
   const TypeIcon = typeConfig.icon;
   const completed = isCompleted || !!resource.completed;
+  // Dim only a confirmed rating from this authenticated session, never a
+  // pending request, rejected write, or ambiguous network outcome.
+  const rated = Boolean(recommendationFeedback?.authenticated
+    && canRateRecommendation(resource.feedbackTargetId)
+    && recommendationFeedback.entries.get(resource.feedbackTargetId)?.status === 'success');
 
   // Contextual AI matching explanation
   const aiReason = resource.recommendation_reason ||
@@ -83,15 +91,19 @@ export default function ResourceCard({
 
   return (
     <div
-      className="ui-card"
+      className={`ui-card resource-card${rated ? ' resource-card--rated' : ''}`}
       style={{
         padding: compact ? '16px' : '22px',
+        minWidth: 0,
+        overflowWrap: 'anywhere',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         borderRadius: '14px',
         border: completed ? '1px solid rgba(16, 185, 129, 0.4)' : resource.isFromPlan ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid var(--border-stroke, #2D2D35)',
-        background: completed ? 'rgba(16, 185, 129, 0.04)' : 'var(--bg-surface, #1E1E22)',
+        // Darken the card surface, not its text or controls: opacity would
+        // lower contrast and make a still-usable resource look disabled.
+        background: rated ? 'linear-gradient(rgba(0, 0, 0, .24), rgba(0, 0, 0, .24)), var(--bg-surface, #1E1E22)' : completed ? 'rgba(16, 185, 129, 0.04)' : 'var(--bg-surface, #1E1E22)',
         transition: 'border-color 0.2s ease, transform 0.2s ease',
         textAlign: 'left',
       }}
@@ -204,6 +216,7 @@ export default function ResourceCard({
           borderTop: '1px solid var(--border-stroke, #2D2D35)',
           marginTop: '6px',
           gap: '8px',
+          flexWrap: 'wrap',
         }}
       >
         {onToggleComplete ? (
@@ -251,6 +264,7 @@ export default function ResourceCard({
           <ExternalLink size={12} />
         </a>
       </div>
+      <RecommendationFeedback targetId={resource.feedbackTargetId} title={resource.title} feedback={recommendationFeedback} />
     </div>
   );
 }

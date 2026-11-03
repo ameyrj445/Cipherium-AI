@@ -9,9 +9,9 @@ import EmptyState from './layout/EmptyState';
 /**
  * Production-ready curated educational library view.
  * Uses PageContainer, 220px sticky FilterSidebar, search bar with count indicator,
- * and a responsive repeat(auto-fill, minmax(300px, 1fr)) card grid.
+ * and a responsive repeat(auto-fill, minmax(min(300px, 100%), 1fr)) card grid.
  */
-export default function ResourcesFullView({ recommendations = [], customPlan = null }) {
+export default function ResourcesFullView({ recommendations = [], customPlan = null, recommendationFeedback = null }) {
   const [selectedFilters, setSelectedFilters] = useState({
     type: 'All',
     difficulty: 'All',
@@ -49,6 +49,7 @@ export default function ResourcesFullView({ recommendations = [], customPlan = n
   const allResources = useMemo(() => {
     const diagnosticList = recommendations.map((r) => ({
       ...r,
+      feedbackTargetId: r.id,
       isFromPlan: false,
       recommendation_reason: r.recommendation_reason ||
         (r.topic_name ? `Recommended because recent diagnostic questions identified gaps in ${r.topic_name}.` : 'Curated for your current skill level.'),
@@ -355,20 +356,21 @@ export default function ResourcesFullView({ recommendations = [], customPlan = n
             </div>
           </div>
 
-          {/* Wider Resource Cards Grid: repeat(auto-fill, minmax(300px, 1fr)) */}
+          {/* Wider Resource Cards Grid: repeat(auto-fill, minmax(min(300px, 100%), 1fr)) */}
           {filtered.length > 0 ? (
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))',
                 gap: '20px',
               }}
             >
               {filtered.map((resource, idx) => (
                 <ResourceCard
-                  key={resource.id || idx}
+                  key={`${resource.isFromPlan ? 'plan' : 'recommendation'}-${resource.id || idx}`}
                   resource={resource}
                   showAiReason
+                  recommendationFeedback={recommendationFeedback}
                 />
               ))}
             </div>

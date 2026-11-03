@@ -103,7 +103,7 @@ Overall Progress:
 | **FR-REC-01b** | P0 | Filter out topics with unmet hard prerequisites | ✅ Implemented | Recommendations respect DAG dependency states and normalized prerequisite links. |
 | **FR-REC-02** | P0 | Explainable recommendation reasoning | ✅ Implemented | `recommendation_reason` dynamically generated in `ResourceResponse`. |
 | **FR-REC-03** | P1 | Dynamic difficulty staircase adaptation | ✅ Implemented | $\ge 85\%$ accuracy steps difficulty up $+1$; $< 50\%$ steps difficulty down $-1$. |
-| **FR-REC-04** | P1 | Explicit learner feedback (`too_easy`, `too_hard`, `not_relevant`) | ✅ Implemented | `POST /feedback` endpoint with `Feedback` ORM model supporting `rec_rating`, `tutor_flag`, and `bug_report`. |
+| **FR-REC-04** | P1 | Explicit learner feedback (`too_easy`, `too_hard`, `not_relevant`) | ✅ Implemented | `POST /feedback` endpoint with `Feedback` ORM model supporting `tutor_rating`, `rec_rating`, `bug`, `too_easy`, `too_hard`, and `not_relevant`. |
 | **FR-REC-05** | P2 | Contextual Bandit policy (LinUCB / Thompson Sampling) | ✅ Implemented | Epsilon-greedy bandit ($\epsilon = 0.1$) in `app/services/bandit.py` with online reward updates persisted in `RecommendationArm`. |
 
 ---
@@ -156,7 +156,7 @@ Overall Progress:
 |---|:---:|---|:---:|---|
 | **FR-ADMIN-01** | P1 | Content lifecycle management (`draft`, `review`, `published`, `archived`) | ✅ Implemented | Admin Question CMS (`/admin/questions`) provides full authoring, editing, and publishing controls. |
 | **FR-ADMIN-02** | P1 | Privacy-preserving aggregated student performance metrics | ✅ Implemented | `GET /admin/overview` aggregates student counts, active sessions, quiz statistics, and tutor engagement metrics. |
-| **FR-ADMIN-03** | P1 | Flagged tutor answers & incorrect question reporting | ✅ Implemented | Handled via `POST /feedback` and admin moderation oversight. |
+| **FR-ADMIN-03** | P1 | Flagged tutor answers & incorrect question reporting | ⚠️ Partial | General issue reports use `POST /feedback` with `feedback_type: "bug"` and a comment. The optional `target_id` is omitted by the incorrect-answer modal, so reports do not provide automatic answer/question traceability. Admin feedback viewing is available; a structured moderation workflow is not verified. |
 
 ---
 
@@ -243,3 +243,13 @@ Overall Progress:
 | **Amey Sprint 2** (`feat/amey-s2`) | Amey | Vector RAG Pipeline (Chroma), Dialogue Telemetry, Dynamic Roadmap Regeneration, ML Model Benchmark Report, Token Quotas & LLM Cap | ✅ Merged |
 | **Amey Sprint 3** (`feat/amey-s3`) | Amey | API Performance Benchmarking, Review Schedule Persistence, Anti-Cheat Tutor Lock, Contextual Bandit Baseline, Topic Prerequisite Junction Table | ✅ Merged |
 | **Sarvesh Sprint 1** (`feat/sarvesh-s1`) | Sarvesh | Forgot & Reset Password UI, WCAG 2.2 Keyboard Accessibility, Scoped Error Boundary Recovery, Core View Vitest Suite Expansion | ✅ Merged |
+
+### Frontend verification notes
+
+| Task | Contributor | Implementation | Verification / remaining work |
+|---|---|---|---|
+| S2-6 conversation sidebar (`feat/sarvesh-s2`) | Sarvesh | API-backed conversation list/load-more, selection with saved message IDs, immediate New Conversation creation, conversation-scoped streaming/fallback, responsive sidebar and session-race protection. | Automated frontend tests, lint and build pass. Browser visual QA is blocked in the cloud environment; desktop/mobile visual checks and real-backend end-to-end persistence remain unverified. Independent review and team PR/merge remain separate gates. See `frontend/docs/tutor-conversations.md` for backend limits. |
+| S2-1 admin dashboard (`feat/sarvesh-s2`) | Sarvesh | Role-gated Questions / Resources / Feedback tabs; question drafts, publish/archive and authoring; resource creation; read-only all-user feedback. **Partial:** required existing-resource list/edit awaits backend endpoints. | Automated component/API checks cover role gating, payloads, validation, pagination and session/write uncertainty. Browser/mobile and real-backend transactions, CI and teammate PR/merge remain separate gates. See `frontend/docs/admin-dashboard.md`. |
+| S2-3 tutor feedback completion (local, unpublished) | Sarvesh | Saved-answer ratings plus incorrect-answer issue-report modal using `bug`/`comment`. No automatic answer linkage. | Automated/session/accessibility checks are recorded in `frontend/docs/tutor-feedback.md`. Browser QA, backend end-to-end verification, and publication remain separate gates. |
+
+| S2-5 recommendation saved-card treatment | Sarvesh | Confirmed ratings dim only the card surface, preserve resource access and provide a keyboard/hover/tap thank-you tooltip. Pending/error/ambiguous states do not look saved. | Focused regression tests cover eligibility, all choices, session changes and tooltip interactions. API mapping follows existing backend semantics; assignment `rec_rating` mapping still needs product/backend reconciliation. Browser/mobile/AT checks and team review remain separate gates. See `frontend/docs/recommendation-feedback.md`. |

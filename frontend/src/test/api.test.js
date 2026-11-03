@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import api, {
+  authAPI,
   startSession,
   getStoredSession,
   endSession,
   setSessionToken,
+  profileAPI,
+  feedbackAPI,
 } from '../services/api';
 
 describe('Centralized API & Session Management Service', () => {
@@ -11,6 +14,12 @@ describe('Centralized API & Session Management Service', () => {
     localStorage.clear();
     setSessionToken('');
     vi.restoreAllMocks();
+  });
+
+  it('deletes the current account through the authenticated API client', async () => {
+    const request = vi.spyOn(api, 'delete').mockResolvedValue({ data: {} });
+    await authAPI.deleteAccount();
+    expect(request).toHaveBeenCalledExactlyOnceWith('/me');
   });
 
   it('startSession correctly persists token, user, and future expiresAt timestamp', () => {
@@ -79,5 +88,37 @@ describe('Centralized API & Session Management Service', () => {
     const transformed = handler(mockConfig);
 
     expect(transformed.headers.Authorization).toBeUndefined();
+  });
+});
+
+
+describe('Profile export transport', () => {
+  it.each(['json', 'csv'])('requests %s with a bounded timeout and matching response type', async (format) => {
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ data: {} });
+    await profileAPI.exportData(format);
+    expect(get).toHaveBeenCalledWith(`/me/export?format=${format}`, {
+      responseType: format === 'json' ? 'json' : 'blob',
+      timeout: 60000,
+    });
+    get.mockRestore();
+  });
+});
+
+
+describe('Feedback session binding', () => {
+  it('rejects a queued request after the active login changes', () => {
+    setSessionToken('new-login');
+    const handler = api.interceptors.request.handlers[0].fulfilled;
+    expect(() => handler({ headers: {}, expectedSessionToken: 'old-login' })).toThrow('feedback session has changed');
+    expect(handler({ headers: {}, expectedSessionToken: 'new-login' }).headers.Authorization).toBe('Bearer new-login');
+  });
+  it('passes the captured login through both feedback requests', () => {
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ data: [] });
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} });
+    feedbackAPI.getMyFeedback({ limit: 100 }, 'bound-login');
+    feedbackAPI.submit({ target_id: 731, rating: 1 }, 'bound-login');
+    expect(get).toHaveBeenCalledWith('/feedback/my', { params: { limit: 100 }, expectedSessionToken: 'bound-login', timeout: 15000 });
+    expect(post).toHaveBeenCalledWith('/feedback', { target_id: 731, rating: 1 }, { expectedSessionToken: 'bound-login', timeout: 15000 });
+    vi.restoreAllMocks();
   });
 });

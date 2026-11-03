@@ -12,6 +12,7 @@ import PageContainer from './layout/PageContainer';
 import PageHeader from './layout/PageHeader';
 import FlashFixCard from './common/FlashFixCard';
 import ActivityHeatmap from './ActivityHeatmap';
+import MasteryTimeline from './MasteryTimeline';
 import CompetencyRadarChart from './CompetencyRadarChart';
 
 const totalsFor = (plans) =>
@@ -212,6 +213,7 @@ export default function AnalyticsFullView({
       {/* ── TAB 1: CURRICULUM MASTERY & AI DIAGNOSTICS ── */}
       {activeTab === 'mastery' && (
         <>
+          <MasteryTimeline topics={analytics?.topics} />
           {/* Top KPI Cards (Full width row across all 12 columns) */}
           <div
             style={{

@@ -9,8 +9,10 @@
  *   - Wraps the entire component tree in an Error Boundary for crash resilience.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { authAPI, quizAPI, analyticsAPI, tutorAPI, tasksAPI, getStoredSession, startSession, endSession } from './services/api';
+import { useTutorConversations } from './hooks/useTutorConversations';
+import useAccountDeletion from './hooks/useAccountDeletion';
+import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+import { authAPI, quizAPI, analyticsAPI, tasksAPI, getStoredSession, startSession, endSession } from './services/api';
 
 // Error Boundary & Modular Components
 import ErrorBoundary from './components/ErrorBoundary';
@@ -34,15 +36,22 @@ import AnalyticsFullView from './components/AnalyticsFullView';
 import ResourcesFullView from './components/ResourcesFullView';
 import StudyPlanView from './components/StudyPlanView';
 import SettingsView from './components/SettingsView';
+import AdminView from './components/AdminView';
 import KnowledgeGraphView from './components/KnowledgeGraphView';
 import RetentionScheduleCard from './components/RetentionScheduleCard';
 
+import { useRecommendationFeedback } from './hooks/useRecommendationFeedback';
+import { useTutorFeedback } from './hooks/useTutorFeedback';
 import { useDocumentMetadata } from './hooks/useDocumentMetadata';
 
 export default function App() {
   // Session & Auth
   const [restoredSession] = useState(() => getStoredSession());
   const [token, setToken] = useState(restoredSession?.token || '');
+  const sessionRef = useRef(token);
+  useLayoutEffect(() => { sessionRef.current = token; }, [token]);
+  const feedback = useTutorFeedback(token);
+  const recommendationFeedback = useRecommendationFeedback(token);
   const [user, setUser] = useState(restoredSession?.user || null);
   const [sessionExpiresAt, setSessionExpiresAt] = useState(restoredSession?.expiresAt || null);
   const [showAuthModal, setShowAuthModal] = useState(!restoredSession);
@@ -65,8 +74,14 @@ export default function App() {
   const recoveryMode = recoveryLocation.path === '/reset-password' ? 'reset' : recoveryLocation.path === '/forgot-password' ? 'forgot' : null;
   const resetToken = recoveryMode === 'reset' ? new URLSearchParams(recoveryLocation.search).get('token') : null;
 
+  const [chatInput, setChatInput] = useState('');
+  const conversations = useTutorConversations(token);
+  const { messages: chatMessages, thinking: tutorThinking, topicId: tutorTopicId, setTopicId: setTutorTopicId } = conversations;
+
   // Define session expiration handler before useEffect to satisfy temporal ordering
   const endInvalidSession = useCallback(() => {
+    sessionRef.current = '';
+    setChatInput('');
     endSession();
     setToken('');
     setUser(null);
@@ -120,30 +135,7 @@ export default function App() {
   // AI Tutor State
   const [aiModel, setAiModel] = useState('gemini-2.5-flash');
   const [tutorMode, setTutorMode] = useState('socratic'); // 'socratic' | 'direct' | 'exam_prep'
-  const [tutorTopicId, setTutorTopicId] = useState(null);
-  const [chatInput, setChatInput] = useState('');
-  const [tutorThinking, setTutorThinking] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    {
-      role: 'user',
-      text: 'Can you explain how binary search works with a visual example?'
-    },
-    {
-      role: 'assistant',
-      isCustomCard: true,
-      text: 'Sure! Binary search is an efficient algorithm to find an element in a sorted array. It repeatedly divides the search interval in half.',
-      array: [2, 5, 8, 12, 16, 23, 38],
-      highlightIndex: 3,
-      steps: [
-        '1. Start with low = 0, high = 6',
-        '2. Find the middle element: (0 + 6) / 2 = 3',
-        '3. Compare 12 with the middle element',
-        '4. If equal -> element found!'
-      ],
-      timeComp: 'O(log n)',
-      spaceComp: 'O(1)'
-    }
-  ]);
+  const clearChat = () => { conversations.newConversation(topics.find((topic) => topic.id === tutorTopicId)?.name || 'General'); setChatInput(''); };
 
   // Today's Plan Checklist
   const [todayTasks, setTodayTasks] = useState([
@@ -160,12 +152,15 @@ export default function App() {
 
   // Load user data whenever token changes
   const loadUserData = useCallback(async () => {
+    const requestSession = token;
+    if (!requestSession) return;
     try {
       // Confirm a restored token before allowing plan generation or other
       // authenticated actions to be shown.
       const profileRes = await authAPI.getProfile();
+      if (sessionRef.current !== requestSession) return;
       if (profileRes.data) setUser(profileRes.data);
-      const [topRes, anaRes, recRes, roadRes, planRes, plansRes, tasksRes, historyRes] = await Promise.all([
+      const [topRes, anaRes, recRes, roadRes, planRes, plansRes, tasksRes] = await Promise.all([
         quizAPI.getTopics().catch(() => ({ data: [] })),
         analyticsAPI.getMastery().catch(() => ({ data: null })),
         analyticsAPI.getRecommendations().catch(() => ({ data: [] })),
@@ -173,8 +168,8 @@ export default function App() {
         analyticsAPI.getCurrentPlan().catch(() => null),
         analyticsAPI.getCustomPlans().catch(() => ({ data: [] })),
         tasksAPI.getTodayTasks().catch(() => ({ data: [] })),
-        tutorAPI.getHistory(30).catch(() => ({ data: [] })),
       ]);
+      if (sessionRef.current !== requestSession) return;
       if (topRes.data) setTopics(topRes.data);
       if (anaRes.data) setAnalytics(anaRes.data);
       if (recRes.data) setRecommendations(recRes.data);
@@ -187,13 +182,6 @@ export default function App() {
           done: !!t.is_done,
         })));
       }
-      if (Array.isArray(historyRes.data) && historyRes.data.length > 0) {
-        setChatMessages(historyRes.data.map((msg) => ({
-          role: msg.role,
-          text: msg.message,
-          created_at: msg.created_at,
-        })));
-      }
       const savedPlans = Array.isArray(plansRes.data) && plansRes.data.length
         ? plansRes.data
         : JSON.parse(localStorage.getItem(plansStorageKey) || '[]');
@@ -202,10 +190,11 @@ export default function App() {
       const currentPlan = savedPlans.find((plan) => plan.id === planRes?.data?.id) || savedPlans[0] || planRes?.data || null;
       setCustomPlan(currentPlan);
     } catch (err) {
+      if (sessionRef.current !== requestSession) return;
       console.error('Initialization error:', err);
       if (err.response?.status === 401) endInvalidSession();
     }
-  }, [endInvalidSession, plansStorageKey, cachePlans]);
+  }, [token, endInvalidSession, plansStorageKey, cachePlans]);
 
   useEffect(() => {
     if (token) {
@@ -247,6 +236,8 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    sessionRef.current = '';
+    setChatInput('');
     endSession();
     setToken('');
     setSessionExpiresAt(null);
@@ -261,6 +252,8 @@ export default function App() {
     setSelectedTopicId(null);
     setShowAuthModal(false);
   };
+
+  const { deleteAccount, deletionPending } = useAccountDeletion(token, handleLogout);
 
   // Custom Study Plan Handlers
   const handleGenerateCustomPlan = async (planConfig) => {
@@ -338,105 +331,13 @@ export default function App() {
   // Only the plan deliberately added to Learn drives plan-specific surfaces.
   const learningPlan = customPlan?.is_added_to_learn ? customPlan : null;
 
-  // AI Tutor Chat
+  // Conversation requests are session-bound and invalidate on thread switches.
   const handleSendChat = async (e) => {
     e?.preventDefault?.();
-    if (!chatInput.trim() || tutorThinking) return;
-
-    const userMsg = chatInput.trim();
-    const currentMode = tutorMode || 'socratic';
-    const updated = [...chatMessages, { role: 'user', text: userMsg }];
-    setChatMessages(updated);
+    if (!chatInput.trim() || tutorThinking || conversations.loadingMessages || conversations.blocked || conversations.activeId === 'legacy') return;
+    const text = chatInput;
     setChatInput('');
-    setTutorThinking(true);
-
-    const streamingIndex = updated.length;
-    // Add placeholder assistant message in streaming state
-    setChatMessages([
-      ...updated,
-      {
-        role: 'assistant',
-        text: '',
-        mode: currentMode,
-        streaming: true,
-      },
-    ]);
-
-    let accumulatedText = '';
-
-    await tutorAPI.streamMessage(
-      {
-        message: userMsg,
-        topic_id: tutorTopicId || undefined,
-        mode: currentMode,
-      },
-      (chunk) => {
-        accumulatedText += chunk;
-        setChatMessages((prev) => {
-          const next = [...prev];
-          if (next[streamingIndex]) {
-            next[streamingIndex] = {
-              ...next[streamingIndex],
-              text: accumulatedText,
-              mode: currentMode,
-              streaming: true,
-            };
-          }
-          return next;
-        });
-      },
-      (donePayload) => {
-        setChatMessages((prev) => {
-          const next = [...prev];
-          if (next[streamingIndex]) {
-            next[streamingIndex] = {
-              ...next[streamingIndex],
-              text: accumulatedText,
-              mode: donePayload?.mode || currentMode,
-              streaming: false,
-              suggested_resources: donePayload?.suggested_resources || [],
-            };
-          }
-          return next;
-        });
-        setTutorThinking(false);
-      },
-      async (err) => {
-        console.warn('Streaming error, falling back to standard API:', err);
-        try {
-          const res = await tutorAPI.sendMessage({
-            message: userMsg,
-            topic_id: tutorTopicId || undefined,
-            mode: currentMode,
-          });
-          setChatMessages((prev) => {
-            const next = [...prev];
-            next[streamingIndex] = {
-              role: 'assistant',
-              text: res.data.response,
-              mode: res.data.mode || currentMode,
-              streaming: false,
-              suggested_resources: res.data.suggested_resources || [],
-            };
-            return next;
-          });
-        } catch (fallbackErr) {
-          console.error('Tutor chat fallback error:', fallbackErr);
-          setChatMessages((prev) => {
-            const next = [...prev];
-            next[streamingIndex] = {
-              role: 'assistant',
-              text: "I'm synthesizing an answer using syllabus and RAG notes...",
-              mode: currentMode,
-              streaming: false,
-            };
-            return next;
-          });
-        } finally {
-          setTutorThinking(false);
-        }
-      }
-    );
+    await conversations.send(text, tutorMode);
   };
 
   // Practice & Quiz Handler
@@ -671,6 +572,8 @@ export default function App() {
               />
 
               <RecommendedPanel
+                recommendations={recommendations}
+                recommendationFeedback={recommendationFeedback}
                 customPlan={learningPlan}
                 activeResourceFilter={activeResourceFilter}
                 setActiveResourceFilter={setActiveResourceFilter}
@@ -758,6 +661,7 @@ export default function App() {
 
         {activeNav === 'Resources' && (
           <ResourcesFullView
+            recommendationFeedback={recommendationFeedback}
             recommendations={recommendations}
             customPlan={learningPlan}
           />
@@ -770,6 +674,7 @@ export default function App() {
             tutorMode={tutorMode}
             setTutorMode={setTutorMode}
             chatMessages={chatMessages}
+            feedback={feedback}
             chatInput={chatInput}
             setChatInput={setChatInput}
             handleSendChat={handleSendChat}
@@ -777,9 +682,14 @@ export default function App() {
             topics={topics}
             tutorTopicId={tutorTopicId}
             setTutorTopicId={setTutorTopicId}
-            onClearHistory={() => setChatMessages([])}
+            onClearHistory={clearChat}
+            conversations={{ ...conversations, select: (id) => { setChatInput(''); conversations.select(id); }, showLegacy: () => { setChatInput(''); conversations.showLegacy(); } }}
             embedded
           />
+        )}
+
+        {activeNav === 'Admin' && (
+          <AdminView key={`${token}:${user?.role}`} user={user} token={token} topics={topics} />
         )}
 
         {activeNav === 'Settings' && (
@@ -789,6 +699,8 @@ export default function App() {
             setAiModel={setAiModel}
             sessionExpiresAt={sessionExpiresAt}
             onLogout={handleLogout}
+            onDeleteAccount={deleteAccount}
+            deletionPending={deletionPending}
             customPlan={learningPlan}
           />
         )}

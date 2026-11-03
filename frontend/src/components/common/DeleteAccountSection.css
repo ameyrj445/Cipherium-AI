@@ -1,0 +1,25 @@
+.account-danger-zone .ui-card { border-color: #be4560 !important; }
+.account-danger-zone .account-delete-button {
+  background: #9f1239;
+  border: 1px solid #fb7185;
+  color: #fff;
+  align-self: flex-start;
+  white-space: normal;
+}
+.account-danger-zone button:disabled { opacity: 0.55; cursor: not-allowed; }
+.account-danger-zone button:focus-visible,
+.account-danger-zone input:focus-visible { outline: 2px solid #fda4af; outline-offset: 3px; }
+.account-danger-zone form { min-width: 0; }
+.account-danger-zone form p { overflow-wrap: anywhere; line-height: 1.5; }
+.account-danger-zone label { display: block; margin-bottom: 8px; font-weight: 600; }
+.account-danger-zone input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-shell, #161618);
+  color: var(--text-primary, #f3f4f6);
+  border: 1px solid #9ca3af;
+  border-radius: 8px;
+}
+.account-delete-error { color: #fda4af; }
+.account-delete-actions { display: flex; flex-wrap: wrap; gap: 12px; }
