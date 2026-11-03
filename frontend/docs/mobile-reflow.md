@@ -81,3 +81,32 @@ long unbroken topic names/codes, all review statuses and clicking the quiz actio
 Check card/text edges, not only document scroll width (overflow can be clipped).
 Narrow viewport checks are reflow approximations, not actual browser zoom tests.
 No screen-reader, physical touch-device or full WCAG-conformance claim is made.
+
+## Study-plan summary follow-up — 2026-11-03
+
+PC QA of `02d54889351f9fcb89bb2aeb6013817805284e12` found that the study-plan
+progress summary kept four columns at 375px: content width was 506px inside a
+320px card, clipping Study Hours and placing Subtopics off-screen. The summary
+now uses auto-fitting tracks with a 200px minimum bounded by available width.
+Each statistic can shrink and wrap long numbers; decorative icons retain their
+size with a gap from the label. This is confined to presentation: calculations,
+plan data, callbacks and the unavailable/disabled freshness gate are unchanged.
+
+Eight regression tests cover style/content contracts at 320/375/390/640/768/
+1024/1280px, large values, scoped axe, milestone toggles/checkbox updates and the
+unchanged freshness gate. These JSDOM tests do not establish pixel geometry.
+The full frontend suite passes 657 tests in 64 files, inclusive branch coverage
+84.90%; lint passes with existing warnings, and production build plus all four
+bundle checks pass (167,054 initial gzip bytes, below 250,000).
+
+The cloud Chromium launch is blocked by the runtime's local-socket restriction,
+including after an approved sandbox escalation. PC rendered retest remains
+required at the listed widths with both ordinary and large values: verify every
+statistic, label and value fits its card, not merely that the page has no scrollbar.
+Include desktop layout, keyboard milestone/checkbox actions and enlarged text.
+No rendered-browser, screen-reader, physical-device or WCAG-conformance pass is
+claimed by this patch.
+The real-backend journey rerun did not start in this runtime: the previously
+used `/tmp/cipherium-flag-integration-venv/bin/python` is absent, and the default
+Python lacks `slowapi` and other backend dependencies. The earlier six-journey
+base result is not a result on this follow-up. Backend implementation is unchanged.
