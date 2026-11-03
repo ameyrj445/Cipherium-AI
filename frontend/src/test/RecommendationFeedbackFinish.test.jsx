@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import ResourceCard from '../components/common/ResourceCard';
 import RecommendedPanel from '../components/RecommendedPanel';
 import ResourcesFullView from '../components/ResourcesFullView';
+import feedbackStyles from '../components/RecommendationFeedback.css?raw';
 
 const resource = { id: 42, feedbackTargetId: 42, title: 'Binary search', url: 'https://example.com/resource' };
 const feedback = (state, authenticated = true) => ({ authenticated, entries: new Map(state ? [[42, state]] : []), submit: vi.fn() });
@@ -52,6 +53,24 @@ describe('Confirmed recommendation feedback presentation', () => {
 });
 
 describe('Thanks tooltip', () => {
+  it('keeps the tooltip in normal flow below its trigger instead of overlaying rating controls', () => {
+    const stylesheet = document.createElement('style');
+    stylesheet.textContent = feedbackStyles;
+    document.head.append(stylesheet);
+    try {
+      render(<ResourceCard resource={resource} recommendationFeedback={feedback({ status: 'success', choice: 'helpful' })} />);
+      const trigger = screen.getByRole('button', { name: 'Feedback saved' });
+      fireEvent.focus(trigger);
+      const tooltip = screen.getByRole('tooltip');
+      expect(trigger.nextElementSibling).toBe(tooltip);
+      expect(getComputedStyle(tooltip).position).toBe('static');
+      expect(getComputedStyle(tooltip).display).toBe('block');
+      expect(getComputedStyle(tooltip).marginTop).toBe('8px');
+      expect(getComputedStyle(tooltip).boxSizing).toBe('border-box');
+    } finally {
+      stylesheet.remove();
+    }
+  });
   it('opens on focus, describes trigger, is dismissed by Escape, and remains keyboard reachable', () => {
     render(<ResourceCard resource={resource} recommendationFeedback={feedback({ status: 'success' })} />);
     const trigger = screen.getByRole('button', { name: 'Feedback saved' });

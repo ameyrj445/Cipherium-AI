@@ -46,3 +46,7 @@ error/ambiguous or invalid/sample targets, session reset, both recommendation
 views, resource link usability, tooltip focus/hover/tap/Escape and unique IDs.
 These are DOM-level tests; responsive browser and assistive-technology verification
 are separate gates, not implied by wrapping CSS or a test pass.
+
+### Narrow-card tooltip correction
+
+Desktop narrow-viewport QA found the above-trigger overlay could cover rating controls. The thank-you tooltip now participates in normal document flow below its trigger, growing the card instead of covering adjacent content. Its card-bounded width, contrast, keyboard, Escape and outside-tap behavior are preserved. A CSS/DOM regression checks normal-flow positioning; rendered-width retesting remains a separate browser check.
