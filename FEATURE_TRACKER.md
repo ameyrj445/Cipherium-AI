@@ -176,7 +176,7 @@ Overall Progress:
 | **NFR-OBS-01** | Structured logs, trace IDs, metrics | ✅ Implemented | Trace ID middleware assigns and logs unique `X-Trace-ID` on all requests. |
 | **NFR-REL-01** | Database backups & tested restore | ⏳ Backlog | Automated backup cron not configured; volume mounts used for persistent storage. |
 | **NFR-UX-01** | WCAG 2.2 AA accessibility compliance | 🔶 Partial | Automated axe/keyboard regressions and sampled desktop checks are implemented; full rendered contrast, mobile/reflow and screen-reader audits remain outstanding. No WCAG conformance claim. See `frontend/docs/accessibility-verification.md`. |
-| **NFR-TEST-01** | $\ge 80\%$ test coverage on critical paths | ✅ Implemented | Latest local S3 product tree: 547 frontend tests and 83.99% aggregate branch coverage; five isolated backend-integrated journeys pass. Historical backend checkpoint: 188 tests. Counts alone do not prove every critical path; see `frontend/docs/verification-status.md` for scope and remaining gates. |
+| **NFR-TEST-01** | $\ge 80\%$ test coverage on critical paths | ✅ Implemented | Latest local S3 product tree: 548 frontend tests and 83.99% aggregate branch coverage; five isolated backend-integrated journeys pass. Historical backend checkpoint: 188 tests. Counts alone do not prove every critical path; see `frontend/docs/verification-status.md` for scope and remaining gates. |
 | **NFR-COST-01** | Monthly LLM spending budget & alerts | 🔶 Partial | Hard monthly token quotas active per user; organization billing webhooks not configured. |
 
 ---

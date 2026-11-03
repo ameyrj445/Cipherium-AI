@@ -32,7 +32,7 @@ The manifest inspection identifies Analytics as the largest deferred JS chunk (~
 - Navigation tests explicitly cover deferred resolution, abandoning a pending view, revisiting it, rejected chunk containment and navigation recovery. Existing real-page axe scans still pass after asynchronous page loading.
 - Lint passes with existing warnings; production build passes with the retained raw-entry advisory.
 - Independent review passed. Subsequent desktop mocked-browser smoke QA at `475f4a0990c0002e654605604be2c39d96dbb9a2` verified loading and navigation for Analytics, Knowledge Graph and Admin with no observed console errors. It did not profile real network/device performance or mobile rendering. Remote CI and teammate PR/merge remain separate gates.
-- After the report-modal integration (`fa976545`), the same initial-static-import-closure budget measured 164,562 gzip bytes. The earlier 161,992-byte result is a historical S3-5 checkpoint. The later saved-card integration (`878e863b`) measured 164,861 gzip bytes; see `verification-status.md` for the latest tested aggregate.
+- After the report-modal integration (`fa976545`), the same initial-static-import-closure budget measured 164,562 gzip bytes. The earlier 161,992-byte result is a historical S3-5 checkpoint. The later saved-card integration (`a7008072`, including the tooltip reflow correction) measured 164,861 gzip bytes; see `verification-status.md` for the latest tested aggregate.
 
 ## Chunk-load failure behavior
 
