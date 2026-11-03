@@ -13,4 +13,5 @@
 .resource-card--rated { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .05); }
 .recommendation-thanks { position: relative; display: block; width: 100%; min-width: 0; }
 .recommendation-feedback .recommendation-thanks-trigger { color: #c7d2fe; }
-.recommendation-thanks-tooltip { position: absolute; z-index: 2; bottom: 100%; left: 0; width: max-content; max-width: min(18rem, 100%); box-sizing: border-box; padding: 10px 12px; border: 1px solid #a5b4fc; border-radius: 8px; color: #f3f4f6; background: #161618; box-shadow: 0 4px 16px rgba(0, 0, 0, .4); }
+/* In-flow disclosure prevents narrow cards from covering rating controls. */
+.recommendation-thanks-tooltip { position: static; display: block; margin-top: 8px; width: max-content; max-width: min(18rem, 100%); box-sizing: border-box; padding: 10px 12px; border: 1px solid #a5b4fc; border-radius: 8px; color: #f3f4f6; background: #161618; box-shadow: 0 4px 16px rgba(0, 0, 0, .4); }
