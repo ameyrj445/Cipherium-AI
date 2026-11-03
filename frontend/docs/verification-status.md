@@ -94,7 +94,7 @@ mobile device behavior or WCAG conformance.
 - Fresh-answer ratings need persisted assistant IDs and server-side protection.
 - Quota UI needs actual usage/quota and reliable reset metadata.
 - Current-plan regeneration needs consistent plan identity and safe targeting;
-  the existing load-time generation risk must be resolved with the backend owner.
+  the unsafe unused load-time generation call has now been removed, while the backend identity/targeting contract still needs repair.
 - Recommendation saved-card/tooltip behavior is implemented and locally tested.
   Real browser/mobile/assistive-technology checks remain outstanding. The assignment
   specifies `rec_rating` but existing Too easy/Too hard types adjust overall difficulty;
@@ -111,3 +111,13 @@ Production settings remain **Usage unavailable**, with no synthetic percentage o
 reset date. No fixture is wired into App or enabled by configuration. Live meter,
 90% proactive warning and metadata-driven reset remain backend-blocked; see
 `ai-quota.md`. This addition does not close those acceptance requirements.
+
+## Study-plan freshness frontend preparation (2026-11-03)
+
+S3-2 prepares an unavailable production notice plus test-only freshness/refresh
+states. Regeneration stays disabled, and no status API is consumed. The unused
+load-time generation call was removed to prevent automatic cross-plan overwrites.
+649 frontend tests across 63 files, 84.92% inclusive branch coverage, lint/build,
+four bundle checks and six isolated real-backend journeys passed on this product
+tree. Chromium launch was blocked by the cloud runtime, so no browser/mobile pass
+is claimed. Live activation remains backend-blocked; see `study-plan-freshness.md`.

@@ -57,6 +57,8 @@ This is a source/test audit, not a claim of visual browser coverage. Test names 
 
 | AiUsage.jsx | AiUsage.test.jsx; AiQuotaApp.test.jsx | N/A — synchronous prepared presentation; explicit unavailable state tested, no live quota request |
 
+| PlanFreshnessBanner.jsx | PlanFreshness.test.jsx; PlanFreshnessApp.test.jsx | Fixture checking/regenerating/error states and production unavailable state; no live request/action |
+
 ## Limitations
 
 - AnalyticsFullView initiates auxiliary requests and maintains an internal loading flag, but does not render an explicit loading indicator. The test asserts it safely renders while requests remain pending; this is not equivalent to a visible loading-state UX.

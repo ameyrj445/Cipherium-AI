@@ -27,12 +27,13 @@ const change = (node, value) => fireEvent.change(node, { target: { value } });
 const dashboard = async () => {
   await screen.findByRole('button', { name: 'Dashboard', exact: true });
   await completed('/tasks/today');
-  await completed('/roadmaps/generate');
+  await completed('/roadmaps/custom');
 };
-const mountSignedIn = async () => {
+const mountSignedIn = async (beforeMount) => {
   const result = await authAPI.register({ name: 'Integration Learner', email: account.email, password });
   const token = result.data.access_token;
   startSession(token, { id: result.data.user_id, name: 'Integration Learner', email: account.email });
+  if (beforeMount) await beforeMount();
   render(<App />);
   await dashboard();
   return token;
@@ -131,13 +132,13 @@ describe('real backend learner journeys (disposable data, offline AI fallback)',
     expect(screen.queryByText(/Could not send|Unable to send/i)).not.toBeInTheDocument();
   });
 
-  it('generates a roadmap and persists a daily-task toggle', async () => {
-    await mountSignedIn();
-    // App dashboard initialization invokes the production generation service.
-    // This is deliberately isolated: existing production selection can overwrite
-    // the first plan; this suite must never be pointed at a developer database.
+  it('independently generates an isolated roadmap and persists a daily-task toggle', async () => {
+    // Explicitly exercise this endpoint only for a fresh disposable account,
+    // separate from App initialization. Never overwrite a user's saved plan.
+    await mountSignedIn(() => analyticsAPI.generateRoadmap(10));
     const roadmap = (await completed('/roadmaps/generate')).data;
     expect(roadmap.tasks.length).toBeGreaterThan(0);
+    expect(responses.filter(r => requestPath(r) === '/roadmaps/generate')).toHaveLength(1);
     const tasks = (await completed('/tasks/today')).data;
     expect(tasks.length).toBeGreaterThan(0);
     const task = tasks[0];
@@ -147,6 +148,29 @@ describe('real backend learner journeys (disposable data, offline AI fallback)',
     expect(toggled.data.is_done).toBe(!task.is_done);
     const reread = await api.get('/tasks/today');
     expect(reread.data.find(t => t.id === task.id).is_done).toBe(!task.is_done);
+  });
+
+  it('preserves a saved custom plan on workspace load and study-plan navigation', async () => {
+    const plan = {
+      subject: 'Preserved integration plan', target_hours_per_week: 6,
+      milestones: [{ id: 'foundation', title: 'Foundations', status: 'in_progress',
+        subtopics: ['Arrays'], completed_subtopics: [], resources: [] }],
+    };
+    let before;
+    await mountSignedIn(async () => {
+      await analyticsAPI.saveCustomPlan(plan);
+      before = (await analyticsAPI.getCustomPlans()).data;
+    });
+    click('Study Plan');
+    await screen.findByRole('heading', { name: /Preserved integration plan/ });
+    expect(screen.getByRole('heading', { name: 'Plan freshness unavailable' })).toBeInTheDocument();
+    const regenerate = screen.getByRole('button', { name: 'Regenerate plan' });
+    expect(regenerate).toBeDisabled();
+    fireEvent.click(regenerate); fireEvent.click(regenerate);
+    click('Dashboard'); click('Study Plan');
+    expect((await analyticsAPI.getCustomPlans()).data).toEqual(before);
+    expect(responses.some(r => requestPath(r) === '/roadmaps/generate')).toBe(false);
+    expect(responses.some(r => requestPath(r) === '/roadmaps/status')).toBe(false);
   });
 
   it('requests a real export and starts a downloadable JSON with the signed-in user data', async () => {

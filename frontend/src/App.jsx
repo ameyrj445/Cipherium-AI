@@ -136,7 +136,6 @@ export default function App() {
   const [analytics, setAnalytics] = useState(null);
   const [topics, setTopics] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  const [_roadmap, setRoadmap] = useState(null);
   const [customPlan, setCustomPlan] = useState(null);
   const [customPlans, setCustomPlans] = useState([]);
   const [planLoading, setPlanLoading] = useState(false);
@@ -171,11 +170,12 @@ export default function App() {
       const profileRes = await authAPI.getProfile();
       if (sessionRef.current !== requestSession) return;
       if (profileRes.data) setUser(profileRes.data);
-      const [topRes, anaRes, recRes, roadRes, planRes, plansRes, tasksRes] = await Promise.all([
+      // Reading the workspace must not call the untargeted mutation endpoint
+      // /roadmaps/generate, which can overwrite an existing custom plan.
+      const [topRes, anaRes, recRes, planRes, plansRes, tasksRes] = await Promise.all([
         quizAPI.getTopics().catch(() => ({ data: [] })),
         analyticsAPI.getMastery().catch(() => ({ data: null })),
         analyticsAPI.getRecommendations().catch(() => ({ data: [] })),
-        analyticsAPI.generateRoadmap(10).catch(() => ({ data: null })),
         analyticsAPI.getCurrentPlan().catch(() => null),
         analyticsAPI.getCustomPlans().catch(() => ({ data: [] })),
         tasksAPI.getTodayTasks().catch(() => ({ data: [] })),
@@ -184,7 +184,6 @@ export default function App() {
       if (topRes.data) setTopics(topRes.data);
       if (anaRes.data) setAnalytics(anaRes.data);
       if (recRes.data) setRecommendations(recRes.data);
-      if (roadRes.data) setRoadmap(roadRes.data);
       if (Array.isArray(tasksRes.data) && tasksRes.data.length > 0) {
         setTodayTasks(tasksRes.data.map((t) => ({
           id: t.id,
@@ -259,7 +258,6 @@ export default function App() {
     setCustomPlans([]);
     setAnalytics(null);
     setRecommendations([]);
-    setRoadmap(null);
     setCurrentQuestion(null);
     setQuizResult(null);
     setSelectedTopicId(null);

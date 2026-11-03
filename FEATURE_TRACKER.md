@@ -275,3 +275,9 @@ layout evidence. **Rendered retest pending; not release-ready on this evidence
 alone.** See `frontend/docs/mobile-reflow.md` and the verification matrix.
 
 | S3-1 AI usage (`feat/sarvesh-s3`) | Sarvesh | **Frontend-prepared / backend-blocked:** fixture-tested bar, 90% warning, 100% send lock and reset display. Production deliberately shows unavailable; only a specific server quota rejection can set exhausted for the current login. | No production default numbers or invented reset date. Live activation awaits authoritative usage/reset contract. See `frontend/docs/ai-quota.md`. Unit/fixture tests are not live quota acceptance; browser/mobile, remote CI and team review remain separate gates. |
+
+### Prepared study-plan freshness frontend
+
+| Item | Owner | Scope | Verification / remaining work |
+| --- | --- | --- | --- |
+| S3-2 stale-plan banner | Sarvesh | Unavailable production notice, disabled regeneration, test-only checking/fresh/stale/pending/error/refreshed previews; removed unsafe unused load-time generation. No backend changes. | **Frontend-prepared / backend-blocked.** 649 frontend tests, 84.92% branch coverage, lint/build, 4 bundle checks and 6 isolated backend journeys pass. Identity-safe live status/regeneration, browser/mobile and remote CI remain unverified. See `frontend/docs/study-plan-freshness.md`. |

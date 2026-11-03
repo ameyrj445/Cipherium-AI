@@ -7,6 +7,7 @@ import {
 import PageContainer from './layout/PageContainer';
 import PageHeader from './layout/PageHeader';
 import StickyRail from './layout/StickyRail';
+import PlanFreshnessBanner from './PlanFreshnessBanner';
 
 const POPULAR_SUBJECTS = [
   { name: 'Data Structures & Algorithms', icon: '⚡', category: 'Core CS' },
@@ -182,6 +183,8 @@ export default function StudyPlanView({
           }
         />
       </div>
+
+      {plan && <PlanFreshnessBanner planId={plan.id} />}
 
       {/* ── GENERATOR MODE: TWO COLUMN (7 cols Form + 5 cols Live Preview) ── */}
       {showGenerator && (
