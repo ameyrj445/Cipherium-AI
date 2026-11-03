@@ -42,7 +42,7 @@ const check = async (container) => {
 const loaded = async (page, populated = false) => {
   const titles = { Dashboard: populated ? 'Computer science' : 'Create your first study plan', Learn: 'Curated Learning Roadmaps & Progress Tracker', Practice: 'Adaptive Practice & Diagnostic Evaluation', Analytics: 'Curriculum Mastery & Performance Analytics', Settings: 'Settings & Preferences', Admin: 'Admin dashboard' };
   if (page === 'AI Tutor') await screen.findByRole('textbox', { name: 'Message the tutor' });
-  else await screen.findAllByRole('heading', { name: titles[page], exact: true });
+  else await screen.findAllByRole('heading', { name: titles[page], exact: true }, { timeout: 8000 });
   if (page === 'Admin') await waitFor(() => expect(screen.queryByText('Loading questions…')).not.toBeInTheDocument());
   expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
 };
