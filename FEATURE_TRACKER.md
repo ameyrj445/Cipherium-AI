@@ -103,7 +103,7 @@ Overall Progress:
 | **FR-REC-01b** | P0 | Filter out topics with unmet hard prerequisites | ✅ Implemented | Recommendations respect DAG dependency states and normalized prerequisite links. |
 | **FR-REC-02** | P0 | Explainable recommendation reasoning | ✅ Implemented | `recommendation_reason` dynamically generated in `ResourceResponse`. |
 | **FR-REC-03** | P1 | Dynamic difficulty staircase adaptation | ✅ Implemented | $\ge 85\%$ accuracy steps difficulty up $+1$; $< 50\%$ steps difficulty down $-1$. |
-| **FR-REC-04** | P1 | Explicit learner feedback (`too_easy`, `too_hard`, `not_relevant`) | ✅ Implemented | `POST /feedback` endpoint with `Feedback` ORM model supporting `rec_rating`, `tutor_flag`, and `bug_report`. |
+| **FR-REC-04** | P1 | Explicit learner feedback (`too_easy`, `too_hard`, `not_relevant`) | ✅ Implemented | `POST /feedback` endpoint with `Feedback` ORM model supporting `tutor_rating`, `rec_rating`, `bug`, `too_easy`, `too_hard`, and `not_relevant`. |
 | **FR-REC-05** | P2 | Contextual Bandit policy (LinUCB / Thompson Sampling) | ✅ Implemented | Epsilon-greedy bandit ($\epsilon = 0.1$) in `app/services/bandit.py` with online reward updates persisted in `RecommendationArm`. |
 
 ---
@@ -156,7 +156,7 @@ Overall Progress:
 |---|:---:|---|:---:|---|
 | **FR-ADMIN-01** | P1 | Content lifecycle management (`draft`, `review`, `published`, `archived`) | ✅ Implemented | Admin Question CMS (`/admin/questions`) provides full authoring, editing, and publishing controls. |
 | **FR-ADMIN-02** | P1 | Privacy-preserving aggregated student performance metrics | ✅ Implemented | `GET /admin/overview` aggregates student counts, active sessions, quiz statistics, and tutor engagement metrics. |
-| **FR-ADMIN-03** | P1 | Flagged tutor answers & incorrect question reporting | ✅ Implemented | Handled via `POST /feedback` and admin moderation oversight. |
+| **FR-ADMIN-03** | P1 | Flagged tutor answers & incorrect question reporting | ⚠️ Partial | General issue reports use `POST /feedback` with `feedback_type: "bug"` and a comment. The optional `target_id` is omitted by the incorrect-answer modal, so reports do not provide automatic answer/question traceability. Admin feedback viewing is available; a structured moderation workflow is not verified. |
 
 ---
 
@@ -258,3 +258,5 @@ Overall Progress:
 | S3-5 initial bundle (`feat/sarvesh-s3`) | Sarvesh | Lazy Analytics/Knowledge Graph/Admin views with Suspense; production manifest static-import-closure JS budget, strict <250,000 gzip bytes enforced in frontend CI. | Initial JS 161,992 gzip bytes (baseline 293,434 with the same method); 443 component/unit tests and four bundle tests pass; 83.54% inclusive branch coverage; lint/build pass with existing warnings. Browser/network profiling, remote CI and teammate PR/merge remain separate gates. See `frontend/docs/bundle-budget.md`. |
 
 | S3-6 real-backend journeys (`feat/sarvesh-s3`) | Sarvesh | Separate Vitest/JSDOM actual-App journeys over a real isolated FastAPI/SQLite server: auth/dashboard, adaptive quiz/mastery, tutor SSE/persistence, generated roadmap/daily task, export/download action. CI integration stage and safe disposable fixture. Fixed adaptive-session completion mismatch uncovered by the tests. | Five journeys pass locally using actual offline AI/service fallback, not live external providers. Unit suite, coverage and bundle gate verified separately; timed-exam completion, real browser/download/mobile, actual CI and teammate PR/merge remain separate gates. See `frontend/docs/integration-journeys.md`. |
+
+| S2-3 tutor feedback completion (local, unpublished) | Sarvesh | Saved-answer ratings plus incorrect-answer issue-report modal using `bug`/`comment`. No automatic answer linkage. | Automated/session/accessibility checks are recorded in `frontend/docs/tutor-feedback.md`. Browser QA, backend end-to-end verification, and publication remain separate gates. |
