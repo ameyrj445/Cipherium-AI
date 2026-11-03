@@ -15,6 +15,7 @@ export default function SectionHeader({
     <div
       style={{
         display: 'flex',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
         alignItems: subtitle ? 'flex-start' : 'center',
         marginBottom: '14px',

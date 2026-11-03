@@ -255,7 +255,7 @@ export default function LoginScreen({
           </div>
 
           {/* Social Proof Footer */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.8rem', color: '#64748b' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.8rem', color: '#9CA3AF' }}>
             <ShieldCheck size={16} color="#10b981" />
             <span>Secure Database Persistence • JWT Encrypted • Personalized Workspace</span>
           </div>

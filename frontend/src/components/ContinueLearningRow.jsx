@@ -46,7 +46,7 @@ export function ContinueLearningCards({
         onAction={onOpenLearn || onOpenStudyPlan}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '16px' }}>
         {/* Card 1: Active Roadmap Card */}
         <div
           className="ui-card"

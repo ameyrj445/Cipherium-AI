@@ -29,7 +29,7 @@ describe('PageHeader Component', () => {
     expect(eyebrowEl.style.fontWeight).toBe('800');
     expect(eyebrowEl.style.textTransform).toBe('uppercase');
     expect(eyebrowEl.style.letterSpacing).toBe('0.06em');
-    expect(eyebrowEl.style.color).toBe('var(--primary-brand, #6366F1)');
+    expect(eyebrowEl.style.color).toBe('var(--text-accent, #A5B4FC)');
   });
 
   it('does not render eyebrow when omitted', () => {

@@ -40,11 +40,12 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
   );
 
   return (
-    <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+    <div className="glass-panel" style={{ minWidth: 0, overflowWrap: 'anywhere', padding: '24px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
           <div style={{
+            flexShrink: 0,
             width: '36px',
             height: '36px',
             borderRadius: '10px',
@@ -55,8 +56,8 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
           }}>
             <BrainCircuit size={20} color="#fff" />
           </div>
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ minWidth: 0 }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', margin: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
               Cognitive Retention & Spaced Repetition (Ebbinghaus SM-2)
               <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(99,102,241,0.2)', color: '#818cf8', fontWeight: 700 }}>
                 BKT Powered
@@ -97,7 +98,7 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
       </div>
 
       {/* Grid of Scheduled Topics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '14px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(290px, 100%), 1fr))', gap: '14px' }}>
         {!(data.schedule && data.schedule.length > 0) ? (
           <div style={{ gridColumn: '1 / -1', padding: '16px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
             No learning topics scheduled yet. Take your first diagnostic quiz to calibrate your spaced repetition curve!
@@ -112,6 +113,7 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
             <div
               key={item.topic_id}
               style={{
+                minWidth: 0,
                 padding: '14px 16px',
                 borderRadius: '12px',
                 background: isCritical
@@ -131,7 +133,7 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
               }}
             >
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
                   <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8' }}>{item.topic_code}</span>
                   <span style={{
                     fontSize: '0.68rem',
@@ -152,7 +154,7 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
               {/* Progress Gauges */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginBottom: '3px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px', fontSize: '0.72rem', marginBottom: '3px' }}>
                     <span style={{ color: 'var(--text-dim)' }}>Memory Retention Curve</span>
                     <strong style={{ color: retentionPct < 60 ? '#fb7185' : retentionPct < 80 ? '#fbbf24' : '#34d399' }}>
                       {retentionPct}%
@@ -167,7 +169,7 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px', fontSize: '0.72rem', color: 'var(--text-dim)' }}>
                   <span>BKT Latent Mastery: <strong style={{ color: '#818cf8' }}>P(L) = {bktPct}%</strong></span>
                   <span>{item.attempt_count ?? 0} attempts</span>
                 </div>
@@ -179,6 +181,9 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
                 className="btn btn-secondary"
                 style={{
                   width: '100%',
+                  minWidth: 0,
+                  whiteSpace: 'normal',
+                  flexWrap: 'wrap',
                   padding: '7px 10px',
                   fontSize: '0.76rem',
                   display: 'flex',

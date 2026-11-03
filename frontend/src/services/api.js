@@ -101,7 +101,8 @@ export const authAPI = {
 export const quizAPI = {
   getTopics: () => api.get('/topics'),
   getNextQuestion: (topicId) => api.get(`/quizzes/next${topicId ? `?topic_id=${topicId}` : ''}`),
-  submitAttempt: (data) => api.post('/quizzes/attempts', data),
+  submitAttempt: (data, expectedSessionToken) => api.post('/quizzes/attempts', data, { expectedSessionToken }),
+  completeSession: (quizId, expectedSessionToken) => api.post(`/quizzes/${encodeURIComponent(quizId)}/complete`, null, { expectedSessionToken }),
   generateExam: (params = {}) => api.post('/quizzes/exam', null, { params }),
 };
 

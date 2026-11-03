@@ -19,14 +19,14 @@ describe('GlobalSearch Component', () => {
 
   it('renders search input with placeholder and shortcut badge', () => {
     render(<GlobalSearch />);
-    const input = screen.getByRole('textbox', { name: /search topics/i });
+    const input = screen.getByRole('combobox', { name: /search topics/i });
     expect(input).toBeInTheDocument();
     expect(screen.getByText('/')).toBeInTheDocument();
   });
 
   it('opens dropdown and displays quick tools when input is focused with empty query', () => {
     render(<GlobalSearch topics={sampleTopics} />);
-    const input = screen.getByRole('textbox', { name: /search topics/i });
+    const input = screen.getByRole('combobox', { name: /search topics/i });
     fireEvent.focus(input);
 
     expect(screen.getByText('Quick Navigation & Tools')).toBeInTheDocument();
@@ -41,14 +41,14 @@ describe('GlobalSearch Component', () => {
       />
     );
 
-    const input = screen.getByRole('textbox', { name: /search topics/i });
+    const input = screen.getByRole('combobox', { name: /search topics/i });
     fireEvent.change(input, { target: { value: 'binary' } });
 
     // Should find the topic
     expect(screen.getByText('Binary Search Trees')).toBeInTheDocument();
     // Should find the milestone
     expect(screen.getByText('Binary Search Variants')).toBeInTheDocument();
-    expect(screen.getByText(/MATCHING RESULTS/i)).toBeInTheDocument();
+    expect(screen.getByText(/MATCHING RESULTS \(/i)).toBeInTheDocument();
   });
 
   it('calls onNavigate with appropriate target when a result is clicked', () => {
@@ -60,7 +60,7 @@ describe('GlobalSearch Component', () => {
       />
     );
 
-    const input = screen.getByRole('textbox', { name: /search topics/i });
+    const input = screen.getByRole('combobox', { name: /search topics/i });
     fireEvent.change(input, { target: { value: 'analytics' } });
 
     const viewResult = screen.getByText('Analytics');
@@ -71,7 +71,7 @@ describe('GlobalSearch Component', () => {
 
   it('clears query when clear button is clicked', () => {
     render(<GlobalSearch topics={sampleTopics} />);
-    const input = screen.getByRole('textbox', { name: /search topics/i });
+    const input = screen.getByRole('combobox', { name: /search topics/i });
     fireEvent.change(input, { target: { value: 'graph' } });
 
     expect(input.value).toBe('graph');
@@ -90,7 +90,7 @@ describe('GlobalSearch Component', () => {
       />
     );
 
-    const input = screen.getByRole('textbox', { name: /search topics/i });
+    const input = screen.getByRole('combobox', { name: /search topics/i });
     fireEvent.change(input, { target: { value: 'dynamic' } });
 
     fireEvent.keyDown(input, { key: 'ArrowDown' });
@@ -101,7 +101,7 @@ describe('GlobalSearch Component', () => {
 
   it('renders helpful empty state when no results match query', () => {
     render(<GlobalSearch topics={sampleTopics} />);
-    const input = screen.getByRole('textbox', { name: /search topics/i });
+    const input = screen.getByRole('combobox', { name: /search topics/i });
     fireEvent.change(input, { target: { value: 'xyzunknownterm' } });
 
     expect(screen.getByText(/No matches found for/i)).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe('GlobalSearch Component', () => {
 
   it('closes dropdown when Escape key is pressed', () => {
     render(<GlobalSearch topics={sampleTopics} />);
-    const input = screen.getByRole('textbox', { name: /search topics/i });
+    const input = screen.getByRole('combobox', { name: /search topics/i });
     fireEvent.focus(input);
 
     expect(screen.getByText('Quick Navigation & Tools')).toBeInTheDocument();

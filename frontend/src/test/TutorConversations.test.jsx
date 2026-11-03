@@ -172,3 +172,47 @@ describe('Persistent tutor conversations', () => {
   });
 
 });
+
+describe('Server-confirmed quota rejection', () => {
+  const message = 'Monthly AI quota exceeded. Upgrade or wait until next month.';
+  it('blocks only explicit quota exhaustion across thread changes and resets on session change', async () => {
+    const { result, rerender } = await ready();
+    await act(async () => result.current.select(1));
+    tutorAPI.streamMessage.mockImplementation(async (_d,_c,_done,error) => error({ status: 429, message }));
+    await act(async () => result.current.send('Question'));
+    expect(result.current.quotaExceeded).toBe(true);
+    expect(result.current.messages).toEqual([]);
+    expect(result.current.thinking).toBe(false);
+    await act(async () => result.current.select(2));
+    await act(async () => result.current.newConversation());
+    await act(async () => result.current.send('Blocked'));
+    expect(tutorAPI.streamMessage).toHaveBeenCalledTimes(1);
+    await act(async () => rerender({ token: 'b' }));
+    expect(result.current.quotaExceeded).toBe(false);
+  });
+  it('recognizes axios fallback quota errors without treating a generic 429 as monthly exhaustion', async () => {
+    const { result } = await ready(); await act(async () => result.current.select(1));
+    tutorAPI.streamMessage.mockImplementation(async (_d,_c,_done,error) => error({ status: 429, message: 'Slow down' }));
+    await act(async () => result.current.send('Question'));
+    expect(result.current.quotaExceeded).toBe(false);
+    await act(async () => result.current.select(1));
+    tutorAPI.streamMessage.mockImplementation(async (_d,_c,_done,error) => error({ status: 405 }));
+    tutorAPI.sendConversationMessage.mockRejectedValue({ response: { status: 429, data: { detail: message } } });
+    await act(async () => result.current.send('Question'));
+    expect(result.current.quotaExceeded).toBe(true);
+  });
+  it('ignores old-session quota errors and does not label partial streams as a pre-save quota denial', async () => {
+    const { result, rerender } = await ready(); await act(async () => result.current.select(1));
+    tutorAPI.streamMessage.mockResolvedValue(undefined);
+    await act(async () => result.current.send('Question'));
+    const oldError = tutorAPI.streamMessage.mock.calls[0][3];
+    await act(async () => rerender({ token: 'b' }));
+    await act(async () => oldError({ status: 429, message }));
+    expect(result.current.quotaExceeded).toBe(false);
+    await act(async () => result.current.select(1));
+    tutorAPI.streamMessage.mockImplementation(async (_d,chunk,_done,error) => { chunk('partial'); await error({ status: 429, message }); });
+    await act(async () => result.current.send('Another'));
+    expect(result.current.quotaExceeded).toBe(false);
+    expect(result.current.messages.at(-1).text).toBe('partial');
+  });
+});
