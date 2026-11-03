@@ -46,6 +46,17 @@ A clean isolated desktop install at commit `1e6125e1011e1f58ff0513c3c3b7f96b23ab
 
 Automated keyboard events and inert-attribute assertions are regression tests, not substitutes for these manual checks. No backend/database changes. Remote CI and teammate-reviewed PR/merge are separate gates.
 
-## Mobile verification environment limitation
+## Earlier mobile verification environment limitation
 
 On 2026-11-03, an installed cloud Chromium/Playwright launch at a requested 390×844 viewport failed before a page rendered with `socket() failed: Operation not permitted`. The supported reviewed escalation failed for the same reason. No mobile result is claimed. The connected desktop browser previously offered no viewport-size/device-emulation controls. Do not treat JSDOM responsive tests as rendered-mobile evidence. See `verification-status.md` for the remaining test matrix.
+
+## Subsequent narrow-viewport findings and candidate fix
+
+The desktop browser later completed a sampled audit on published `469974e0` at
+320/375/390/768 CSS pixels. Dashboard, Learn, Practice, Analytics and the top bar
+had overflow/clipped-control findings. Settings, Tutor and Admin had no observed
+overflow in those sampled states; skip-link/drawer/Admin keyboard samples passed.
+Local `59e6ecf8` addresses layout causes and passes 555 automated frontend tests,
+including seven new reflow-contract/interaction regressions. Its rendered retest
+is still pending. This is not a physical-device, full contrast or screen-reader
+check. See `mobile-reflow.md`.

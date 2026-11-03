@@ -1,11 +1,22 @@
 # Frontend verification status
 
-Evidence checkpoint: 2026-11-03. Published bases: team S2 `e1fb9299` and stacked S3 `fa976545`. Latest local saved-card integration: `a7008072`.
+Evidence checkpoint: 2026-11-03. Published bases: team S2 `3fc50885` and stacked S3 `469974e0`. Latest local mobile-reflow candidate: `59e6ecf8`.
 This records observed results, not a release approval or WCAG certification.
 Historical task reports retain their original totals; use the exact commit/tree
 when comparing results. Future source changes require affected checks to rerun.
 
 ## Latest combined local result
+
+The mobile-reflow candidate `59e6ecf807f548686fe61562ce9f3ed5f469205b`
+(tree `10ff3781b633b5152445040ef08f5338dd539d72`) passed 555 frontend tests
+across 58 files, 84.04% branch coverage, lint with existing warnings, production
+build and four bundle checks. Initial static-import JavaScript closure measured
+165,050 gzip bytes (<250,000 gate). Five isolated actual-App/FastAPI/SQLite journeys
+passed. It fixes layout causes found in the desktop browser's narrow-viewport audit;
+rendered acceptance on this candidate remains pending. See `mobile-reflow.md`.
+No push, PR or merge is implied by this local candidate.
+
+### Previous saved-card checkpoint
 
 The S3 saved-card integration commit `a7008072b697617096a698b90cd024c1e51d06d9`
 (tree `ce7e0838978b9f240a97d1e7d6d1c51240574e12`) passed 548 frontend tests
@@ -13,7 +24,7 @@ across 57 files, inclusive branch coverage 83.99%, lint (with existing warnings)
 production build and four bundle tests. Initial static-import JavaScript closure
 measured 164,861 gzip bytes (<250,000 gate). Five isolated actual-App/FastAPI/SQLite
 journeys passed on that same tree. The following documentation-only refresh does
-not change product code. At this evidence checkpoint, these local saved-card commits have not yet been published.
+not change product code. These saved-card commits were subsequently published to the team branches listed above.
 
 S2 saved-card commit `3fc50885a02339b5d09e60482279cf602b3a2657` passed 426 tests,
 lint and production build. Its 24 new tests cover success/pending/error/uncertain
@@ -46,6 +57,17 @@ pushes. No teammate-reviewed PR/main merge is recorded at this checkpoint.
 
 These checks used isolated copies and mocked API data. They do not validate live
 backend persistence, mobile rendering, or screen-reader speech.
+
+## Narrow-viewport audit on the published base
+
+A desktop browser audit on `469974e0` at 320, 375, 390 and 768 CSS pixels found
+Dashboard overflow at every width, Learn overflow at 320/375/390, clipped Practice
+mode controls at 320, offscreen Analytics Practice actions at 320/375/390, and
+shared top-bar controls outside the narrow viewport. Settings, Tutor and Admin
+showed no overflow in the sampled states. Sampled skip-link/drawer/Admin keyboard
+checks passed. This used mock data in an isolated copy, not live backend or a
+physical mobile device. The new candidate addresses those findings but must be
+retested in the browser before any fixed/pass claim.
 
 ## Remaining verification matrix
 
