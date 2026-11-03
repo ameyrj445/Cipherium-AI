@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 import ResourceCard from '../components/common/ResourceCard';
 import RecommendedPanel from '../components/RecommendedPanel';
 import ResourcesFullView from '../components/ResourcesFullView';
-import feedbackStyles from '../components/RecommendationFeedback.css?raw';
+import { readFileSync } from 'node:fs';
+const feedbackStyles = readFileSync('src/components/RecommendationFeedback.css', 'utf8');
 
 const resource = { id: 42, feedbackTargetId: 42, title: 'Binary search', url: 'https://example.com/resource' };
 const feedback = (state, authenticated = true) => ({ authenticated, entries: new Map(state ? [[42, state]] : []), submit: vi.fn() });
@@ -63,10 +64,11 @@ describe('Thanks tooltip', () => {
       fireEvent.focus(trigger);
       const tooltip = screen.getByRole('tooltip');
       expect(trigger.nextElementSibling).toBe(tooltip);
-      expect(getComputedStyle(tooltip).position).toBe('static');
-      expect(getComputedStyle(tooltip).display).toBe('block');
-      expect(getComputedStyle(tooltip).marginTop).toBe('8px');
-      expect(getComputedStyle(tooltip).boxSizing).toBe('border-box');
+      const rule = [...stylesheet.sheet.cssRules].find((entry) => entry.selectorText === '.recommendation-thanks-tooltip');
+      expect(rule.style.getPropertyValue('position')).toBe('static');
+      expect(rule.style.getPropertyValue('display')).toBe('block');
+      expect(rule.style.getPropertyValue('margin-top')).toBe('8px');
+      expect(rule.style.getPropertyValue('box-sizing')).toBe('border-box');
     } finally {
       stylesheet.remove();
     }
