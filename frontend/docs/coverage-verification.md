@@ -24,7 +24,7 @@ All three have regression assertions. No backend implementation was changed.
 
 ## Measured frontend result
 
-- 417 tests pass across 50 files.
+- At the S3-3 implementation checkpoint, 417 tests passed across 50 files. See `verification-status.md` for later aggregate results.
 - Branches: **82.65% (3211/3885)**.
 - Lines: **86.21% (2227/2583)**.
 - Statements: **84.62%**; functions: **74.05%**.

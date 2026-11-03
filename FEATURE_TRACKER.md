@@ -10,6 +10,8 @@
 
 ---
 
+> Verification totals below are an implementation inventory, not release approval. Latest frontend evidence and unresolved acceptance gates: `frontend/docs/verification-status.md`.
+
 ## 📊 High-Level Implementation Dashboard
 
 | Category | Total Requirements | ✅ Implemented | 🔶 Partial / Variant | ⏳ Backlog | Progress (%) |
@@ -23,14 +25,14 @@
 | **7. AI Tutor & Pedagogical RAG (FR-TUTOR)** | 10 | 10 | 0 | 0 | **100.0%** |
 | **8. Dashboard & Reporting (FR-DASH)** | 6 | 5 | 0 | 1 | **83.3%** |
 | **9. Administration & CMS (FR-ADMIN)** | 3 | 3 | 0 | 0 | **100.0%** |
-| **10. Non-Functional Requirements (NFR)** | 12 | 10 | 1 | 1 | **83.3%** |
+| **10. Non-Functional Requirements (NFR)** | 12 | 9 | 2 | 1 | **75.0%** |
 | **11. Database Schema Specifications** | 19 | 18 | 0 | 1 | **94.7%** |
 | **12. REST API Endpoints Contract** | 20 | 20 | 0 | 0 | **100.0%** |
-| **TOTAL** | **113** | **108** | **1** | **4** | **95.6%** |
+| **TOTAL** | **113** | **107** | **2** | **4** | **94.7%** |
 
 ```
 Overall Progress:
-[█████████████████████████████████████████████████░] 95.6% (108 Completed / 1 Partial / 4 Backlog)
+[█████████████████████████████████████████████████░] 94.7% (107 Completed / 2 Partial / 4 Backlog)
 ```
 
 ---
@@ -173,8 +175,8 @@ Overall Progress:
 | **NFR-PRIV-01** | Data minimization & retention policies | ✅ Implemented | `POST /admin/maintenance/purge-stale` purges tutor interactions older than the retention window. |
 | **NFR-OBS-01** | Structured logs, trace IDs, metrics | ✅ Implemented | Trace ID middleware assigns and logs unique `X-Trace-ID` on all requests. |
 | **NFR-REL-01** | Database backups & tested restore | ⏳ Backlog | Automated backup cron not configured; volume mounts used for persistent storage. |
-| **NFR-UX-01** | WCAG 2.2 AA accessibility compliance | ✅ Implemented | Focus trapping in `FilterSidebar.jsx`, semantic exam buttons with `aria-pressed`, `aria-expanded` milestone controls. |
-| **NFR-TEST-01** | $\ge 80\%$ test coverage on critical paths | ✅ Implemented | **319 automated tests** (188 backend Pytest + 131 frontend Vitest). |
+| **NFR-UX-01** | WCAG 2.2 AA accessibility compliance | 🔶 Partial | Automated axe/keyboard regressions and sampled desktop checks are implemented; full rendered contrast, mobile/reflow and screen-reader audits remain outstanding. No WCAG conformance claim. See `frontend/docs/accessibility-verification.md`. |
+| **NFR-TEST-01** | $\ge 80\%$ test coverage on critical paths | ✅ Implemented | Latest local S3 product tree: 547 frontend tests and 83.99% aggregate branch coverage; five isolated backend-integrated journeys pass. Historical backend checkpoint: 188 tests. Counts alone do not prove every critical path; see `frontend/docs/verification-status.md` for scope and remaining gates. |
 | **NFR-COST-01** | Monthly LLM spending budget & alerts | 🔶 Partial | Hard monthly token quotas active per user; organization billing webhooks not configured. |
 
 ---
@@ -259,6 +261,6 @@ Overall Progress:
 
 | S3-6 real-backend journeys (`feat/sarvesh-s3`) | Sarvesh | Separate Vitest/JSDOM actual-App journeys over a real isolated FastAPI/SQLite server: auth/dashboard, adaptive quiz/mastery, tutor SSE/persistence, generated roadmap/daily task, export/download action. CI integration stage and safe disposable fixture. Fixed adaptive-session completion mismatch uncovered by the tests. | Five journeys pass locally using actual offline AI/service fallback, not live external providers. Unit suite, coverage and bundle gate verified separately; timed-exam completion, real browser/download/mobile, actual CI and teammate PR/merge remain separate gates. See `frontend/docs/integration-journeys.md`. |
 
-| S2-3 tutor feedback completion (local, unpublished) | Sarvesh | Saved-answer ratings plus incorrect-answer issue-report modal using `bug`/`comment`. No automatic answer linkage. | Automated/session/accessibility checks are recorded in `frontend/docs/tutor-feedback.md`. Browser QA, backend end-to-end verification, and publication remain separate gates. |
+| S2-3 tutor feedback completion (`e1fb9299`; S3 `fa976545`) | Sarvesh | Saved-answer ratings plus incorrect-answer issue-report modal using `bug`/`comment`. No automatic answer linkage. | Automated/session/accessibility checks are recorded in `frontend/docs/tutor-feedback.md`. Published on S2 and integrated into S3; sampled desktop mocked-modal QA passed. Mobile/AT, actual report persistence, remote CI and team review remain separate gates. |
 
 | S2-5 recommendation saved-card treatment | Sarvesh | Confirmed ratings dim only the card surface, preserve resource access and provide a keyboard/hover/tap thank-you tooltip. Pending/error/ambiguous states do not look saved. | Focused regression tests cover eligibility, all choices, session changes and tooltip interactions. API mapping follows existing backend semantics; assignment `rec_rating` mapping still needs product/backend reconciliation. Browser/mobile/AT checks and team review remain separate gates. See `frontend/docs/recommendation-feedback.md`. |

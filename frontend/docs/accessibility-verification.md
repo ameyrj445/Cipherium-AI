@@ -2,7 +2,7 @@
 
 Status: **partial manual acceptance**, not a WCAG conformance certification.
 
-## Verified aggregate result
+## Implementation-checkpoint aggregate result
 
 441 tests across 53 files pass; inclusive frontend branch coverage 83.54%. Lint and production build pass with existing warnings. These are local cloud results, not remote CI or manual audit completion.
 
@@ -31,7 +31,11 @@ JSDOM cannot perform layout, rendered color contrast, real browser Tab navigatio
 
 These calculations do not establish contrast for every gradient, translucent overlay, chart label or state. Full rendered contrast audit remains required.
 
-## Manual acceptance checklist (unverified)
+## Subsequent sampled desktop verification
+
+A clean isolated desktop install at commit `1e6125e1011e1f58ff0513c3c3b7f96b23ab83f4` verified the first-focusable skip link and focus transfer to main, visible focus and Space activation of representative Study Plan/Practice controls, and accessible names for Resources search and Practice choices. Sampled Resources text contrast measured 17.00:1 (heading), 7.37:1 (description), and 6.54:1 (card summary). This is not a complete page/state or screen-reader audit. Later report-modal desktop checks are recorded in `tutor-feedback.md`.
+
+## Remaining manual acceptance checklist
 
 - Browser Tab/Shift+Tab order on all seven pages and populated/empty/error flows; no focus obscured by sticky elements.
 - Actual NVDA or VoiceOver reading of labels, headings, controls and live messages.
@@ -41,3 +45,7 @@ These calculations do not establish contrast for every gradient, translucent ove
 - Keyboard operation of drawers/dialogs and return focus in the real browser.
 
 Automated keyboard events and inert-attribute assertions are regression tests, not substitutes for these manual checks. No backend/database changes. Remote CI and teammate-reviewed PR/merge are separate gates.
+
+## Mobile verification environment limitation
+
+On 2026-11-03, an installed cloud Chromium/Playwright launch at a requested 390×844 viewport failed before a page rendered with `socket() failed: Operation not permitted`. The supported reviewed escalation failed for the same reason. No mobile result is claimed. The connected desktop browser previously offered no viewport-size/device-emulation controls. Do not treat JSDOM responsive tests as rendered-mobile evidence. See `verification-status.md` for the remaining test matrix.

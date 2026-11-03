@@ -48,3 +48,7 @@ error states, literal feedback text, session changes, stale responses and ambigu
 write protection. Lint/build and full frontend suite must be rerun against the
 final tree. Browser/mobile visual QA, real backend admin transactions, CI and
 teammate PR review are separate verification gates; mocked tests do not prove them.
+
+### Subsequent desktop verification
+
+At `10d943b58abe1a3572c5a2f74c6b75f92ae2ec15`, isolated desktop QA with mocked data verified the admin navigation entry, three tabs, readable resource form and missing-endpoint notice, long question text wrapping, and a mocked Publish status update. Resource submission, feedback, loading/error and non-admin scenarios were not completed visually. Automated tests cover those behaviors separately. No real backend admin transaction or mobile/screen-reader result is claimed.
