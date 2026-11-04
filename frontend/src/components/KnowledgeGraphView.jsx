@@ -54,7 +54,7 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
   }, [filteredNodes]);
 
   const tierLabels = {
-    0: 'Tier 1: Foundational Roots (Zero Prerequisites)',
+    0: 'Tier 1: Fundamentals (Foundational Roots)',
     1: 'Tier 2: Intermediate Dependencies (Requires Tier 1)',
     2: 'Tier 3: Advanced Concepts (Requires Tier 2)',
     3: 'Tier 4: Specialized Architectures (Requires Tier 3)',
@@ -64,7 +64,8 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
     return (
       <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center', padding: '60px 20px', color: 'var(--text-dim)' }}>
         <RefreshCw size={32} className="spin" color="#6366f1" style={{ marginBottom: '14px' }} />
-        <h3>Computing Curriculum Directed Acyclic Graph (DAG)...</h3>
+        <h3>Loading your learning map...</h3>
+        <p style={{ fontSize: "0.78rem", color: "var(--text-dim)", margin: "4px 0 0" }}>Computing Curriculum Directed Acyclic Graph</p>
       </div>
     );
   }
@@ -88,13 +89,13 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-accent, #A5B4FC)', letterSpacing: '.06em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Network size={14} /> CURRICULUM PREREQUISITE GRAPH
+            <Network size={14} /> TOPIC LEARNING PATH
           </span>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '6px 0 4px', color: '#fff' }}>
-            Interactive Knowledge Map (DAG)
+            Interactive Knowledge Map
           </h2>
           <p style={{ color: 'var(--text-dim)', fontSize: '0.88rem', margin: 0, maxWidth: '620px' }}>
-            Visualizes academic prerequisite paths. Nodes unlock dynamically as you prove mastery on foundational topics using Bayesian Knowledge Tracing.
+            See what to learn next. Topics unlock automatically as you practice and master earlier lessons.
           </p>
         </div>
 
@@ -252,9 +253,9 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
                       {/* BKT Mastery Indicator */}
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginBottom: '3px' }}>
-                          <span style={{ color: 'var(--text-dim)' }}>BKT Latent Knowledge</span>
+                          <span style={{ color: 'var(--text-dim)' }}>Topic Mastery</span>
                           <strong style={{ color: isMastered ? '#34d399' : '#818cf8' }}>
-                            P(L) = {bktPct}%
+                            {bktPct}%
                           </strong>
                         </div>
                         <div style={{ height: '5px', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
@@ -387,11 +388,11 @@ export default function KnowledgeGraphView({ onStartQuiz, onAskTutor }) {
             {/* BKT Stat */}
             <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(255, 255, 255, 0.03)', marginBottom: '22px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#fff', marginBottom: '6px' }}>
-                <span>Bayesian Latent Knowledge Probability:</span>
+                <span>Topic Mastery:</span>
                 <strong>{Math.round((selectedNode.bkt_probability ?? 0.2) * 100)}%</strong>
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-                Evaluated from chronological response slips and guess propensities.
+                Calculated based on your recent quiz answers and practice scores.
               </div>
             </div>
 

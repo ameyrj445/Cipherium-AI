@@ -144,7 +144,7 @@ export default function SettingsView({
       <PageHeader
         eyebrow="ACCOUNT & WORKSPACE CONFIGURATION"
         title="Settings & Preferences"
-        description="Configure your academic targets, AI tutor hyperparameters, study reminders, and telemetry data."
+        description="Set your learning goals, study reminders, AI tutor settings, and account data."
         actions={
           saveStatus ? (
             <div
@@ -289,7 +289,7 @@ export default function SettingsView({
           <SettingSection
             icon={Brain}
             title="AI Intelligence & Diagnostic Hyperparameters"
-            description="Configure pedagogical grounding, model latency, and adaptive assessment behavior."
+            description="Configure tutor responses, speed, and question difficulty behavior."
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {/* Model Switcher */}
@@ -426,7 +426,7 @@ export default function SettingsView({
           <SettingSection
             icon={Bell}
             title="Study Reminders & Retention Alerts"
-            description="Schedule nudges to maintain memory consolidation and spaced repetition intervals."
+            description="Get friendly reminders to review what you've learned on time."
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <ToggleSwitch

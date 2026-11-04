@@ -26,7 +26,7 @@ export default function CompetencyRadarChart({ radarData = [] }) {
         </h3>
       </div>
       <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', margin: '0 0 16px' }}>
-        Multi-dimensional mastery synthesis across foundational computer science and systems domains.
+        A simple visual overview of your skills across different topics.
       </p>
 
       <div style={{ width: '100%', height: 320 }}>

@@ -60,11 +60,11 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
             <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', margin: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
               Cognitive Retention & Spaced Repetition (Ebbinghaus SM-2)
               <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(99,102,241,0.2)', color: '#818cf8', fontWeight: 700 }}>
-                BKT Powered
+                Smart Practice
               </span>
             </h3>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '3px 0 0' }}>
-              Scientifically calculates memory decay curves and schedules optimal revision moments before forgetting occurs.
+              Reminds you to review topics at the right time so you remember them longer.
             </p>
           </div>
         </div>
@@ -90,7 +90,7 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
             <>
               <CheckCircle2 size={15} color="#34d399" />
               <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#34d399' }}>
-                All Retention States Optimal
+                All Topics Up to Date
               </span>
             </>
           )}
@@ -143,7 +143,7 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
                     background: isCritical ? '#f43f5e' : isRec ? '#d97706' : '#10b981',
                     color: '#fff'
                   }}>
-                    {isCritical ? 'Critical Review' : isRec ? 'Review Recommended' : 'Retention Safe'}
+                    {isCritical ? 'Critical Review' : isRec ? 'Review Recommended' : 'Good to Go'}
                   </span>
                 </div>
                 <h4 style={{ margin: '0 0 6px', fontSize: '0.92rem', color: '#fff', fontWeight: 700 }}>
@@ -170,7 +170,7 @@ export default function RetentionScheduleCard({ onStartQuiz }) {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px', fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-                  <span>BKT Latent Mastery: <strong style={{ color: '#818cf8' }}>P(L) = {bktPct}%</strong></span>
+                  <span>Mastery: <strong style={{ color: '#818cf8' }}>{bktPct}%</strong></span>
                   <span>{item.attempt_count ?? 0} attempts</span>
                 </div>
               </div>

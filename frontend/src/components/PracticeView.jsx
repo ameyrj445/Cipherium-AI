@@ -1055,7 +1055,7 @@ export default function PracticeView({
               </div>
 
               <p style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.88rem', lineHeight: 1.55, marginBottom: '28px' }}>
-                Benchmark your computer science and algorithmic problem-solving speed under realistic exam constraints. Questions are randomly sampled from your curriculum and graded automatically with in-depth pedagogical breakdowns.
+                Test your skills under realistic exam conditions. Questions are chosen from your topics and graded automatically with clear explanations.
               </p>
 
               {examError && (

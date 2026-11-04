@@ -44,7 +44,7 @@ export default function ActivityHeatmap({ heatmapData = [], totalActivities = 0,
             </h3>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', margin: '4px 0 0' }}>
-            {totalActivities} total diagnostic quizzes & pedagogical tutor inquiries logged over the past 365 days.
+            {totalActivities} total diagnostic quizzes and tutor questions answered in the past year.
           </p>
         </div>
 

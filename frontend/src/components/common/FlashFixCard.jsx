@@ -7,7 +7,7 @@ import { AlertTriangle, Clock, ArrowRight, Sparkles } from 'lucide-react';
  */
 export default function FlashFixCard({
   topicName,
-  diagnosis = 'Diagnosed gap based on recent quiz answers and practice velocity.',
+  diagnosis = 'Based on your recent quiz answers, spending a few minutes reviewing this topic will help.',
   estimatedTime = '15 mins',
   riskScore = null,
   status = 'Intervention Recommended',
@@ -69,7 +69,7 @@ export default function FlashFixCard({
         {riskScore !== null && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', fontSize: '0.72rem', color: 'var(--text-tertiary, #6B7280)' }}>
             <Sparkles size={11} color="#EF4444" />
-            <span>Diagnostic Risk Probability: <strong style={{ color: '#EF4444' }}>{riskScore}%</strong></span>
+            <span>Needs Review: <strong style={{ color: '#EF4444' }}>{riskScore}%</strong></span>
           </div>
         )}
       </div>

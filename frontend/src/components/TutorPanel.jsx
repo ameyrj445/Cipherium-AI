@@ -139,7 +139,7 @@ export default function TutorPanel({
   const activeTopicRef = useMemo(() => {
     if (!activeTopic) {
       return {
-        notes: 'Select a syllabus topic to bind curriculum context, formulas, and tailored diagnostic prompts.',
+        notes: 'Choose a topic to focus on, or ask any question below.',
         formulas: [
           { label: 'Time Complexity Hierarchy', code: 'O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ) < O(n!)' },
           { label: 'Binary Search Invariant', code: 'low, high = 0, len(arr) - 1\nwhile low <= high:\n  mid = low + (high - low) // 2' },
@@ -372,7 +372,7 @@ export default function TutorPanel({
                 }}
               >
                 <Sparkles size={13} color={tutorTopicId === null ? '#818cf8' : 'var(--text-tertiary, #6B7280)'} />
-                <span>General Tutor Context</span>
+                <span>All Topics (General)</span>
               </button>
 
               {/* Individual Topics List */}
@@ -561,7 +561,7 @@ export default function TutorPanel({
                   cursor: 'pointer',
                 }}
               >
-                <option value="socratic">🏛️ Socratic Guided Mode</option>
+                <option value="socratic">🏛️ Step-by-Step Questions (Socratic)</option>
                 <option value="direct">💡 Direct Instructor Mode</option>
                 <option value="exam_prep">⚡ Exam & Drill Prep Mode</option>
               </select>
@@ -661,12 +661,12 @@ export default function TutorPanel({
 
               <div>
                 <h3 style={{ margin: '0 0 6px', fontSize: '1.25rem', fontWeight: 800, color: '#F3F4F6' }}>
-                  Cipherium AI Pedagogical Tutor
+                  Cipherium AI Tutor
                 </h3>
                 <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-secondary, #9CA3AF)', lineHeight: 1.55 }}>
                   {activeTopic
-                    ? `I am currently grounded in ${activeTopic.name}. Ask me about theoretical intuition, code implementations, or edge cases.`
-                    : 'Grounded in your active curriculum and diagnostic gap analysis. Ask a conceptual question, request step-by-step algorithms, or practice edge cases.'}
+                    ? `Ask me anything about ${activeTopic.name} — from simple explanations to code examples and practice problems.`
+                    : 'Ask any question to get clear explanations, helpful hints, and code examples.'}
                 </p>
               </div>
 

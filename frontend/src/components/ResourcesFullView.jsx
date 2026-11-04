@@ -52,7 +52,7 @@ export default function ResourcesFullView({ recommendations = [], customPlan = n
       feedbackTargetId: r.id,
       isFromPlan: false,
       recommendation_reason: r.recommendation_reason ||
-        (r.topic_name ? `Recommended because recent diagnostic questions identified gaps in ${r.topic_name}.` : 'Curated for your current skill level.'),
+        (r.topic_name ? `Recommended because recent practice showed room to improve in ${r.topic_name}.` : 'Recommended for your current skill level.'),
       difficulty: r.difficulty || ((r.estimated_minutes || 15) > 30 ? 'Advanced' : (r.estimated_minutes || 15) > 15 ? 'Intermediate' : 'Beginner'),
     }));
     return [...planResources, ...diagnosticList];

@@ -188,7 +188,7 @@ export default function AnalyticsFullView({
                   boxShadow: activeTab === 'mastery' ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
                 }}
               >
-                <BarChart2 size={14} color={activeTab === 'mastery' ? '#6366F1' : 'var(--text-secondary, #9CA3AF)'} /> Curriculum Mastery & AI Diagnostics
+                <BarChart2 size={14} color={activeTab === 'mastery' ? '#6366F1' : 'var(--text-secondary, #9CA3AF)'} /> Topic Mastery & Practice Analytics
               </button>
               <button
                 type="button"
@@ -288,7 +288,7 @@ export default function AnalyticsFullView({
                   Curriculum Mastery Scores
                 </h3>
                 <p style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.78rem', margin: '4px 0 0' }}>
-                  Weighted composite of diagnostic accuracy and retrieval spacing across syllabus modules.
+                  Overall score combining quiz accuracy and review practice across topics.
                 </p>
               </div>
               <span style={{ fontSize: '0.74rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818CF8', padding: '4px 8px', borderRadius: '8px', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
@@ -349,7 +349,7 @@ export default function AnalyticsFullView({
               </h3>
             </div>
             <p style={{ color: 'var(--text-secondary, #9CA3AF)', fontSize: '0.78rem', margin: '0 0 16px', lineHeight: 1.45 }}>
-              Topics with lowest diagnostic accuracy or overdue retrieval spacing.
+              Topics that need more practice or review.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, overflowY: 'auto' }}>
@@ -499,7 +499,7 @@ export default function AnalyticsFullView({
                   Quiz Score Distribution
                 </h4>
                 <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--text-secondary, #9CA3AF)' }}>
-                  Accuracy brackets across diagnostic assessments
+                  How you scored across your practice quizzes
                 </p>
               </div>
               <Award size={16} color="#818CF8" />

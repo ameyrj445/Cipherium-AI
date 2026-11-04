@@ -19,11 +19,11 @@ const DEFAULT_CURRICULUM_TOPICS = [
 const PLATFORM_VIEWS = [
   { name: 'Dashboard', desc: 'Home, study streak stats, and daily progress', target: 'Dashboard' },
   { name: 'Learn', desc: 'Interactive subject roadmaps and curriculum milestones', target: 'Learn' },
-  { name: 'Practice', desc: 'Adaptive diagnostic quiz and curated roadmap challenges', target: 'Practice' },
+  { name: 'Practice', desc: 'Practice quizzes and topic challenges', target: 'Practice' },
   { name: 'Study Plan', desc: 'Custom AI generative study roadmap and milestone checklist', target: 'Study Plan' },
-  { name: 'Analytics', desc: 'Curriculum mastery curves and ML performance diagnostics', target: 'Analytics' },
+  { name: 'Analytics', desc: 'Track your progress, scores, and review schedule', target: 'Analytics' },
   { name: 'Resources', desc: 'Curated library of tutorials, practice sets, and docs', target: 'Resources' },
-  { name: 'AI Tutor', desc: 'Gemini-powered pedagogical assistant and concept explainer', target: 'AI Tutor' },
+  { name: 'AI Tutor', desc: 'Ask questions and get clear step-by-step explanations', target: 'AI Tutor' },
   { name: 'Settings', desc: 'Study streak alerts, ML triage preferences, and security', target: 'Settings' },
 ];
 
