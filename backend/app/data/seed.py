@@ -379,3 +379,15 @@ def seed_database(db):
         )
         db.add(new_student)
         db.commit()
+
+    # Seed Default Admin User if not exists
+    default_admin = db.query(User).filter(User.email == "admin@cipherium.ai").first()
+    if not default_admin:
+        new_admin = User(
+            name="Admin User",
+            email="admin@cipherium.ai",
+            password_hash=hash_password("admin123"),
+            role="admin"
+        )
+        db.add(new_admin)
+        db.commit()
